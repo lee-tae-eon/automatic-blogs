@@ -5,9 +5,12 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm --filter ./apps/cli dev",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "core-build": "pnpm --filter @blog-automation/core build",
+    "cli-dev": "pnpm --filter @blog-automation/cli dev"
   },
   "devDependencies": {
+    "@types/node": "^25.0.9",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
