@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "references": [{ "path": "../../packages/core" }],
+  "include": ["src"]
+}

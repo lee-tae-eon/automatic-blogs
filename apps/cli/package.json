@@ -1,0 +1,11 @@
+{
+  "name": "@blog-automation/cli",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@blog-automation/core": "workspace:*"
+  }
+}
