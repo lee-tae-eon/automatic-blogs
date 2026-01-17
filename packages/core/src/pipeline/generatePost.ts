@@ -8,7 +8,15 @@ export async function generatePost({
   client,
   input,
 }: GeneratePostInput): Promise<BlogPost> {
-  return generatePostSingleCall(client, input);
+  const aiPost = await generatePostSingleCall(client, input);
+
+  const post: BlogPost = {
+    ...aiPost,
+    platform: "naver",
+    createdAt: new Date().toISOString(),
+  };
+
+  return post;
   // // 1. 목차 생성 (input 객체를 통째로 넘겨 주제와 톤을 반영)
   // const outlineData = await generateOutline(client, input);
 

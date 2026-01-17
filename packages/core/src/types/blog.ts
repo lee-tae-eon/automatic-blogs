@@ -18,10 +18,14 @@ export interface BlogPostInput {
   //   | "empathetic"; // 공감되는 (위로, 고민 상담 느낌)
 }
 
-export interface BlogPost {
+export interface AiGeneratedPost {
   title: string;
   outline: string[];
   content: string;
+}
+export interface BlogPost extends AiGeneratedPost {
+  platform: "naver" | "tistory";
+  createdAt: string;
 }
 
 export interface GeneratePostInput {

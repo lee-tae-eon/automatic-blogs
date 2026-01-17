@@ -1,11 +1,11 @@
 import { BaseAiClient } from "../ai";
-import { BlogPostInput, BlogPost } from "../types/blog";
+import { BlogPostInput, AiGeneratedPost } from "../types/blog";
 import { safeGenerate } from "../util/safeGenerate";
 
 export const generatePostSingleCall = async (
   client: BaseAiClient,
   input: BlogPostInput,
-): Promise<BlogPost> => {
+): Promise<AiGeneratedPost> => {
   const role = `
 너는 블로그 상위 노출을 전문으로 하는 콘텐츠 전략가다.
 검색 의도를 정확히 반영하고,
@@ -53,7 +53,7 @@ ${sectionInstruction}
 `;
 
   const response = await safeGenerate(() =>
-    client.generateJson<BlogPost>(prompt),
+    client.generateJson<AiGeneratedPost>(prompt),
   );
 
   return response;
