@@ -1,5 +1,4 @@
-import { BaseAiClient } from "../ai/types";
-import { BlogPostInput, BlogPost, GeneratePostInput } from "../types/blog";
+import { BlogPost, GeneratePostInput } from "../types/blog";
 import { generateOutline } from "./generateOutline";
 import { generateArticle } from "./generateArticle";
 
