@@ -1,4 +1,2 @@
-export const coreHello = () => {
-  return "core is ready";
-};
 export * from "./pipeline/generatePost";
+export * from "./util/saveMarkdown";

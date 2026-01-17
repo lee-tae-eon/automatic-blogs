@@ -1,6 +1,6 @@
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import { BlogPostInput } from "@blog-automation/core/src/types/blog";
-import { generatePost } from "@blog-automation/core/src";
+import { generatePost, saveMarkdown } from "@blog-automation/core/src";
 import { ENV } from "./env";
 import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
 
@@ -40,6 +40,8 @@ async function main() {
     console.log(post.content);
     console.log("--------------------------------------");
     console.log("\n✅ 생성이 완료되었습니다!");
+
+    const filePath = await saveMarkdown(post);
   } catch (error) {
     console.error("🚨 오류 발생:", error);
   }
