@@ -1,3 +1,5 @@
+import { BaseAiClient } from "../ai";
+
 export interface BlogPostInput {
   topic: string;
   tone?:
@@ -7,10 +9,19 @@ export interface BlogPostInput {
     | "professional" // 전문적 (비즈니스, 논문 요약 느낌)
     | "humorous" // 위트 있는 (드립, 재미 위주)
     | "empathetic"; // 공감되는 (위로, 고민 상담 느낌)
+  textLength: {
+    min: number;
+    max: number;
+  };
 }
 
 export interface BlogPost {
   title: string;
   outline: string[];
   content: string;
+}
+
+export interface GeneratePostInput {
+  client: BaseAiClient;
+  input: BlogPostInput;
 }

@@ -1,21 +1,14 @@
-import dotenv from "dotenv";
-import path from "path";
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import { generatePost } from "@blog-automation/core/src";
+import { ENV } from "./env";
 
 // 1. .env 로드 (루트 경로 설정)
-dotenv.config({
-  path: [
-    path.join(__dirname, "../../../.env.local"),
-    path.join(__dirname, "../../../.env"),
-  ],
-});
 
 async function main() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL_FAST;
-  console.log(apiKey);
+  const apiKey = ENV.GEMINI_API_KEY;
+  const modelName = ENV.GEMINI_MODEL_FAST;
+
   if (!apiKey || !modelName) {
     console.error(
       "❌ GEMINI_API_KEY 또는 modelName이 없습니다. .env 파일을 확인해주세요."
@@ -25,7 +18,11 @@ async function main() {
 
   const input: BlogPostInput = {
     topic: "5살 아이랑 태국 여행 갈 때 챙겨야 할 필수 아이템",
-    tone: "casual", // 추천드린 5개 중 하나 선택 가능
+    tone: "informative", // 추천드린 5개 중 하나 선택 가능
+    textLength: {
+      min: 1500,
+      max: 2000,
+    },
   };
   console.log(`\n🚀 블로그 자동 생성 시작!`);
   console.log(`📌 주제: ${input.topic}`);
@@ -34,7 +31,7 @@ async function main() {
   const aiClient = new GeminiClient(apiKey, modelName);
 
   try {
-    const post = await generatePost(aiClient, input);
+    const post = await generatePost({ client: aiClient, input });
 
     console.log("--------------------------------------");
     console.log(`제목: ${post.title}`);

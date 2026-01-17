@@ -1,12 +1,12 @@
 import { BaseAiClient } from "../ai/types";
-import { BlogPostInput, BlogPost } from "../types/blog";
+import { BlogPostInput, BlogPost, GeneratePostInput } from "../types/blog";
 import { generateOutline } from "./generateOutline";
 import { generateArticle } from "./generateArticle";
 
-export async function generatePost(
-  client: BaseAiClient,
-  input: BlogPostInput
-): Promise<BlogPost> {
+export async function generatePost({
+  client,
+  input,
+}: GeneratePostInput): Promise<BlogPost> {
   // 1. 목차 생성 (input 객체를 통째로 넘겨 주제와 톤을 반영)
   const outlineData = await generateOutline(client, input);
 
