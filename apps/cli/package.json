@@ -6,6 +6,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@blog-automation/core": "workspace:*"
+    "@blog-automation/core": "workspace:*",
+    "marked": "^17.0.1"
   }
 }
