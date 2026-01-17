@@ -12,7 +12,7 @@ export const generateArticle = async (
     ? `말투는 "${input.tone}" 스타일로 작성해줘.`
     : "";
 
-  // 각 소제목을 순회하며 본문 생성 (Flash 모델의 속도와 비용 장점 활용)
+  // 각 소제목을 순회하며 본문 생성
   for (const section of outline.sections) {
     const prompt = `
       전체 주제: "${outline.title}"
