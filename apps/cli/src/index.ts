@@ -5,7 +5,12 @@ import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import { generatePost } from "@blog-automation/core/src";
 
 // 1. .env 로드 (루트 경로 설정)
-dotenv.config({ path: path.join(__dirname, "../../../../.env.local") });
+dotenv.config({
+  path: [
+    path.join(__dirname, "../../../.env.local"),
+    path.join(__dirname, "../../../.env"),
+  ],
+});
 
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
