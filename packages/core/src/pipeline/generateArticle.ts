@@ -1,5 +1,7 @@
 import { BaseAiClient } from "../ai/types";
 import { BlogPostInput } from "../types/blog";
+import { delay } from "../util/delay";
+import { safeGenerate } from "../util/safeGenerate";
 import { BlogOutline } from "./generateOutline";
 
 export const generateArticle = async (
@@ -23,11 +25,17 @@ export const generateArticle = async (
       독자가 읽기 편하게 적절한 줄바꿈을 포함하고, 정보를 구체적으로 전달해줘.
     `;
 
-    const sectionContent = await client.generateText(prompt);
+    const sectionContent = await safeGenerate(() =>
+      client.generateText(prompt)
+    );
 
     // 마크다운 형식으로 본문을 조립
     fullContent += `## ${section}\n\n${sectionContent}\n\n`;
+
+    await delay(2000);
   }
+
+  console.log(fullContent.length, "fullContent.length");
 
   return fullContent;
 };
