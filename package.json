@@ -4,10 +4,9 @@
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm --filter ./apps/cli dev",
     "lint": "pnpm -r lint",
-    "core-build": "pnpm --filter @blog-automation/core build",
-    "cli-dev": "pnpm --filter @blog-automation/cli dev"
+    "cli-dev": "pnpm --filter @blog-automation/cli dev",
+    "core-build": "pnpm --filter @blog-automation/core build"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
