@@ -2,8 +2,11 @@ import { GeminiClient } from "@blog-automation/core/src/ai";
 import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import { generatePost } from "@blog-automation/core/src";
 import { ENV } from "./env";
+import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
 
 // 1. .env 로드 (루트 경로 설정)
+
+const preset = BLOG_PRESET["naver"];
 
 async function main() {
   const apiKey = ENV.GEMINI_API_KEY;
@@ -18,7 +21,9 @@ async function main() {
 
   const input: BlogPostInput = {
     topic: "5살 아이랑 태국 여행 갈 때 챙겨야 할 필수 아이템",
-    platform: "tistory",
+    tone: preset.tone,
+    textLength: preset.textLength,
+    sections: preset.sections,
   };
   console.log(`\n🚀 블로그 자동 생성 시작!`);
   console.log(`📌 주제: ${input.topic}`);

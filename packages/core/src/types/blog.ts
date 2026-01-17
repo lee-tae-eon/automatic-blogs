@@ -2,8 +2,13 @@ import { BaseAiClient } from "../ai";
 
 export interface BlogPostInput {
   topic: string;
+  tone: string;
+  sections: number;
+  textLength: {
+    min: number;
+    max: number;
+  };
   overriedTone?: string;
-  platform: BlogPlatform;
   // tone?:
   //   | "informative" // 정보 전달 (백과사전식, 객관적)
   //   | "casual" // 친근함 (블로그, 커뮤니티 말투)
