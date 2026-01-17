@@ -14,8 +14,12 @@ dotenv.config({
 
 async function main() {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error("❌ GEMINI_API_KEY가 없습니다. .env 파일을 확인해주세요.");
+  const modelName = process.env.GEMINI_MODEL_FAST;
+  console.log(apiKey);
+  if (!apiKey || !modelName) {
+    console.error(
+      "❌ GEMINI_API_KEY 또는 modelName이 없습니다. .env 파일을 확인해주세요."
+    );
     return;
   }
 
@@ -27,7 +31,7 @@ async function main() {
   console.log(`📌 주제: ${input.topic}`);
   console.log(`🎭 톤: ${input.tone}\n`);
   // Gemini 클라이언트 초기화
-  const aiClient = new GeminiClient(apiKey);
+  const aiClient = new GeminiClient(apiKey, modelName);
 
   try {
     const post = await generatePost(aiClient, input);
