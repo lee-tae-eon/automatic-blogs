@@ -1,5 +1,6 @@
 import { BaseAiClient } from "../ai";
-import { BlogPostInput } from "../types/blog";
+import { BlogPlatform, BlogPostInput } from "../types/blog";
+import { BLOG_PRESET } from "../util/platform";
 import { safeGenerate } from "../util/safeGenerate";
 
 export interface BlogOutline {
@@ -9,8 +10,10 @@ export interface BlogOutline {
 
 export const generateOutline = async (
   clinet: BaseAiClient,
-  input: BlogPostInput
+  input: BlogPostInput,
 ): Promise<BlogOutline> => {
+  const preset = BLOG_PRESET[input.platform];
+
   const role = `
                 너는 블로그 상위 노출을 전문으로 하는 콘텐츠 전략가야.
                 검색 의도를 정확히 반영하고,
@@ -19,14 +22,14 @@ export const generateOutline = async (
                 실제 검색 사용자에게 도움이 되는 정보 위주로 작성해.
                 `;
 
-  const toneInstruction = input.tone
-    ? `전체적인 말투는 "${input.tone}" 스타일로 해줘.`
+  const toneInstruction = preset.tone
+    ? `전체적인 말투는 "${preset.tone}" 스타일로 해줘.`
     : "";
 
-  const lengthInstruction = input.textLength
+  const lengthInstruction = preset.textLength
     ? `
     [글 분량 조건]
-    - 최종 완성될 전체 글은 공백 포함 ${input.textLength.min}자 이상 ${input.textLength.max}자 이하로 작성될 예정이야.
+    - 최종 완성될 전체 글은 공백 포함 ${preset.textLength.min}자 이상 ${preset.textLength.max}자 이하로 작성될 예정이야.
     - 이 분량에 적합한 목차로 구성해줘.
     - 정보 손실은 최소화해주세요.
   `
@@ -51,7 +54,7 @@ export const generateOutline = async (
   `;
 
   const response = await safeGenerate(() =>
-    clinet.generateJson<BlogOutline>(prompt)
+    clinet.generateJson<BlogOutline>(prompt),
   );
 
   return response;
