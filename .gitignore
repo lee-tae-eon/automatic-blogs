@@ -142,3 +142,4 @@ dist
 .env
 *.log
 apps/cli/output/*
+.auth/*

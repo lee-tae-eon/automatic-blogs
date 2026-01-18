@@ -42,24 +42,33 @@ export class NaverPublisher {
       // 가끔 뜨는 도움말 팝업 닫기
       await page.keyboard.press("Escape");
 
-      // 3. 제목 입력
-      const titleSelector =
-        ".se-placeholder.__se_placeholder.se-ff-nanumbarungothic";
-      await page.waitForSelector(titleSelector);
-      await page.click(titleSelector);
+      // 3. 제목 입력 (macOS)
+      console.log("📝 제목 입력 중...");
+      await page.waitForTimeout(3000); // 에디터 마운트 대기
+
+      await page.keyboard.press("Meta+Alt+T");
+      await page.waitForTimeout(500);
       await page.keyboard.type(title);
-      console.log("✅ 제목 입력 완료");
+
+      // ✅ 제목 입력 검증 (중요)
+      await page.waitForFunction(
+        (expectedTitle) => {
+          const el = document.querySelector(
+            '[contenteditable="true"][data-placeholder*="제목"]',
+          ) as HTMLElement | null;
+          return el && el.innerText.trim() === expectedTitle.trim();
+        },
+        title,
+        { timeout: 5000 },
+      );
+
+      await page.keyboard.press("Escape"); // 포커스 안정화
+      console.log("✅ 제목 입력 및 검증 완료");
 
       // 4. 본문 주입 (중요: 에디터 영역 클릭 후 주입)
       await page.click(".se-content");
       await page.evaluate(injectEditor, htmlContent);
-      // await page.evaluate((html: string) => {
-      //   const editor = document.querySelector(".se-content");
-      //   if (editor) {
-      //     editor.innerHTML = html;
-      //     editor.dispatchEvent(new Event("input", { bubbles: true }));
-      //   }
-      // }, htmlContent);
+      await page.waitForTimeout(500);
       console.log("✅ 본문 주입 완료");
 
       console.log(

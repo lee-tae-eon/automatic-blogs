@@ -1,2 +1,3 @@
-2026/01/19-06:18:26.251 7ea829 Creating DB /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/Local Storage/leveldb since it was missing.
-2026/01/19-06:18:26.256 7ea829 Reusing MANIFEST /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/Local Storage/leveldb/MANIFEST-000001
+2026/01/19-06:35:27.940 7f1372 Reusing MANIFEST /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/Local Storage/leveldb/MANIFEST-000001
+2026/01/19-06:35:27.942 7f1372 Recovering log #3
+2026/01/19-06:35:27.942 7f1372 Reusing old log /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/Local Storage/leveldb/000003.log 

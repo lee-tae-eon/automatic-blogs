@@ -1,2 +1,3 @@
-2026/01/19-06:18:27.079 7ea7ea Creating DB /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/shared_proto_db/metadata since it was missing.
-2026/01/19-06:18:27.087 7ea7ea Reusing MANIFEST /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/shared_proto_db/metadata/MANIFEST-000001
+2026/01/19-06:35:28.207 7f1339 Reusing MANIFEST /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/shared_proto_db/metadata/MANIFEST-000001
+2026/01/19-06:35:28.207 7f1339 Recovering log #3
+2026/01/19-06:35:28.207 7f1339 Reusing old log /Users/itaeeon/Desktop/PersonalProject/automatic-blogs/.auth/naver/Default/shared_proto_db/metadata/000003.log 

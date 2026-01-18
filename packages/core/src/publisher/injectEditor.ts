@@ -1,9 +1,12 @@
 /// <reference lib="dom" />
 export function injectEditor(html: string) {
-  const editor = document.querySelector(".se-content");
+  const editor = document.querySelector(".se-content") as HTMLElement | null;
+  if (!editor) return;
 
-  if (editor) {
-    editor.innerHTML = html;
-    editor.dispatchEvent(new Event("input", { bubbles: true }));
-  }
+  editor.innerHTML = html;
+
+  editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  editor.dispatchEvent(new Event("change", { bubbles: true }));
+
+  editor.focus();
 }
