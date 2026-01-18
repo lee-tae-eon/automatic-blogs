@@ -1,50 +1,60 @@
-import { chromium, BrowserContext, Page } from "playwright";
+// packages/core/src/publisher/naverPublisher.ts
+
+import { chromium } from "playwright";
 import path from "path";
 
 export class NaverPublisher {
-  private userDataDir: string;
+  private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
 
-  constructor() {
-    // 로그인 세션을 저장할 폴더 경로 (루트의 .auth 폴더)
-    this.userDataDir = path.join(process.cwd(), "../../.auth/naver");
-  }
-
-  /**
-   * 브라우저를 실행하고 로그인 세션을 유지한 채로 페이지를 엽니다.
-   */
-  async getContext(): Promise<BrowserContext> {
-    return await chromium.launchPersistentContext(this.userDataDir, {
-      headless: false, // 눈으로 확인하기 위해 false로 설정
-      args: ["--disable-blink-features=AutomationControlled"], // 자동화 탐지 우회
+  async postToBlog(blogId: string, title: string, htmlContent: string) {
+    const context = await chromium.launchPersistentContext(this.userDataDir, {
+      headless: false, // 직접 눈으로 확인하며 진행
+      args: ["--disable-blink-features=AutomationControlled"],
     });
-  }
 
-  /**
-   * 네이버 블로그 글쓰기 페이지로 이동합니다.
-   */
-  async postToBlog(title: string, htmlContent: string) {
-    const context = await this.getContext();
     const page = await context.newPage();
 
     try {
-      // 1. 네이버 블로그 글쓰기 주소로 이동
-      await page.goto("https://blog.naver.com/내아이디/postwrite");
+      // 1. 글쓰기 페이지 진입
+      await page.goto(`https://blog.naver.com/${blogId}/postwrite`);
 
-      // 2. 로그인 여부 확인 (로그인이 안 되어 있다면 여기서 멈추고 수동 로그인 필요)
+      // 2. 로그인 세션 체크
       if (page.url().includes("nid.naver.com")) {
         console.log(
-          "⚠️ 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요.",
+          "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
         );
-        // 사용자가 로그인할 때까지 대기하거나 안내 후 종료
-        return;
+        await page.waitForURL("**/postwrite**", { timeout: 120000 });
       }
 
-      console.log("📝 글쓰기 에디터 진입 중...");
+      console.log("📝 에디터 로딩 중...");
+      // 가끔 뜨는 도움말 팝업 닫기
+      await page.keyboard.press("Escape");
 
-      // 네이버 스마트에디터는 iframe이나 복잡한 구조로 되어 있어
-      // 추가적인 셀렉터 작업이 필요합니다. (다음 단계에서 진행)
+      // 3. 제목 입력
+      const titleSelector =
+        ".se-placeholder.__se_placeholder.se-ff-nanumbarungothic";
+      await page.waitForSelector(titleSelector);
+      await page.click(titleSelector);
+      await page.keyboard.type(title);
+      console.log("✅ 제목 입력 완료");
+
+      // 4. 본문 주입 (중요: 에디터 영역 클릭 후 주입)
+      await page.click(".se-content");
+      await page.evaluate((html) => {
+        const editor = document.querySelector(".se-content");
+        if (editor) {
+          editor.innerHTML = html;
+          // 네이버 엔진이 변경을 감지하도록 이벤트 발생
+          editor.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      }, htmlContent);
+      console.log("✅ 본문 주입 완료");
+
+      console.log(
+        "🚀 모든 작업이 끝났습니다. 브라우저에서 '발행' 버튼을 직접 눌러보세요!",
+      );
     } catch (error) {
-      console.error("Naver Publish Error:", error);
+      console.error("❌ 네이버 발행 오류:", error);
     }
   }
 }

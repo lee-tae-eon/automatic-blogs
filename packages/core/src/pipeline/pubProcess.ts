@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 import { markdownToHtml } from "../util/markdownToHtml"; // core에서 가져옴
 
 export async function pubProcess(mdFilePath: string) {
