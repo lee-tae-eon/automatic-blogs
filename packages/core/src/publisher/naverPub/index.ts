@@ -7,6 +7,7 @@ export class NaverPublisher {
   private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
 
   async postToBlog(blogId: string, title: string, htmlContent: string) {
+    // context와 page는 playwright가 자동으로 타입을 추론해줍니다.
     const context = await chromium.launchPersistentContext(this.userDataDir, {
       headless: false, // 직접 눈으로 확인하며 진행
       args: ["--disable-blink-features=AutomationControlled"],
