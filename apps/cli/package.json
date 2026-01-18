@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "@blog-automation/core": "workspace:*",
-    "marked": "^17.0.1",
-    "playwright": "^1.57.0"
+    "marked": "^17.0.1"
   }
 }

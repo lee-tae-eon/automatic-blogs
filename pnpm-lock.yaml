@@ -11,6 +11,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
+      playwright:
+        specifier: ^1.57.0
+        version: 1.57.0
     devDependencies:
       '@types/node':
         specifier: ^25.0.9
@@ -33,9 +36,6 @@ importers:
       marked:
         specifier: ^17.0.1
         version: 17.0.1
-      playwright:
-        specifier: ^1.57.0
-        version: 1.57.0
 
   packages/core:
     dependencies:
