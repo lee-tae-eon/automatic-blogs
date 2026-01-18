@@ -2,11 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "lib": ["ESNext", "DOM"],
     "declaration": true,
-    "declarationMap": true,
-    "lib": ["ES2020", "DOM"],
-    "outDir": "dist",
-    "rootDir": "src"
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

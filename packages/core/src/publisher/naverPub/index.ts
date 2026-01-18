@@ -2,6 +2,7 @@
 
 import { chromium } from "playwright";
 import path from "path";
+import { injectEditor } from "../injectEditor";
 
 export class NaverPublisher {
   private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
@@ -20,12 +21,22 @@ export class NaverPublisher {
       await page.goto(`https://blog.naver.com/${blogId}/postwrite`);
 
       // 2. 로그인 세션 체크
+      // 로그인 페이지로 튕겼다면
       if (page.url().includes("nid.naver.com")) {
         console.log(
           "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
         );
-        await page.waitForURL("**/postwrite**", { timeout: 120000 });
+
+        // 로그인 완료되어 네이버 블로그 도메인으로 돌아오기만 기다림
+        await page.waitForURL("https://blog.naver.com/**", {
+          timeout: 120000,
+        });
+
+        console.log("✅ 로그인 완료 감지");
       }
+
+      // ❗❗ 중요: 다시 글쓰기 페이지로 직접 이동
+      await page.goto(`https://blog.naver.com/${blogId}/postwrite`);
 
       console.log("📝 에디터 로딩 중...");
       // 가끔 뜨는 도움말 팝업 닫기
@@ -41,13 +52,14 @@ export class NaverPublisher {
 
       // 4. 본문 주입 (중요: 에디터 영역 클릭 후 주입)
       await page.click(".se-content");
-      await page.evaluate((html: string) => {
-        const editor = document.querySelector(".se-content");
-        if (editor) {
-          editor.innerHTML = html;
-          editor.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }, htmlContent);
+      await page.evaluate(injectEditor, htmlContent);
+      // await page.evaluate((html: string) => {
+      //   const editor = document.querySelector(".se-content");
+      //   if (editor) {
+      //     editor.innerHTML = html;
+      //     editor.dispatchEvent(new Event("input", { bubbles: true }));
+      //   }
+      // }, htmlContent);
       console.log("✅ 본문 주입 완료");
 
       console.log(
