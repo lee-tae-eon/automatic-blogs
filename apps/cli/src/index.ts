@@ -3,6 +3,7 @@ import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import { generatePost, saveMarkdown } from "@blog-automation/core/src";
 import { ENV } from "./env";
 import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
+import { processPublish } from "./processPublish/processPublishNaver";
 
 const preset = BLOG_PRESET["naver"];
 
@@ -41,6 +42,18 @@ async function main() {
     console.log("\n✅ 생성이 완료되었습니다!");
 
     const filePath = await saveMarkdown(post);
+
+    console.log("--------------------------------------");
+    console.log(filePath);
+    console.log("--------------------------------------");
+    console.log("\n md 생성이 완료되었습니다!");
+
+    const fileHtml = processPublish(filePath);
+
+    console.log("--------------------------------------");
+    console.log(fileHtml);
+    console.log("--------------------------------------");
+    console.log("\n html 생성이 완료되었습니다!");
   } catch (error) {
     console.error("🚨 오류 발생:", error);
   }
