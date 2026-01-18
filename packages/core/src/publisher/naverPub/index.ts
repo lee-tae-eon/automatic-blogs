@@ -41,11 +41,10 @@ export class NaverPublisher {
 
       // 4. 본문 주입 (중요: 에디터 영역 클릭 후 주입)
       await page.click(".se-content");
-      await page.evaluate((html) => {
+      await page.evaluate((html: string) => {
         const editor = document.querySelector(".se-content");
         if (editor) {
           editor.innerHTML = html;
-          // 네이버 엔진이 변경을 감지하도록 이벤트 발생
           editor.dispatchEvent(new Event("input", { bubbles: true }));
         }
       }, htmlContent);
