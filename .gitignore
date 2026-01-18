@@ -141,3 +141,4 @@ vite.config.ts.timestamp-*
 dist
 .env
 *.log
+apps/cli/output/*
