@@ -142,4 +142,6 @@ dist
 .env
 *.log
 apps/cli/output/*
-.auth/*
+.auth/
+*.auth/
+user-data-dir/
