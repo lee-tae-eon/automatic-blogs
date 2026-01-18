@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { markdownToHtml } from "@blog-automation/core"; // core에서 가져옴
+import { markdownToHtml } from "../../util/markdownToHtml"; // core에서 가져옴
 
-export async function processPublish(mdFilePath: string) {
+export async function pubProcess(mdFilePath: string) {
   // 1. 저장된 마크다운 파일 읽기
   const markdown = fs.readFileSync(mdFilePath, "utf-8");
 

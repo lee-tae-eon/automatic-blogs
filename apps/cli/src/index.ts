@@ -1,9 +1,12 @@
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import { BlogPostInput } from "@blog-automation/core/src/types/blog";
-import { generatePost, saveMarkdown } from "@blog-automation/core/src";
+import {
+  generatePost,
+  pubProcess,
+  saveMarkdown,
+} from "@blog-automation/core/src";
 import { ENV } from "./env";
 import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
-import { processPublish } from "./processPublish/processPublishNaver";
 
 const preset = BLOG_PRESET["naver"];
 
@@ -46,7 +49,7 @@ async function main() {
       console.log("--------------------------------------");
       console.log("\n md 생성이 완료되었습니다!");
 
-      const fileHtml = processPublish(filePath);
+      const fileHtml = await pubProcess(filePath);
 
       console.log("--------------------------------------");
       console.log(fileHtml);
