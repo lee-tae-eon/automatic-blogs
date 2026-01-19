@@ -15,7 +15,7 @@ const preset = BLOG_PRESET["naver"];
 // 사용자 인터페이스 (입구)
 async function main() {
   const apiKey = ENV.GEMINI_API_KEY;
-  const modelName = ENV.GEMINI_MODEL_FAST;
+  const modelName = ENV.GEMINI_MODEL_NORMAL;
 
   if (!apiKey || !modelName) {
     console.error(

@@ -14,7 +14,7 @@ export async function generatePost({
   client,
   input,
 }: GeneratePostInput): Promise<BlogPost> {
-  const MAX_RETRIES = 3; // 최대 3번 재시도
+  const MAX_RETRIES = 1; // 최대 3번 재시도
   let lastError: any;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -35,6 +35,7 @@ export async function generatePost({
       console.warn(
         `⚠️ 생성 실패 (시도 ${attempt}):`,
         error instanceof Error ? error.message : error,
+        error instanceof Error ? error.name : error,
       );
 
       if (attempt < MAX_RETRIES) {

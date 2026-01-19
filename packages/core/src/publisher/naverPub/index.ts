@@ -439,56 +439,65 @@ export class NaverPublisher {
    * 본문 입력 - 정확한 본문 영역에 주입
    */
   private async enterContent(page: Page, htmlContent: string) {
-    console.log("\n📄 본문 입력 시작 (클립보드 시뮬레이션)...");
-
-    await this.debugBeforeContentInjection(page);
+    console.log("\n📄 본문 주입 시도 (포커스 강제 고정)...");
 
     try {
-      const textModuleSelector = '[data-a11y-title="본문"] .se-module-text';
-      await page.waitForSelector(textModuleSelector, {
+      // 1. 제목 영역에서 확실히 빠져나오기
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+
+      // 2. 본문 영역의 실제 입력 가능 지점(Paragraph) 셀렉터
+      // 네이버 에디터 본문의 첫 번째 문단을 정확히 타겟팅합니다.
+      const bodyInputSelector = '[data-a11y-title="본문"] .se-text-paragraph';
+
+      await page.waitForSelector(bodyInputSelector, {
         state: "visible",
         timeout: 10000,
       });
 
-      // 1. 본문 영역 클릭하여 포커스
-      await page.click(textModuleSelector);
-      await page.waitForTimeout(500);
+      // 3. 본문을 클릭하여 포커스 주되, 확실하게 하기 위해 '중앙'을 클릭
+      const bodyBox = await page.$(bodyInputSelector);
+      if (bodyBox) {
+        await bodyBox.click({ force: true });
+        await page.waitForTimeout(500);
+      }
 
-      // 2. 에디터 파서를 깨우는 클립보드 주입
-      const injectionSuccess = await page.evaluate((html) => {
-        try {
-          const el = document.querySelector(
-            '[data-a11y-title="본문"] .se-module-text',
-          ) as HTMLElement;
-          if (!el) return false;
+      // 4. 에디터가 '입력 모드'로 전환되도록 화살표 아래 키 한 번 더 입력
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(200);
 
-          // 실제 'Paste' 이벤트 데이터 생성
-          const dataTransfer = new DataTransfer();
-          dataTransfer.setData("text/html", html);
+      // 5. HTML 세척 (제목 주입 방지를 위해 구조 단순화)
+      const cleanHtml = htmlContent
+        .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, "<strong>$1</strong><br>")
+        .replace(/<p[^>]*>/gi, "<div>")
+        .replace(/<\/p>/gi, "</div>");
 
-          const pasteEvent = new ClipboardEvent("paste", {
-            clipboardData: dataTransfer,
-            bubbles: true,
-            cancelable: true,
-          });
+      // 6. 클립보드 복사 및 붙여넣기
+      await page.evaluate((text) => {
+        const type = "text/html";
+        const blob = new Blob([text], { type });
+        const data = [new ClipboardItem({ [type]: blob })];
+        navigator.clipboard.write(data);
+      }, cleanHtml);
 
-          // 에디터에 붙여넣기 실행
-          el.dispatchEvent(pasteEvent);
-          return true;
-        } catch (e) {
-          return false;
-        }
-      }, htmlContent);
+      const modifier = process.platform === "darwin" ? "Meta" : "Control";
+      await page.keyboard.press(`${modifier}+V`);
 
-      console.log(`   주입 시도 결과: ${injectionSuccess ? "성공" : "실패"}`);
+      console.log("   붙여넣기 완료. 데이터 처리 대기...");
+      await page.waitForTimeout(3000);
 
-      // 3. 에디터 상태 동기화를 위한 추가 동작
-      await page.waitForTimeout(1000);
-      await page.keyboard.press("End");
-      await page.keyboard.type(" "); // 공백 하나 입력하여 에디터 상태 갱신 유도
-      await page.keyboard.press("Backspace");
+      // 7. 검증: 제목과 본문 각각 확인
+      const check = await page.evaluate(() => {
+        const titleText =
+          document.querySelector(".se-title-text")?.textContent || "";
+        const bodyText =
+          document.querySelector('[data-a11y-title="본문"]')?.textContent || "";
+        return { titleLength: titleText.length, bodyLength: bodyText.length };
+      });
 
-      console.log("✅ 본문 입력 및 상태 동기화 완료");
+      console.log(
+        `   검증 결과 - 제목 길이: ${check.titleLength}, 본문 길이: ${check.bodyLength}`,
+      );
     } catch (error) {
       console.error("❌ 본문 입력 실패:", error);
       throw error;
