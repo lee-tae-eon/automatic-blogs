@@ -59,11 +59,13 @@ async function main() {
       console.log("\n html 생성이 완료되었습니다!");
 
       const publisher = new NaverPublisher();
+
       console.log("🌐 네이버 블로그 업로드 프로세스 시작...");
       await publisher.postToBlog(
         naverIdProfile.id,
         naverIdProfile.title,
         fileHtml,
+        naverIdProfile.password,
       );
     } catch (fileError) {
       // 포스트는 생성됐는데 파일 시스템 에러가 난 경우

@@ -1,3 +1,4 @@
+import { delay } from "../util/delay";
 import { BlogPost, GeneratePostInput } from "../types/blog";
 // import { generateOutline } from "./generateOutline";
 // import { generateArticle } from "./generateArticle";
@@ -13,15 +14,41 @@ export async function generatePost({
   client,
   input,
 }: GeneratePostInput): Promise<BlogPost> {
-  const aiPost = await generatePostSingleCall(client, input);
+  const MAX_RETRIES = 3; // 최대 3번 재시도
+  let lastError: any;
 
-  const post: BlogPost = {
-    ...aiPost,
-    platform: "naver",
-    createdAt: new Date().toISOString(),
-  };
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🤖 AI 포스팅 생성 시도 중... (${attempt}/${MAX_RETRIES})`);
 
-  return post;
+      const aiPost = await generatePostSingleCall(client, input);
+
+      const post: BlogPost = {
+        ...aiPost,
+        platform: "naver",
+        createdAt: new Date().toISOString(),
+      };
+
+      return post; // 성공 시 즉시 반환
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `⚠️ 생성 실패 (시도 ${attempt}):`,
+        error instanceof Error ? error.message : error,
+      );
+
+      if (attempt < MAX_RETRIES) {
+        // 다음 시도 전 대기 (재시도 횟수가 늘어날수록 더 오래 대기하는 '지수 백오프' 전략)
+        const waitTime = attempt * 2000;
+        console.log(`⏱️ ${waitTime / 1000}초 후 다시 시도합니다...`);
+        await delay(waitTime);
+      }
+    }
+  }
+
+  // 모든 재시도가 실패한 경우
+  console.error("🚨 모든 AI 호출 재시도가 실패했습니다.");
+  throw lastError;
 }
 
 // * 멀티플용
