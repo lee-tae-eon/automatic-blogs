@@ -1,8 +1,7 @@
 // packages/core/src/publisher/naverPublisher.ts
-
+/// <reference lib="dom" />
 import { chromium, Page, BrowserContext } from "playwright";
 import path from "path";
-import { injectEditor } from "../injectEditor";
 
 export class NaverPublisher {
   private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
@@ -65,6 +64,9 @@ export class NaverPublisher {
         });
       }
 
+      // 팝업 청소부
+      await this.clearPopups(page);
+
       console.log("⏳ 에디터 로딩 대기 중...");
       await page.waitForTimeout(5000);
 
@@ -72,8 +74,8 @@ export class NaverPublisher {
       await page.waitForTimeout(1000);
 
       // 디버깅 (필요시 주석 해제)
-      // await this.debugPageElements(page);
-      // await this.debugNaverEditor(page);
+      await this.debugPageElements(page);
+      await this.debugNaverEditor(page);
 
       try {
         // 제목 입력
@@ -178,6 +180,29 @@ export class NaverPublisher {
       //   await context.close();
       // }
     }
+  }
+
+  private async clearPopups(page: Page) {
+    console.log("🧹 팝업 청소 시작...");
+    // 네이버 임시저장 팝업의 '취소' 버튼 전용 셀렉터
+    const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
+
+    try {
+      // 3초 정도 기다려보고 있으면 클릭
+      const cancelBtn = await page.waitForSelector(CANCEL_SELECTOR, {
+        timeout: 3000,
+      });
+      if (cancelBtn) {
+        await cancelBtn.click();
+        console.log("✅ 임시저장 불러오기 취소 완료");
+      }
+    } catch (e) {
+      // 팝업이 안 뜨는 경우가 정상이므로 에러는 무시
+      console.log("ℹ️ 활성화된 임시저장 팝업 없음");
+    }
+
+    // 도움말 팝업 등은 Escape로 한 번 더 방어
+    await page.keyboard.press("Escape");
   }
 
   /**
@@ -335,7 +360,7 @@ export class NaverPublisher {
   }
 
   /**
-   * 제목 입력 - 여러 방법 시도
+   * 제목 입력 - Tab 키 제거
    */
   private async enterTitle(page: Page, title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -358,125 +383,42 @@ export class NaverPublisher {
         await page.locator(titleSelector).first().click({ force: true });
         await page.waitForTimeout(1000);
 
-        // 3. 제목 입력 (여러 방법 시도)
-        const methods = [
-          // 방법 1: 키보드로 직접 입력 (가장 안전)
-          async () => {
-            console.log("   방법 1: 키보드 입력 시도");
+        // 3. 제목 입력 (키보드 방식만 사용)
+        console.log("   키보드 입력 시도");
 
-            // 기존 텍스트 모두 선택
-            const isMac = process.platform === "darwin";
-            await page.keyboard.press(isMac ? "Meta+A" : "Control+A");
-            await page.waitForTimeout(300);
+        // 기존 텍스트 모두 선택
+        const isMac = process.platform === "darwin";
+        await page.keyboard.press(isMac ? "Meta+A" : "Control+A");
+        await page.waitForTimeout(300);
 
-            // 삭제
-            await page.keyboard.press("Backspace");
-            await page.waitForTimeout(300);
+        // 삭제
+        await page.keyboard.press("Backspace");
+        await page.waitForTimeout(300);
 
-            // 새 제목 입력
-            await page.keyboard.type(title, { delay: 30 });
-            await page.waitForTimeout(1000);
-          },
+        // 새 제목 입력
+        await page.keyboard.type(title, { delay: 30 });
+        await page.waitForTimeout(1000);
 
-          // 방법 2: DOM 직접 조작 + 이벤트
-          async () => {
-            console.log("   방법 2: DOM 직접 조작 시도");
+        // 검증
+        const actualText = await page
+          .locator(titleSelector)
+          .first()
+          .evaluate((el: HTMLElement) => el.innerText.trim());
 
-            await page.evaluate(
-              (args) => {
-                const selector = args.selector;
-                const titleText = args.title;
+        console.log(`      예상: "${title}"`);
+        console.log(`      실제: "${actualText}"`);
 
-                const titleElement = document.querySelector(
-                  selector,
-                ) as HTMLElement;
-                if (!titleElement) return;
+        if (actualText === title.trim()) {
+          console.log(`   ✅ 제목 입력 성공!`);
 
-                // innerText 설정
-                titleElement.innerText = titleText;
-                titleElement.textContent = titleText;
-                titleElement.focus();
+          // ❌ Tab 키 제거 - 대신 Escape로 포커스 해제만
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(500);
 
-                // 다양한 이벤트 발생
-                ["input", "change", "blur", "keyup", "keydown"].forEach(
-                  (eventType) => {
-                    const event = new Event(eventType, {
-                      bubbles: true,
-                      cancelable: true,
-                    });
-                    titleElement.dispatchEvent(event);
-                  },
-                );
-
-                // InputEvent도 시도
-                const inputEvent = new InputEvent("input", {
-                  bubbles: true,
-                  cancelable: true,
-                  data: titleText,
-                });
-                titleElement.dispatchEvent(inputEvent);
-              },
-              { selector: titleSelector, title },
-            );
-
-            await page.waitForTimeout(1000);
-          },
-
-          // 방법 3: execCommand 사용
-          async () => {
-            console.log("   방법 3: execCommand 시도");
-
-            await page.evaluate(
-              (args) => {
-                const selector = args.selector;
-                const titleText = args.title;
-
-                const titleElement = document.querySelector(
-                  selector,
-                ) as HTMLElement;
-                if (!titleElement) return;
-
-                titleElement.focus();
-
-                // 전체 선택
-                document.execCommand("selectAll", false);
-                // 삭제
-                document.execCommand("delete", false);
-                // 입력
-                document.execCommand("insertText", false, titleText);
-              },
-              { selector: titleSelector, title },
-            );
-
-            await page.waitForTimeout(1000);
-          },
-        ];
-
-        // 각 방법 시도
-        for (let i = 0; i < methods.length; i++) {
-          await methods[i]();
-
-          // 검증
-          const actualText = await page
-            .locator(titleSelector)
-            .first()
-            .evaluate((el: HTMLElement) => el.innerText.trim());
-
-          console.log(`      예상: "${title}"`);
-          console.log(`      실제: "${actualText}"`);
-
-          if (actualText === title.trim()) {
-            console.log(`   ✅ 방법 ${i + 1} 성공!`);
-
-            // Tab 키로 본문으로 이동하여 제목 확정
-            await page.keyboard.press("Tab");
-            await page.waitForTimeout(500);
-
-            return; // 성공
-          }
+          return; // 성공
+        } else {
+          throw new Error("제목 검증 실패");
         }
-
-        console.log("⚠️ 모든 방법 실패");
       } catch (error) {
         console.log(
           `   ❌ 시도 ${attempt} 실패:`,
@@ -494,112 +436,247 @@ export class NaverPublisher {
   }
 
   /**
-   * 본문 입력 - 제목을 보존하면서 주입
+   * 본문 입력 - 정확한 본문 영역에 주입
    */
   private async enterContent(page: Page, htmlContent: string) {
-    console.log("\n📄 본문 입력 중...");
+    console.log("\n📄 본문 입력 시작 (클립보드 시뮬레이션)...");
+
+    await this.debugBeforeContentInjection(page);
 
     try {
-      // 1. 본문 영역으로 이동 (Tab 또는 클릭)
-      const contentSelector = ".se-content";
-      await page.waitForSelector(contentSelector, {
+      const textModuleSelector = '[data-a11y-title="본문"] .se-module-text';
+      await page.waitForSelector(textModuleSelector, {
         state: "visible",
         timeout: 10000,
       });
 
-      // 제목 다음 줄로 이동 (Enter 키 사용)
-      console.log("   본문 영역으로 이동 중...");
-      await page.keyboard.press("Enter"); // 제목에서 Enter로 본문으로 이동
+      // 1. 본문 영역 클릭하여 포커스
+      await page.click(textModuleSelector);
       await page.waitForTimeout(500);
 
-      console.log("   HTML 주입 중...");
-
-      // 2. 현재 커서 위치에 HTML 주입 (제목은 건드리지 않음)
-      const injected = await page.evaluate((htmlContent) => {
+      // 2. 에디터 파서를 깨우는 클립보드 주입
+      const injectionSuccess = await page.evaluate((html) => {
         try {
-          // 현재 포커스된 요소 찾기
-          const selection = window.getSelection();
-          if (!selection || selection.rangeCount === 0) {
-            console.error("선택 영역이 없습니다");
-            return false;
-          }
+          const el = document.querySelector(
+            '[data-a11y-title="본문"] .se-module-text',
+          ) as HTMLElement;
+          if (!el) return false;
 
-          const range = selection.getRangeAt(0);
+          // 실제 'Paste' 이벤트 데이터 생성
+          const dataTransfer = new DataTransfer();
+          dataTransfer.setData("text/html", html);
 
-          // 임시 div 생성하여 HTML 파싱
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = htmlContent;
+          const pasteEvent = new ClipboardEvent("paste", {
+            clipboardData: dataTransfer,
+            bubbles: true,
+            cancelable: true,
+          });
 
-          // 각 자식 노드를 현재 위치에 삽입
-          const fragment = document.createDocumentFragment();
-          while (tempDiv.firstChild) {
-            fragment.appendChild(tempDiv.firstChild);
-          }
-
-          // 현재 커서 위치에 삽입
-          range.deleteContents();
-          range.insertNode(fragment);
-
-          // 커서를 삽입된 내용 끝으로 이동
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-
-          // input 이벤트 발생
-          const contentEl = document.querySelector(".se-content");
-          if (contentEl) {
-            const event = new Event("input", { bubbles: true });
-            contentEl.dispatchEvent(event);
-          }
-
+          // 에디터에 붙여넣기 실행
+          el.dispatchEvent(pasteEvent);
           return true;
         } catch (e) {
-          console.error("HTML 주입 실패:", e);
           return false;
         }
       }, htmlContent);
 
-      if (!injected) {
-        // 대안: injectEditor 함수 사용 (하지만 제목 영역 보호 필요)
-        console.log("   대안 방식으로 HTML 주입 시도...");
+      console.log(`   주입 시도 결과: ${injectionSuccess ? "성공" : "실패"}`);
 
-        // 본문 영역만 선택적으로 주입
-        await page.evaluate(
-          (args) => {
-            const htmlContent = args.htmlContent;
-            const injectFn = args.injectEditor;
-
-            // injectEditor 함수를 문자열로 받아서 실행
-            const fn = new Function("htmlContent", injectFn);
-            fn(htmlContent);
-          },
-          { htmlContent, injectEditor: injectEditor.toString() },
-        );
-      }
-
-      await page.waitForTimeout(2000);
-
-      // 3. 검증
-      const hasContent = await page.evaluate(() => {
-        const content = document.querySelector(".se-content");
-        return content && content.textContent!.trim().length > 10;
-      });
-
-      if (!hasContent) {
-        throw new Error("본문 검증 실패 - 컨텐츠가 비어있음");
-      }
-
-      console.log("✅ 본문 입력 및 검증 완료");
-
-      // 4. 에디터 밖을 클릭하여 확정
-      await page.keyboard.press("Escape");
+      // 3. 에디터 상태 동기화를 위한 추가 동작
       await page.waitForTimeout(1000);
+      await page.keyboard.press("End");
+      await page.keyboard.type(" "); // 공백 하나 입력하여 에디터 상태 갱신 유도
+      await page.keyboard.press("Backspace");
+
+      console.log("✅ 본문 입력 및 상태 동기화 완료");
     } catch (error) {
       console.error("❌ 본문 입력 실패:", error);
       throw error;
     }
   }
+  // private async enterContent(page: Page, htmlContent: string) {
+  //   console.log("\n📄 본문 입력 중...");
 
+  //   await this.debugBeforeContentInjection(page);
+
+  //   try {
+  //     console.log("   본문 영역 찾기 중...");
+
+  //     // 정확한 본문 영역 selector
+  //     // data-a11y-title="본문"인 컴포넌트 찾기
+  //     const bodyComponentSelector = '[data-a11y-title="본문"]';
+
+  //     await page.waitForSelector(bodyComponentSelector, {
+  //       state: "visible",
+  //       timeout: 10000,
+  //     });
+
+  //     // 본문 컴포넌트 내부의 실제 텍스트 입력 영역 클릭
+  //     const textModuleSelector = '[data-a11y-title="본문"] .se-module-text';
+
+  //     await page.waitForSelector(textModuleSelector, {
+  //       state: "visible",
+  //       timeout: 10000,
+  //     });
+
+  //     console.log("   본문 텍스트 모듈 클릭...");
+  //     await page.click(textModuleSelector);
+  //     await page.waitForTimeout(1000);
+
+  //     console.log("   HTML 주입 중...");
+
+  //     // 본문 영역에 HTML 주입
+  //     const injectionSuccess = await page.evaluate((htmlContent) => {
+  //       try {
+  //         // 본문 컴포넌트의 텍스트 모듈 찾기
+  //         const textModule = document.querySelector(
+  //           '[data-a11y-title="본문"] .se-module-text',
+  //         ) as HTMLElement;
+
+  //         if (!textModule) {
+  //           console.error("본문 텍스트 모듈을 찾을 수 없습니다");
+  //           return false;
+  //         }
+
+  //         console.log(
+  //           "주입 전 본문 모듈:",
+  //           textModule.innerHTML.substring(0, 200),
+  //         );
+
+  //         // 기존 placeholder 제거
+  //         const placeholder = textModule.querySelector(".se-placeholder");
+  //         if (placeholder) {
+  //           placeholder.remove();
+  //         }
+
+  //         // 기존 빈 paragraph 찾기
+  //         const existingP = textModule.querySelector("p.se-text-paragraph");
+
+  //         if (existingP) {
+  //           // 기존 paragraph의 빈 span 제거
+  //           const emptySpans = existingP.querySelectorAll("span.__se-node");
+  //           emptySpans.forEach((span) => {
+  //             if (!span.textContent || span.textContent.trim() === "") {
+  //               span.remove();
+  //             }
+  //           });
+
+  //           // HTML 파싱
+  //           const tempDiv = document.createElement("div");
+  //           tempDiv.innerHTML = htmlContent;
+
+  //           // paragraph에 내용 추가
+  //           while (tempDiv.firstChild) {
+  //             existingP.appendChild(tempDiv.firstChild);
+  //           }
+  //         } else {
+  //           // paragraph가 없으면 새로 생성
+  //           const newP = document.createElement("p");
+  //           newP.className = "se-text-paragraph se-text-paragraph-align-left";
+  //           newP.style.lineHeight = "1.8";
+
+  //           const tempDiv = document.createElement("div");
+  //           tempDiv.innerHTML = htmlContent;
+
+  //           while (tempDiv.firstChild) {
+  //             newP.appendChild(tempDiv.firstChild);
+  //           }
+
+  //           textModule.appendChild(newP);
+  //         }
+
+  //         console.log(
+  //           "주입 후 본문 모듈:",
+  //           textModule.innerHTML.substring(0, 200),
+  //         );
+  //         console.log("주입 후 텍스트 길이:", textModule.textContent?.length);
+
+  //         // se-is-empty 클래스 제거 (빈 상태 표시 제거)
+  //         textModule.classList.remove("se-is-empty");
+
+  //         // 이벤트 발생
+  //         textModule.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  //         textModule.dispatchEvent(new Event("change", { bubbles: true }));
+
+  //         // 상위 컴포넌트에도 이벤트 발생
+  //         const bodyComponent = document.querySelector(
+  //           '[data-a11y-title="본문"]',
+  //         );
+  //         if (bodyComponent) {
+  //           bodyComponent.dispatchEvent(
+  //             new InputEvent("input", { bubbles: true }),
+  //           );
+  //           bodyComponent.dispatchEvent(new Event("change", { bubbles: true }));
+  //         }
+
+  //         return (
+  //           textModule.textContent && textModule.textContent.trim().length > 10
+  //         );
+  //       } catch (e) {
+  //         console.error("HTML 주입 실패:", e);
+  //         return false;
+  //       }
+  //     }, htmlContent);
+
+  //     console.log(`   주입 결과: ${injectionSuccess ? "성공" : "실패"}`);
+
+  //     await page.waitForTimeout(2000);
+
+  //     // 검증 - 정확한 본문 영역만 체크
+  //     const verification = await page.evaluate(() => {
+  //       const titleEl = document.querySelector(".se-title-text") as HTMLElement;
+  //       const bodyTextModule = document.querySelector(
+  //         '[data-a11y-title="본문"] .se-module-text',
+  //       ) as HTMLElement;
+  //       const bodyComponent = document.querySelector(
+  //         '[data-a11y-title="본문"]',
+  //       ) as HTMLElement;
+
+  //       return {
+  //         titleText: titleEl?.innerText?.trim() || "",
+  //         titleLength: titleEl?.innerText?.trim().length || 0,
+  //         bodyModuleText: bodyTextModule?.textContent?.trim() || "",
+  //         bodyModuleLength: bodyTextModule?.textContent?.trim().length || 0,
+  //         bodyModuleHTML: bodyTextModule?.innerHTML?.substring(0, 300) || "",
+  //         bodyComponentHTML: bodyComponent?.innerHTML?.substring(0, 300) || "",
+  //       };
+  //     });
+
+  //     console.log(`\n   === 검증 결과 ===`);
+  //     console.log(
+  //       `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
+  //     );
+  //     console.log(`   본문 길이: ${verification.bodyModuleLength}자`);
+  //     console.log(
+  //       `   본문 미리보기: ${verification.bodyModuleText.substring(0, 150)}...`,
+  //     );
+  //     console.log(`   본문 HTML:\n${verification.bodyModuleHTML}\n`);
+
+  //     if (verification.titleLength > 100) {
+  //       throw new Error(
+  //         `제목이 비정상적으로 김 (${verification.titleLength}자)`,
+  //       );
+  //     }
+
+  //     if (verification.bodyModuleLength < 10) {
+  //       console.error(
+  //         "본문 컴포넌트 전체 HTML:",
+  //         verification.bodyComponentHTML,
+  //       );
+  //       throw new Error(
+  //         `본문이 비어있음 - 길이: ${verification.bodyModuleLength}자`,
+  //       );
+  //     }
+
+  //     console.log("✅ 본문 입력 및 검증 완료");
+
+  //     await page.keyboard.press("Escape");
+  //     await page.waitForTimeout(1000);
+  //   } catch (error) {
+  //     console.error("❌ 본문 입력 실패:", error);
+  //     throw error;
+  //   }
+  // }
   /**
    * 네이버 로그인
    */
@@ -656,5 +733,54 @@ export class NaverPublisher {
       console.error("❌ 자동 로그인 실패:", error);
       throw new Error("자동 로그인 실패. 수동으로 로그인해주세요.");
     }
+  }
+
+  /**
+   * 본문 입력 전 디버깅
+   */
+  private async debugBeforeContentInjection(page: Page) {
+    console.log("\n🔍 === 본문 주입 전 상태 확인 ===");
+
+    const debugInfo = await page.evaluate(() => {
+      const editor = document.querySelector(".se-content") as HTMLElement;
+      const titleEl = document.querySelector(".se-title-text") as HTMLElement;
+
+      return {
+        editorExists: !!editor,
+        editorHTML: editor?.innerHTML || "",
+        editorChildren: Array.from(editor?.children || []).map((child) => ({
+          tagName: child.tagName,
+          className: child.className,
+          id: child.id,
+          textContent: child.textContent?.substring(0, 50),
+        })),
+        titleExists: !!titleEl,
+        titleText: titleEl?.innerText || "",
+        focusedElement:
+          document.activeElement?.tagName +
+          "." +
+          document.activeElement?.className,
+        selection: (() => {
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return null;
+          const range = sel.getRangeAt(0);
+          return {
+            text: sel.toString(),
+            containerTagName: (range.commonAncestorContainer as HTMLElement)
+              .tagName,
+            containerClassName: (range.commonAncestorContainer as HTMLElement)
+              .className,
+          };
+        })(),
+      };
+    });
+
+    console.log("📦 디버그 정보:");
+    console.log(JSON.stringify(debugInfo, null, 2));
+    console.log("\n에디터 HTML:");
+    console.log(debugInfo.editorHTML);
+    console.log("\n🔍 === 디버깅 종료 ===\n");
+
+    return debugInfo;
   }
 }
