@@ -138,6 +138,9 @@ export class NaverPublisher {
           }
         }
 
+        // 발행
+        await this.publish(page);
+
         // 최종 검증
         if (!validation.title && validation.contentLength < 10) {
           throw new Error("최종 검증 실패 - 제목이나 본문이 비어있음");
@@ -500,6 +503,60 @@ export class NaverPublisher {
       );
     } catch (error) {
       console.error("❌ 본문 입력 실패:", error);
+      throw error;
+    }
+  }
+
+  private async publish(page: Page, tags: string[] = []) {
+    console.log("\n🚀 발행 프로세스 시작...");
+
+    try {
+      // 1. 상단 '발행' 버튼 클릭
+      const openPublishLayerBtn = ".is_active.btn_publish"; // 발행 레이어를 여는 버튼
+      await page.waitForSelector(openPublishLayerBtn, {
+        state: "visible",
+        timeout: 5000,
+      });
+      await page.click(openPublishLayerBtn);
+      console.log("   발행 설정 레이어 열기 성공");
+
+      // 레이어가 애니메이션으로 뜨는 시간 대기
+      await page.waitForTimeout(1000);
+
+      // 2. 태그 입력 (옵션)
+      if (tags && tags.length > 0) {
+        console.log(`   태그 입력 중: ${tags.join(", ")}`);
+        const tagInputSelector = ".tag_input"; // 태그 입력창
+
+        for (const tag of tags) {
+          await page.click(tagInputSelector);
+          await page.keyboard.type(tag);
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(200);
+        }
+      }
+
+      // 3. 최종 '발행' 버튼 클릭
+      // 네이버는 이 버튼에 .btn_confirm 또는 .publish_btn 등의 클래스를 씁니다.
+      const finalPublishBtn = ".confirm_btn___v9_6W, .btn_confirm";
+
+      await page.waitForSelector(finalPublishBtn, {
+        state: "visible",
+        timeout: 5000,
+      });
+
+      // 실제 발행을 원하시면 아래 주석을 해제하세요.
+      // 현재는 안전을 위해 버튼이 있는지 확인만 하고 로그를 남깁니다.
+      /*
+    await page.click(finalPublishBtn);
+    console.log("✅ 최종 발행 완료!");
+    */
+
+      console.log(
+        "📢 [안내] 실제 발행 버튼 클릭 직전입니다. 코드를 확인하고 주석을 해제하세요.",
+      );
+    } catch (error) {
+      console.error("❌ 발행 중 에러 발생:", error);
       throw error;
     }
   }
