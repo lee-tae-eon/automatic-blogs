@@ -16,7 +16,7 @@ const preset = BLOG_PRESET["naver"];
 async function main() {
   const isVerbose = process.argv.includes("--verbose");
   const apiKey = ENV.GEMINI_API_KEY;
-  const modelName = ENV.GEMINI_MODEL_NORMAL;
+  const modelName = ENV.GEMINI_MODEL_FAST;
 
   if (!apiKey || !modelName) {
     console.error(
