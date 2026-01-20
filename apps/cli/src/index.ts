@@ -39,24 +39,13 @@ async function main() {
     const post = await generatePost({ client: aiClient, input });
 
     try {
-      console.log("--------------------------------------");
-      console.log(post.content);
-      console.log("--------------------------------------");
       console.log("\n✅ 포스트 생성이 완료되었습니다!");
 
       const filePath = await saveMarkdown(post);
-
-      console.log("--------------------------------------");
-      console.log(filePath);
-      console.log("--------------------------------------");
-      console.log("\n md 생성이 완료되었습니다!");
+      console.log(`📄 마크다운 저장 완료: ${filePath}`);
 
       const fileHtml = await pubProcess(filePath);
-
-      console.log("--------------------------------------");
-      console.log(fileHtml);
-      console.log("--------------------------------------");
-      console.log("\n html 생성이 완료되었습니다!");
+      console.log(`📄 HTML 변환 완료 (길이: ${fileHtml.length}자)`);
 
       const publisher = new NaverPublisher();
 
