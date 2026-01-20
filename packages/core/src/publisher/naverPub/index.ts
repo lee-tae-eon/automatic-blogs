@@ -26,7 +26,13 @@ export class NaverPublisher {
 
       page.on("dialog", async (dialog) => {
         console.log(`🔔 다이얼로그 감지: ${dialog.message()}`);
-        await dialog.dismiss();
+        // 페이지 이탈(beforeunload) 시에는 '나가기(accept)' 처리하여 저장하지 않고 종료
+        if (dialog.type() === "beforeunload") {
+          await dialog.accept();
+        } else {
+          // 그 외(작성 중인 글 불러오기 등)는 '취소(dismiss)' 처리하여 새 글 작성 유도
+          await dialog.dismiss();
+        }
       });
 
       console.log("🌐 글쓰기 페이지로 이동 중...");
@@ -175,13 +181,22 @@ export class NaverPublisher {
         const htmlContent = await page.content();
         await require("fs").promises.writeFile(htmlPath, htmlContent);
         console.log(`📄 페이지 HTML 저장: ${htmlPath}`);
+
+        // 🔥 발행 실패 시 정리: 작성 중인 내용을 저장하지 않고 이탈 시도
+        // 이렇게 하면 다음 실행 시 '작성 중인 글이 있습니다' 팝업 빈도를 줄일 수 있음
+        try {
+          console.log("🧹 발행 실패 정리: 페이지 이탈 시도...");
+          await page.goto("about:blank", { timeout: 3000 });
+        } catch (e) {
+          // 이미 닫혔거나 타임아웃 등은 무시
+        }
       }
 
       throw error;
     } finally {
-      // if (context) {
-      //   await context.close();
-      // }
+      if (context) {
+        await context.close();
+      }
     }
   }
 
