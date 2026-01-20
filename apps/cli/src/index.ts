@@ -70,13 +70,13 @@ async function main() {
       const publisher = new NaverPublisher();
 
       console.log("🌐 네이버 블로그 업로드 프로세스 시작...");
-      await publisher.postToBlog(
-        naverIdProfile.id,
-        post.title, // 👈 AI가 생성한 SEO 최적화 제목 사용
-        fileHtml,
-        naverIdProfile.password,
-        post.focusKeywords, // 👈 AI가 추출한 키워드를 태그로 전달
-      );
+      await publisher.postToBlog({
+        blogId: naverIdProfile.id,
+        title: post.title,
+        htmlContent: fileHtml,
+        password: naverIdProfile.password,
+        tags: post.focusKeywords,
+      });
     } catch (fileError) {
       // 포스트는 생성됐는데 파일 시스템 에러가 난 경우
       console.error("🚨 파일 처리 중 오류 발생:", fileError);

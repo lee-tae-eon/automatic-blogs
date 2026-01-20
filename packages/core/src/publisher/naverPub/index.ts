@@ -4,16 +4,24 @@ import { chromium, Page, BrowserContext } from "playwright";
 import path from "path";
 import * as cheerio from "cheerio";
 
+export interface NaverPostInput {
+  blogId: string;
+  title: string;
+  htmlContent: string;
+  password?: string;
+  tags?: string[];
+}
+
 export class NaverPublisher {
   private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
 
-  async postToBlog(
-    blogId: string,
-    title: string,
-    htmlContent: string,
-    password?: string,
-    tags: string[] = [],
-  ) {
+  async postToBlog({
+    blogId,
+    title,
+    htmlContent,
+    password,
+    tags = [],
+  }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
 
