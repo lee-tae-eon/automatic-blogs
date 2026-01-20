@@ -25,6 +25,10 @@ export interface AiGeneratedPost {
   metaDescription: string;
   metaTitle: string;
   focusKeywords: string[];
+  internalLinkSuggestions: {
+    anchor: string;
+    context: string;
+  };
 }
 export interface BlogPost extends AiGeneratedPost {
   platform: "naver" | "tistory";

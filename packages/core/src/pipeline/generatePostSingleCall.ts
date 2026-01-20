@@ -304,11 +304,15 @@ ${sectionInstruction}
 - [ ] 글자수 ${input.textLength ? `${input.textLength.min}-${input.textLength.max}자` : "2,000자 이상"}
 
 ## 출력 형식 (JSON만 출력, 마크다운 코드블록 사용 금지)
+**주의사항:**
+1. \`\`\`json 코드 블록을 절대 사용하지 마세요.
+2. 순수 JSON 문자열만 반환하세요.
+3. 줄바꿈은 반드시 \\n 으로 이스케이프 처리하세요.
 
 {
   "title": "SEO 최적화된 제목 (이모지 포함)",
   "outline": ["소제목1", "소제목2", "소제목3"],
-  "content": "마크다운 형식의 전체 본문 (제목 제외)",
+  "content": "마크다운 형식의 전체 본문 (제목 제외). 줄바꿈은 \\n 사용.",
   "metaTitle": "SEO 메타 제목 (55자 이내, 키워드 포함)",
   "metaDescription": "SEO 메타 설명 (150자 이내)",
   "focusKeywords": ["키워드1", "키워드2", "키워드3"],

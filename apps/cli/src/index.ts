@@ -14,6 +14,7 @@ const preset = BLOG_PRESET["naver"];
 
 // 사용자 인터페이스 (입구)
 async function main() {
+  const isVerbose = process.argv.includes("--verbose");
   const apiKey = ENV.GEMINI_API_KEY;
   const modelName = ENV.GEMINI_MODEL_NORMAL;
 
@@ -41,11 +42,23 @@ async function main() {
     try {
       console.log("\n✅ 포스트 생성이 완료되었습니다!");
 
+      if (isVerbose) {
+        console.log("--------------------------------------");
+        console.log(post.content);
+        console.log("--------------------------------------");
+      }
+
       const filePath = await saveMarkdown(post);
       console.log(`📄 마크다운 저장 완료: ${filePath}`);
 
       const fileHtml = await pubProcess(filePath);
       console.log(`📄 HTML 변환 완료 (길이: ${fileHtml.length}자)`);
+
+      if (isVerbose) {
+        console.log("--------------------------------------");
+        console.log(fileHtml);
+        console.log("--------------------------------------");
+      }
 
       const publisher = new NaverPublisher();
 
