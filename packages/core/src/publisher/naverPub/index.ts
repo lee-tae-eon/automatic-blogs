@@ -2,6 +2,7 @@
 /// <reference lib="dom" />
 import { chromium, Page, BrowserContext } from "playwright";
 import path from "path";
+import * as cheerio from "cheerio";
 
 export class NaverPublisher {
   private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
@@ -27,11 +28,9 @@ export class NaverPublisher {
 
       page.on("dialog", async (dialog) => {
         console.log(`🔔 다이얼로그 감지: ${dialog.message()}`);
-        // 페이지 이탈(beforeunload) 시에는 '나가기(accept)' 처리하여 저장하지 않고 종료
         if (dialog.type() === "beforeunload") {
           await dialog.accept();
         } else {
-          // 그 외(작성 중인 글 불러오기 등)는 '취소(dismiss)' 처리하여 새 글 작성 유도
           await dialog.dismiss();
         }
       });
@@ -71,7 +70,6 @@ export class NaverPublisher {
         });
       }
 
-      // 팝업 청소부
       await this.clearPopups(page);
 
       console.log("⏳ 에디터 로딩 대기 중...");
@@ -80,21 +78,22 @@ export class NaverPublisher {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(1000);
 
-      // 디버깅 (필요시 주석 해제)
-      // await this.debugPageElements(page);
-      // await this.debugNaverEditor(page);
-
       try {
         // 제목 입력
         await this.enterTitle(page, title);
-
-        // 제목 입력 후 추가 대기
         await page.waitForTimeout(1000);
+
+        // 제목 최종 확인
+        const titleCheck = await page.evaluate(() => {
+          const titleEl = document.querySelector(
+            ".se-title-text",
+          ) as HTMLElement;
+          return titleEl?.innerText?.trim() || "";
+        });
+        console.log(`✅ 제목 최종 확인: "${titleCheck}"`);
 
         // 본문 입력
         await this.enterContent(page, htmlContent);
-
-        // 입력 완료 후 추가 대기
         await page.waitForTimeout(2000);
 
         // 최종 검증
@@ -103,23 +102,20 @@ export class NaverPublisher {
           const titleEl = document.querySelector(
             ".se-title-text",
           ) as HTMLElement;
-          const contentEl = document.querySelector(
-            ".se-content",
+          const bodyModule = document.querySelector(
+            '[data-a11y-title="본문"]',
           ) as HTMLElement;
 
           return {
             title: titleEl?.innerText.trim() || "",
-            contentLength: contentEl?.textContent?.trim().length || 0,
+            contentLength: bodyModule?.textContent?.trim().length || 0,
           };
         });
 
         console.log(`   제목: "${validation.title}"`);
         console.log(`   본문 길이: ${validation.contentLength}자`);
 
-        // 발행
-        // await this.publish(page, tags);
-
-        console.log("✅ 작성 완료 (발행은 수동으로 진행하세요)");
+        console.log("✅ 작성 완료!");
       } catch (error) {
         console.error("❌ 입력 처리 실패:", error);
         throw error;
@@ -141,21 +137,11 @@ export class NaverPublisher {
         );
         await page.screenshot({ path: screenshotPath, fullPage: true });
         console.log(`📸 에러 스크린샷 저장: ${screenshotPath}`);
-        console.log(`🌐 현재 페이지 URL: ${page.url()}`);
 
-        // 페이지 HTML 구조 저장
-        const htmlPath = path.join(process.cwd(), `error-${Date.now()}.html`);
-        const htmlContent = await page.content();
-        await require("fs").promises.writeFile(htmlPath, htmlContent);
-        console.log(`📄 페이지 HTML 저장: ${htmlPath}`);
-
-        // 🔥 발행 실패 시 정리: 작성 중인 내용을 저장하지 않고 이탈 시도
-        // 이렇게 하면 다음 실행 시 '작성 중인 글이 있습니다' 팝업 빈도를 줄일 수 있음
         try {
-          console.log("🧹 발행 실패 정리: 페이지 이탈 시도...");
           await page.goto("about:blank", { timeout: 3000 });
         } catch (e) {
-          // 이미 닫혔거나 타임아웃 등은 무시
+          // 무시
         }
       }
 
@@ -169,11 +155,9 @@ export class NaverPublisher {
 
   private async clearPopups(page: Page) {
     console.log("🧹 팝업 청소 시작...");
-    // 네이버 임시저장 팝업의 '취소' 버튼 전용 셀렉터
     const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
 
     try {
-      // 3초 정도 기다려보고 있으면 클릭
       const cancelBtn = await page.waitForSelector(CANCEL_SELECTOR, {
         timeout: 3000,
       });
@@ -182,16 +166,14 @@ export class NaverPublisher {
         console.log("✅ 임시저장 불러오기 취소 완료");
       }
     } catch (e) {
-      // 팝업이 안 뜨는 경우가 정상이므로 에러는 무시
       console.log("ℹ️ 활성화된 임시저장 팝업 없음");
     }
 
-    // 도움말 팝업 등은 Escape로 한 번 더 방어
     await page.keyboard.press("Escape");
   }
 
   /**
-   * 제목 입력 - 이모지 정규화 추가
+   * 제목 입력 - 이모지 정규화
    */
   private async enterTitle(page: Page, title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -219,12 +201,9 @@ export class NaverPublisher {
         await page.waitForTimeout(300);
         await page.keyboard.press("Backspace");
         await page.waitForTimeout(300);
-
-        // 제목 입력
         await page.keyboard.type(title, { delay: 30 });
         await page.waitForTimeout(1000);
 
-        // 검증 - 이모지 정규화하여 비교
         const actualText = await page
           .locator(titleSelector)
           .first()
@@ -233,20 +212,28 @@ export class NaverPublisher {
         console.log(`      예상: "${title}"`);
         console.log(`      실제: "${actualText}"`);
 
-        // 이모지를 정규화하여 비교 (variation selector 제거)
-        const normalizeEmoji = (str: string) => {
-          // variation selector (U+FE0F) 제거
-          return str.replace(/\uFE0F/g, "");
+        // 이모지 정규화 비교
+        const normalize = (str: string) => {
+          return str
+            .replace(/[\uFE00-\uFE0F]/g, "") // Variation Selectors 전체 제거
+            .replace(/[\u200B-\u200D\uFEFF]/g, "") // Zero-width 문자 제거
+            .normalize("NFC") // 유니코드 정규화
+            .trim();
         };
 
-        const normalizedTitle = normalizeEmoji(title.trim());
-        const normalizedActual = normalizeEmoji(actualText);
-
-        console.log(`      정규화 예상: "${normalizedTitle}"`);
-        console.log(`      정규화 실제: "${normalizedActual}"`);
+        const normalizedTitle = normalize(title);
+        const normalizedActual = normalize(actualText);
 
         if (normalizedActual === normalizedTitle) {
           console.log(`   ✅ 제목 입력 성공!`);
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(500);
+          return;
+        } else if (
+          normalizedActual.replace(/[^\w\s가-힣]/g, "") ===
+          normalizedTitle.replace(/[^\w\s가-힣]/g, "")
+        ) {
+          console.log(`   ⚠️ 이모지 불일치 무시 (텍스트 일치)`);
           await page.keyboard.press("Escape");
           await page.waitForTimeout(500);
           return;
@@ -268,18 +255,18 @@ export class NaverPublisher {
 
     throw new Error(`제목 입력 ${maxRetries}회 모두 실패`);
   }
+
   /**
-   * 본문 입력 - 안전한 타이핑 방식
+   * 본문 입력 - 구조 보존 타이핑
    */
   private async enterContent(page: Page, htmlContent: string) {
     console.log("\n📄 본문 입력 중...");
 
     try {
-      // 1. 포커스 초기화
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
 
-      // 2. 본문 영역 클릭 (여러 selector 시도)
+      // 본문 영역 클릭
       const bodySelectors = [
         '[data-a11y-title="본문"] .se-text-paragraph',
         '[data-a11y-title="본문"] .se-module-text',
@@ -298,7 +285,7 @@ export class NaverPublisher {
             await element.click({ force: true });
             await page.waitForTimeout(500);
             clicked = true;
-            console.log(`   ✅ 본문 영역 클릭 성공: ${selector}`);
+            console.log(`   ✅ 본문 영역 클릭 성공`);
             break;
           }
         } catch (e) {
@@ -310,37 +297,70 @@ export class NaverPublisher {
         throw new Error("본문 영역을 찾을 수 없음");
       }
 
-      // 3. 커서 활성화 확인
       await page.keyboard.press("ArrowDown");
       await page.waitForTimeout(300);
 
-      // 4. HTML을 텍스트로 변환 (Node.js 환경에서 실행)
-      console.log("   HTML을 텍스트로 변환 중...");
+      console.log("   HTML 파싱 중...");
       const textBlocks = this.htmlToTextBlocks(htmlContent);
 
-      console.log(`   총 ${textBlocks.length}개 블록 입력 시작...`);
+      console.log(`   총 ${textBlocks.length}개 블록 입력 시작...\n`);
 
-      // 5. 각 블록 타이핑
+      // 각 블록 타이핑
       for (let i = 0; i < textBlocks.length; i++) {
         const block = textBlocks[i];
 
-        console.log(
-          `   [${i + 1}/${textBlocks.length}] 입력 중... (${block.substring(0, 30)}...)`,
-        );
-
-        // 타이핑 (이모지 포함 가능하므로 천천히)
-        await page.keyboard.type(block, { delay: 20 });
-
-        // 블록 간 간격
-        await page.keyboard.press("Enter");
-        await page.keyboard.press("Enter");
-        await page.waitForTimeout(100);
+        if (block.type === "separator") {
+          console.log(`   [구분선]`);
+          await page.keyboard.type(block.text, { delay: 10 });
+          await page.keyboard.press("Enter");
+          await page.keyboard.press("Enter"); // 구분선 아래 여백
+          await page.waitForTimeout(50);
+        } else if (block.type === "empty-line") {
+          // 빈 줄은 Enter만
+          await page.keyboard.press("Enter");
+        } else if (
+          block.type === "blockquote-heading" ||
+          block.type === "heading"
+        ) {
+          console.log(
+            `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
+          );
+          await page.keyboard.type(`${block.prefix}${block.text}`, {
+            delay: 15,
+          });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(50);
+        } else if (block.type === "list") {
+          console.log(`   [리스트] ${block.text.substring(0, 30)}...`);
+          await page.keyboard.type(`${block.prefix || ""}${block.text}`, {
+            delay: 15,
+          });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(50);
+        } else if (block.type === "table-row") {
+          console.log(`   [테이블] ${block.text.substring(0, 40)}...`);
+          await page.keyboard.type(block.text, { delay: 15 });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(50);
+        } else if (
+          block.type === "blockquote-paragraph" ||
+          block.type === "paragraph"
+        ) {
+          // 문단은 로그 생략 (너무 많아서)
+          await page.keyboard.type(block.text, { delay: 15 });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(50);
+        } else {
+          await page.keyboard.type(block.text, { delay: 15 });
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(50);
+        }
       }
 
-      console.log("   ✅ 타이핑 완료");
+      console.log("\n   ✅ 타이핑 완료");
       await page.waitForTimeout(2000);
 
-      // 6. 검증
+      // 검증
       const verification = await page.evaluate(() => {
         const titleEl = document.querySelector(".se-title-text") as HTMLElement;
         const bodyModule = document.querySelector(
@@ -360,18 +380,14 @@ export class NaverPublisher {
         `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
       );
       console.log(`   본문 길이: ${verification.bodyLength}자`);
-      console.log(
-        `   본문 미리보기: ${verification.bodyText.substring(0, 100)}...`,
-      );
 
-      // 제목이 너무 길면 본문이 제목에 들어간 것
       if (verification.titleLength > 150) {
         throw new Error(
-          `제목이 비정상적으로 김 (${verification.titleLength}자) - 본문이 제목에 들어간 것 같음`,
+          `제목이 비정상적으로 김 (${verification.titleLength}자)`,
         );
       }
 
-      if (verification.bodyLength < 50) {
+      if (verification.bodyLength < 100) {
         throw new Error(`본문이 너무 짧음 (${verification.bodyLength}자)`);
       }
 
@@ -381,78 +397,190 @@ export class NaverPublisher {
       await page.waitForTimeout(1000);
     } catch (error) {
       console.error("❌ 본문 입력 실패:", error);
-
-      // 실패 시 현재 상태 확인
-      const debugInfo = await page.evaluate(() => {
-        return {
-          activeElement:
-            document.activeElement?.tagName +
-            "." +
-            document.activeElement?.className,
-          titleText:
-            document.querySelector(".se-title-text")?.textContent || "",
-          bodyText:
-            document.querySelector('[data-a11y-title="본문"]')?.textContent ||
-            "",
-        };
-      });
-
-      console.error("디버그 정보:", debugInfo);
       throw error;
     }
   }
 
   /**
-   * HTML을 텍스트 블록으로 변환 (Node.js 환경)
+   * HTML을 텍스트 블록으로 변환 - 구조 보존 강화
    */
-  private htmlToTextBlocks(html: string): string[] {
-    const blocks: string[] = [];
+  private htmlToTextBlocks(html: string): Array<{
+    type:
+      | "heading"
+      | "paragraph"
+      | "list"
+      | "table-row"
+      | "separator"
+      | "blockquote-heading"
+      | "blockquote-paragraph"
+      | "text"
+      | "empty-line";
+    text: string;
+    prefix?: string;
+  }> {
+    const blocks: Array<{
+      type:
+        | "heading"
+        | "paragraph"
+        | "list"
+        | "table-row"
+        | "separator"
+        | "blockquote-heading"
+        | "blockquote-paragraph"
+        | "text"
+        | "empty-line";
+      text: string;
+      prefix?: string;
+    }> = [];
 
-    // 간단한 HTML 태그 제거 및 텍스트 추출
-    // cheerio나 jsdom 대신 정규식 사용 (의존성 최소화)
+    const $ = cheerio.load(html);
 
-    // 1. <br> 태그를 줄바꿈으로 변환
-    let text = html.replace(/<br\s*\/?>/gi, "\n");
+    // body의 모든 자식 요소 순회
+    $("body")
+      .children()
+      .each((_, element) => {
+        const $el = $(element);
+        const tagName = element.tagName?.toLowerCase();
 
-    // 2. </p>, </div>, </li> 등을 줄바꿈으로 변환
-    text = text.replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
+        // HR 태그는 구분선으로 (AI 프롬프트 요구사항)
+        if (tagName === "hr") {
+          blocks.push({
+            type: "separator",
+            text: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+          });
+          blocks.push({ type: "empty-line", text: "" }); // 구분선 아래 빈 줄
+          return;
+        }
 
-    // 3. 리스트 아이템 처리
-    text = text.replace(/<li[^>]*>/gi, "• ");
+        // Blockquote 처리 (AI가 소제목을 > ## 형식으로 감쌈)
+        if (tagName === "blockquote") {
+          $el.children().each((_, child) => {
+            const $child = $(child);
+            const childTag = child.tagName?.toLowerCase();
 
-    // 4. 제목 태그 처리
-    text = text.replace(/<h[1-3][^>]*>/gi, "\n### ");
-    text = text.replace(/<h[4-6][^>]*>/gi, "\n## ");
+            // Blockquote 안의 제목
+            if (childTag && childTag.match(/^h[1-6]$/)) {
+              const text = $child.text().trim();
+              if (text) {
+                let prefix = "";
+                if (childTag === "h1") prefix = "■ ";
+                else if (childTag === "h2") prefix = "▶ ";
+                else prefix = "• ";
 
-    // 5. 모든 HTML 태그 제거
-    text = text.replace(/<[^>]+>/g, "");
+                blocks.push({ type: "blockquote-heading", text, prefix });
+                blocks.push({ type: "empty-line", text: "" }); // 제목 아래 빈 줄
+              }
+              return;
+            }
 
-    // 6. HTML 엔티티 디코딩
-    text = text
-      .replace(/&nbsp;/g, " ")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
+            // Blockquote 안의 리스트
+            if (childTag === "ul" || childTag === "ol") {
+              $child.find("li").each((idx, li) => {
+                const text = $(li).text().trim();
+                if (text) {
+                  const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
+                  blocks.push({ type: "list", text, prefix });
+                }
+              });
+              blocks.push({ type: "empty-line", text: "" }); // 리스트 아래 빈 줄
+              return;
+            }
 
-    // 7. 줄바꿈 기준으로 분리
-    const lines = text.split("\n");
+            // Blockquote 안의 테이블
+            if (childTag === "table") {
+              $child.find("tr").each((idx, tr) => {
+                const cells: string[] = [];
+                $(tr)
+                  .find("th, td")
+                  .each((_, cell) => {
+                    cells.push($(cell).text().trim());
+                  });
 
-    // 8. 빈 줄 제거하고 블록 생성
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.length > 0) {
-        blocks.push(trimmed);
-      }
-    }
+                if (cells.length > 0) {
+                  const rowText = cells.join(" │ "); // 세로선으로 구분
+                  blocks.push({ type: "table-row", text: rowText });
+                }
+              });
+              blocks.push({ type: "empty-line", text: "" }); // 테이블 아래 빈 줄
+              return;
+            }
+
+            // Blockquote 안의 일반 문단
+            const text = $child.text().trim();
+            if (text) {
+              blocks.push({ type: "blockquote-paragraph", text });
+              blocks.push({ type: "empty-line", text: "" }); // 문단 아래 빈 줄
+            }
+          });
+          return;
+        }
+
+        // 일반 제목 태그 (blockquote 밖)
+        if (tagName && tagName.match(/^h[1-6]$/)) {
+          const text = $el.text().trim();
+          if (text) {
+            let prefix = "";
+            if (tagName === "h1") prefix = "■ ";
+            else if (tagName === "h2") prefix = "▶ ";
+            else prefix = "• ";
+
+            blocks.push({ type: "heading", text, prefix });
+            blocks.push({ type: "empty-line", text: "" });
+          }
+          return;
+        }
+
+        // 일반 리스트 (blockquote 밖)
+        if (tagName === "ul" || tagName === "ol") {
+          $el.find("li").each((idx, li) => {
+            const text = $(li).text().trim();
+            if (text) {
+              const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
+              blocks.push({ type: "list", text, prefix });
+            }
+          });
+          blocks.push({ type: "empty-line", text: "" });
+          return;
+        }
+
+        // 일반 테이블 (blockquote 밖)
+        if (tagName === "table") {
+          $el.find("tr").each((idx, tr) => {
+            const cells: string[] = [];
+            $(tr)
+              .find("th, td")
+              .each((_, cell) => {
+                cells.push($(cell).text().trim());
+              });
+
+            if (cells.length > 0) {
+              const rowText = cells.join(" │ ");
+              blocks.push({ type: "table-row", text: rowText });
+
+              // 헤더 행이면 구분선 추가
+              if (idx === 0 && $(tr).find("th").length > 0) {
+                const separatorCells = cells.map(() => "─────");
+                blocks.push({
+                  type: "table-row",
+                  text: separatorCells.join("─┼─"),
+                });
+              }
+            }
+          });
+          blocks.push({ type: "empty-line", text: "" });
+          return;
+        }
+
+        // 일반 문단
+        const text = $el.text().trim();
+        if (text) {
+          blocks.push({ type: "paragraph", text });
+          blocks.push({ type: "empty-line", text: "" });
+        }
+      });
 
     return blocks;
   }
-
-  /**
-   * 네이버 로그인
-   */
   private async login(page: Page, id: string, pw: string) {
     try {
       console.log("🔐 로그인 진행 중...");
@@ -462,41 +590,27 @@ export class NaverPublisher {
 
       await page.waitForSelector("#id", { timeout: 10000 });
 
-      // 1. 아이디 입력
       console.log("   아이디 입력 중...");
       await page.click("#id");
-
-      // 클립보드에 복사 (await 추가!)
       await page.evaluate((text) => {
         return navigator.clipboard.writeText(text);
       }, id);
-
-      await page.waitForTimeout(500); // 클립보드 복사 완료 대기
+      await page.waitForTimeout(500);
       await page.keyboard.press(pasteKey);
       await page.waitForTimeout(800);
 
-      // 입력 검증
       const idValue = await page.inputValue("#id");
       console.log(`   입력된 아이디: ${idValue}`);
 
-      if (idValue !== id) {
-        console.warn(`   ⚠️ 아이디 불일치 - 예상: ${id}, 실제: ${idValue}`);
-      }
-
-      // 2. 비밀번호 입력
       console.log("   비밀번호 입력 중...");
       await page.click("#pw");
-
-      // 클립보드에 복사 (await 추가!)
       await page.evaluate((text) => {
         return navigator.clipboard.writeText(text);
       }, pw);
-
-      await page.waitForTimeout(500); // 클립보드 복사 완료 대기
+      await page.waitForTimeout(500);
       await page.keyboard.press(pasteKey);
       await page.waitForTimeout(800);
 
-      // 3. 로그인 버튼 클릭
       const loginButtonSelector = ".btn_login";
       await page.waitForSelector(loginButtonSelector, { timeout: 5000 });
       await page.click(loginButtonSelector);

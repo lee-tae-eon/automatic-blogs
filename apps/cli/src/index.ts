@@ -1,3 +1,10 @@
+// ✅ Node.js 20 미만 버전 호환성 패치 (undici 에러 해결)
+import { File } from "node:buffer";
+
+if (typeof global.File === "undefined") {
+  (global as any).File = File;
+}
+
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import {
@@ -26,7 +33,7 @@ async function main() {
   }
 
   const input: BlogPostInput = {
-    topic: "5살 아이랑 태국 여행 갈 때 챙겨야 할 필수 아이템",
+    topic: "방콕 시장 비교",
     tone: preset.tone,
     textLength: preset.textLength,
     sections: preset.sections,
