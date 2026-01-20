@@ -1,16 +1,19 @@
 import { BlogPost } from "../types/blog";
 
 export function toMarkdown(post: BlogPost): string {
-  return `# ${post.title}
+  // Frontmatter (YAML 형식) 추가
+  const frontmatter = `---
+title: "${post.title.replace(/"/g, '\\"')}"
+date: "${post.createdAt}"
+metaTitle: "${post.metaTitle ? post.metaTitle.replace(/"/g, '\\"') : ""}"
+metaDescription: "${post.metaDescription ? post.metaDescription.replace(/"/g, '\\"') : ""}"
+tags: [${post.focusKeywords ? post.focusKeywords.map((k) => `"${k}"`).join(", ") : ""}]
+---`;
+
+  return `${frontmatter}
+
+# ${post.title}
 
 ${post.content}
 `;
 }
-// export function toMarkdown(post: BlogPost): string {
-//   const outlineMd = post.outline.map((section) => `## ${section}`).join("\n\n");
-
-//   return `# ${post.title}
-
-// ${post.content}
-// `;
-// }
