@@ -191,7 +191,7 @@ export class NaverPublisher {
   }
 
   /**
-   * 제목 입력 - Tab 키 제거
+   * 제목 입력 - 이모지 정규화 추가
    */
   private async enterTitle(page: Page, title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -199,38 +199,32 @@ export class NaverPublisher {
 
       try {
         const titleSelector = ".se-title-text";
-
-        // 1. 제목 요소 확인
         const elementCount = await page.locator(titleSelector).count();
+
         if (elementCount === 0) {
           throw new Error(`${titleSelector} 요소를 찾을 수 없음`);
         }
 
         console.log(`   ✅ 제목 요소 발견`);
 
-        // 2. 제목 요소로 스크롤 및 클릭
         await page.locator(titleSelector).first().scrollIntoViewIfNeeded();
         await page.waitForTimeout(500);
         await page.locator(titleSelector).first().click({ force: true });
         await page.waitForTimeout(1000);
 
-        // 3. 제목 입력 (키보드 방식만 사용)
         console.log("   키보드 입력 시도");
 
-        // 기존 텍스트 모두 선택
         const isMac = process.platform === "darwin";
         await page.keyboard.press(isMac ? "Meta+A" : "Control+A");
         await page.waitForTimeout(300);
-
-        // 삭제
         await page.keyboard.press("Backspace");
         await page.waitForTimeout(300);
 
-        // 새 제목 입력
+        // 제목 입력
         await page.keyboard.type(title, { delay: 30 });
         await page.waitForTimeout(1000);
 
-        // 검증
+        // 검증 - 이모지 정규화하여 비교
         const actualText = await page
           .locator(titleSelector)
           .first()
@@ -239,14 +233,23 @@ export class NaverPublisher {
         console.log(`      예상: "${title}"`);
         console.log(`      실제: "${actualText}"`);
 
-        if (actualText === title.trim()) {
-          console.log(`   ✅ 제목 입력 성공!`);
+        // 이모지를 정규화하여 비교 (variation selector 제거)
+        const normalizeEmoji = (str: string) => {
+          // variation selector (U+FE0F) 제거
+          return str.replace(/\uFE0F/g, "");
+        };
 
-          // ❌ Tab 키 제거 - 대신 Escape로 포커스 해제만
+        const normalizedTitle = normalizeEmoji(title.trim());
+        const normalizedActual = normalizeEmoji(actualText);
+
+        console.log(`      정규화 예상: "${normalizedTitle}"`);
+        console.log(`      정규화 실제: "${normalizedActual}"`);
+
+        if (normalizedActual === normalizedTitle) {
+          console.log(`   ✅ 제목 입력 성공!`);
           await page.keyboard.press("Escape");
           await page.waitForTimeout(500);
-
-          return; // 성공
+          return;
         } else {
           throw new Error("제목 검증 실패");
         }
@@ -265,100 +268,186 @@ export class NaverPublisher {
 
     throw new Error(`제목 입력 ${maxRetries}회 모두 실패`);
   }
-
   /**
-   * 본문 입력 - 정확한 본문 영역에 주입
+   * 본문 입력 - 안전한 타이핑 방식
    */
   private async enterContent(page: Page, htmlContent: string) {
-    console.log("\n📄 본문 입력 시도 (키보드 타이핑 방식)...");
+    console.log("\n📄 본문 입력 중...");
 
     try {
-      // 1. 제목 영역에서 확실히 빠져나오기
+      // 1. 포커스 초기화
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
 
-      // 2. 본문 영역의 실제 입력 가능 지점(Paragraph) 셀렉터
-      // 네이버 에디터 본문의 첫 번째 문단을 정확히 타겟팅합니다.
-      const bodyInputSelector = '[data-a11y-title="본문"] .se-text-paragraph';
+      // 2. 본문 영역 클릭 (여러 selector 시도)
+      const bodySelectors = [
+        '[data-a11y-title="본문"] .se-text-paragraph',
+        '[data-a11y-title="본문"] .se-module-text',
+        ".se-component.se-text .se-text-paragraph",
+      ];
 
-      await page.waitForSelector(bodyInputSelector, {
-        state: "visible",
-        timeout: 10000,
-      });
+      let clicked = false;
+      for (const selector of bodySelectors) {
+        try {
+          const element = await page.waitForSelector(selector, {
+            state: "visible",
+            timeout: 3000,
+          });
 
-      // 3. 본문을 클릭하여 포커스 주되, 확실하게 하기 위해 '중앙'을 클릭
-      const bodyBox = await page.$(bodyInputSelector);
-      if (bodyBox) {
-        await bodyBox.click({ force: true });
-        await page.waitForTimeout(500);
+          if (element) {
+            await element.click({ force: true });
+            await page.waitForTimeout(500);
+            clicked = true;
+            console.log(`   ✅ 본문 영역 클릭 성공: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
       }
 
-      // 4. 에디터가 '입력 모드'로 전환되도록 화살표 아래 키 한 번 더 입력
+      if (!clicked) {
+        throw new Error("본문 영역을 찾을 수 없음");
+      }
+
+      // 3. 커서 활성화 확인
       await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(300);
 
-      // 5. HTML을 텍스트 블록으로 변환 (브라우저 컨텍스트에서 실행)
-      // 사용자의 요청대로 각 문단을 키보드로 타이핑하기 위해 HTML 태그를 제거하고 텍스트만 추출합니다.
-      const textBlocks = await page.evaluate((html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        const blocks: string[] = [];
+      // 4. HTML을 텍스트로 변환 (Node.js 환경에서 실행)
+      console.log("   HTML을 텍스트로 변환 중...");
+      const textBlocks = this.htmlToTextBlocks(htmlContent);
 
-        doc.body.childNodes.forEach((node) => {
-          const el = node as HTMLElement;
-          // 리스트 처리
-          if (el.tagName === "UL" || el.tagName === "OL") {
-            el.querySelectorAll("li").forEach(async (li) => {
-              if (li.textContent?.trim()) {
-                blocks.push(`• ${li.textContent.trim()}`);
-              }
-            });
-          }
-          // 제목 처리
-          else if (["H1", "H2", "H3"].includes(el.tagName)) {
-            if (el.textContent?.trim()) {
-              blocks.push(`\n[ ${el.textContent.trim()} ]`);
-            }
-          }
-          // 일반 문단 및 기타
-          else {
-            if (node.textContent?.trim()) {
-              blocks.push(node.textContent.trim());
-            }
-          }
-        });
-        return blocks;
-      }, htmlContent);
+      console.log(`   총 ${textBlocks.length}개 블록 입력 시작...`);
 
-      console.log(`   총 ${textBlocks.length}개 문단 타이핑 시작...`);
+      // 5. 각 블록 타이핑
+      for (let i = 0; i < textBlocks.length; i++) {
+        const block = textBlocks[i];
 
-      // 6. 각 문단 타이핑
-      for (const block of textBlocks) {
-        await page.keyboard.type(block, { delay: 10 });
+        console.log(
+          `   [${i + 1}/${textBlocks.length}] 입력 중... (${block.substring(0, 30)}...)`,
+        );
+
+        // 타이핑 (이모지 포함 가능하므로 천천히)
+        await page.keyboard.type(block, { delay: 20 });
+
+        // 블록 간 간격
         await page.keyboard.press("Enter");
-        await page.keyboard.press("Enter"); // 문단 간격
+        await page.keyboard.press("Enter");
         await page.waitForTimeout(100);
       }
 
-      console.log("   타이핑 완료. 데이터 처리 대기...");
+      console.log("   ✅ 타이핑 완료");
       await page.waitForTimeout(2000);
 
-      // 7. 검증: 제목과 본문 각각 확인
-      const check = await page.evaluate(() => {
-        const titleText =
-          document.querySelector(".se-title-text")?.textContent || "";
-        const bodyText =
-          document.querySelector('[data-a11y-title="본문"]')?.textContent || "";
-        return { titleLength: titleText.length, bodyLength: bodyText.length };
+      // 6. 검증
+      const verification = await page.evaluate(() => {
+        const titleEl = document.querySelector(".se-title-text") as HTMLElement;
+        const bodyModule = document.querySelector(
+          '[data-a11y-title="본문"]',
+        ) as HTMLElement;
+
+        return {
+          titleText: titleEl?.textContent?.trim() || "",
+          titleLength: titleEl?.textContent?.trim().length || 0,
+          bodyText: bodyModule?.textContent?.trim() || "",
+          bodyLength: bodyModule?.textContent?.trim().length || 0,
+        };
       });
 
+      console.log(`\n   === 검증 결과 ===`);
       console.log(
-        `   검증 결과 - 제목 길이: ${check.titleLength}, 본문 길이: ${check.bodyLength}`,
+        `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
       );
+      console.log(`   본문 길이: ${verification.bodyLength}자`);
+      console.log(
+        `   본문 미리보기: ${verification.bodyText.substring(0, 100)}...`,
+      );
+
+      // 제목이 너무 길면 본문이 제목에 들어간 것
+      if (verification.titleLength > 150) {
+        throw new Error(
+          `제목이 비정상적으로 김 (${verification.titleLength}자) - 본문이 제목에 들어간 것 같음`,
+        );
+      }
+
+      if (verification.bodyLength < 50) {
+        throw new Error(`본문이 너무 짧음 (${verification.bodyLength}자)`);
+      }
+
+      console.log("✅ 본문 입력 및 검증 완료");
+
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(1000);
     } catch (error) {
       console.error("❌ 본문 입력 실패:", error);
+
+      // 실패 시 현재 상태 확인
+      const debugInfo = await page.evaluate(() => {
+        return {
+          activeElement:
+            document.activeElement?.tagName +
+            "." +
+            document.activeElement?.className,
+          titleText:
+            document.querySelector(".se-title-text")?.textContent || "",
+          bodyText:
+            document.querySelector('[data-a11y-title="본문"]')?.textContent ||
+            "",
+        };
+      });
+
+      console.error("디버그 정보:", debugInfo);
       throw error;
     }
+  }
+
+  /**
+   * HTML을 텍스트 블록으로 변환 (Node.js 환경)
+   */
+  private htmlToTextBlocks(html: string): string[] {
+    const blocks: string[] = [];
+
+    // 간단한 HTML 태그 제거 및 텍스트 추출
+    // cheerio나 jsdom 대신 정규식 사용 (의존성 최소화)
+
+    // 1. <br> 태그를 줄바꿈으로 변환
+    let text = html.replace(/<br\s*\/?>/gi, "\n");
+
+    // 2. </p>, </div>, </li> 등을 줄바꿈으로 변환
+    text = text.replace(/<\/(p|div|li|h[1-6])>/gi, "\n");
+
+    // 3. 리스트 아이템 처리
+    text = text.replace(/<li[^>]*>/gi, "• ");
+
+    // 4. 제목 태그 처리
+    text = text.replace(/<h[1-3][^>]*>/gi, "\n### ");
+    text = text.replace(/<h[4-6][^>]*>/gi, "\n## ");
+
+    // 5. 모든 HTML 태그 제거
+    text = text.replace(/<[^>]+>/g, "");
+
+    // 6. HTML 엔티티 디코딩
+    text = text
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+
+    // 7. 줄바꿈 기준으로 분리
+    const lines = text.split("\n");
+
+    // 8. 빈 줄 제거하고 블록 생성
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.length > 0) {
+        blocks.push(trimmed);
+      }
+    }
+
+    return blocks;
   }
 
   /**
