@@ -337,9 +337,28 @@ export class NaverPublisher {
           });
           await page.keyboard.press("Enter");
           await page.waitForTimeout(50);
-        } else if (block.type === "table-row") {
-          console.log(`   [테이블] ${block.text.substring(0, 40)}...`);
-          await page.keyboard.type(block.text, { delay: 15 });
+        } else if (block.type === "table") {
+          console.log(`   [테이블] HTML 붙여넣기...`);
+          // 테이블은 타이핑으로 구현하기 어려우므로 HTML 붙여넣기 방식 사용
+          await page.evaluate((html) => {
+            const target =
+              document.activeElement ||
+              document.querySelector(
+                '[data-a11y-title="본문"] .se-text-paragraph',
+              );
+            const dataTransfer = new DataTransfer();
+            dataTransfer.setData("text/html", html);
+            const event = new ClipboardEvent("paste", {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: dataTransfer,
+            });
+            target?.dispatchEvent(event);
+          }, block.text);
+
+          await page.waitForTimeout(1000);
+          // 표 삽입 후 커서 정리
+          await page.keyboard.press("ArrowDown");
           await page.keyboard.press("Enter");
           await page.waitForTimeout(50);
         } else if (
@@ -409,6 +428,7 @@ export class NaverPublisher {
       | "heading"
       | "paragraph"
       | "list"
+      | "table"
       | "table-row"
       | "separator"
       | "blockquote-heading"
@@ -423,6 +443,7 @@ export class NaverPublisher {
         | "heading"
         | "paragraph"
         | "list"
+        | "table"
         | "table-row"
         | "separator"
         | "blockquote-heading"
@@ -476,7 +497,11 @@ export class NaverPublisher {
             // Blockquote 안의 리스트
             if (childTag === "ul" || childTag === "ol") {
               $child.find("li").each((idx, li) => {
-                const text = $(li).text().trim();
+                // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거
+                const text = $(li)
+                  .text()
+                  .trim()
+                  .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
                 if (text) {
                   const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
                   blocks.push({ type: "list", text, prefix });
@@ -533,7 +558,11 @@ export class NaverPublisher {
         // 일반 리스트 (blockquote 밖)
         if (tagName === "ul" || tagName === "ol") {
           $el.find("li").each((idx, li) => {
-            const text = $(li).text().trim();
+            // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거 (중복 방지)
+            const text = $(li)
+              .text()
+              .trim()
+              .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
             if (text) {
               const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
               blocks.push({ type: "list", text, prefix });
@@ -545,28 +574,9 @@ export class NaverPublisher {
 
         // 일반 테이블 (blockquote 밖)
         if (tagName === "table") {
-          $el.find("tr").each((idx, tr) => {
-            const cells: string[] = [];
-            $(tr)
-              .find("th, td")
-              .each((_, cell) => {
-                cells.push($(cell).text().trim());
-              });
-
-            if (cells.length > 0) {
-              const rowText = cells.join(" │ ");
-              blocks.push({ type: "table-row", text: rowText });
-
-              // 헤더 행이면 구분선 추가
-              if (idx === 0 && $(tr).find("th").length > 0) {
-                const separatorCells = cells.map(() => "─────");
-                blocks.push({
-                  type: "table-row",
-                  text: separatorCells.join("─┼─"),
-                });
-              }
-            }
-          });
+          // 테이블은 HTML 통째로 저장하여 붙여넣기 처리
+          const tableHtml = $.html($el);
+          blocks.push({ type: "table", text: tableHtml });
           blocks.push({ type: "empty-line", text: "" });
           return;
         }
