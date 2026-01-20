@@ -115,44 +115,10 @@ export class NaverPublisher {
         console.log(`   제목: "${validation.title}"`);
         console.log(`   본문 길이: ${validation.contentLength}자`);
 
-        // 🔥 제목이 비어있으면 다시 입력
-        if (!validation.title) {
-          console.log("⚠️ 제목이 비어있음! 제목 재입력 시도...");
-
-          // 제목 영역으로 이동
-          const titleSelector = ".se-title-text";
-          await page.click(titleSelector);
-          await page.waitForTimeout(500);
-
-          // 제목 입력 (키보드 방식)
-          const isMac = process.platform === "darwin";
-          await page.keyboard.press(isMac ? "Meta+A" : "Control+A");
-          await page.keyboard.press("Backspace");
-          await page.keyboard.type(title, { delay: 30 });
-          await page.waitForTimeout(1000);
-
-          // 재검증
-          const retryTitle = await page
-            .locator(titleSelector)
-            .first()
-            .evaluate((el: HTMLElement) => el.innerText.trim());
-
-          console.log(`   재입력 제목: "${retryTitle}"`);
-
-          if (!retryTitle) {
-            throw new Error("제목 재입력 실패");
-          }
-        }
-
         // 발행
-        await this.publish(page);
+        // await this.publish(page);
 
-        // 최종 검증
-        if (!validation.title && validation.contentLength < 10) {
-          throw new Error("최종 검증 실패 - 제목이나 본문이 비어있음");
-        }
-
-        console.log("✅ 최종 검증 통과");
+        console.log("✅ 작성 완료 (발행은 수동으로 진행하세요)");
       } catch (error) {
         console.error("❌ 입력 처리 실패:", error);
         throw error;
