@@ -33,11 +33,11 @@ async function main() {
   }
 
   const input: BlogPostInput = {
-    topic: "파타야 가성비 숙소 추천",
+    topic: "2026 육아휴직",
     tone: preset.tone,
     textLength: preset.textLength,
     sections: preset.sections,
-    persona: "empathetic",
+    persona: "informative",
   };
   console.log(`\n🚀 블로그 자동 생성 시작!`);
   console.log(`📌 주제: ${input.topic}`);

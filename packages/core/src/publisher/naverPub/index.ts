@@ -502,20 +502,37 @@ export class NaverPublisher {
               return;
             }
 
+            // // Blockquote 안의 리스트
+            // if (childTag === "ul" || childTag === "ol") {
+            //   $child.find("li").each((idx, li) => {
+            //     // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거
+            //     const text = $(li)
+            //       .text()
+            //       .trim()
+            //       .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+            //     if (text) {
+            //       const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
+            //       blocks.push({ type: "list", text, prefix });
+            //     }
+            //   });
+            //   blocks.push({ type: "empty-line", text: "" }); // 리스트 아래 빈 줄
+            //   return;
+            // }
             // Blockquote 안의 리스트
             if (childTag === "ul" || childTag === "ol") {
               $child.find("li").each((idx, li) => {
-                // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거
-                const text = $(li)
-                  .text()
-                  .trim()
-                  .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+                let text = $(li).text().trim();
+
+                // 🔥 AI가 이미 번호를 넣은 경우 제거
+                // "1. 텍스트", "1) 텍스트", "• 텍스트", "- 텍스트" 패턴 제거
+                text = text.replace(/^(\d+[\.\)]\s*|[•\-\*]\s+)/, "");
+
                 if (text) {
                   const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
                   blocks.push({ type: "list", text, prefix });
                 }
               });
-              blocks.push({ type: "empty-line", text: "" }); // 리스트 아래 빈 줄
+              blocks.push({ type: "empty-line", text: "" });
               return;
             }
 
@@ -563,14 +580,14 @@ export class NaverPublisher {
           return;
         }
 
-        // 일반 리스트 (blockquote 밖)
+        // 일반 리스트도 동일하게
         if (tagName === "ul" || tagName === "ol") {
           $el.find("li").each((idx, li) => {
-            // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거 (중복 방지)
-            const text = $(li)
-              .text()
-              .trim()
-              .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+            let text = $(li).text().trim();
+
+            // 🔥 중복 번호/불릿 제거
+            text = text.replace(/^(\d+[\.\)]\s*|[•\-\*]\s+)/, "");
+
             if (text) {
               const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
               blocks.push({ type: "list", text, prefix });
@@ -579,6 +596,23 @@ export class NaverPublisher {
           blocks.push({ type: "empty-line", text: "" });
           return;
         }
+
+        // // 일반 리스트 (blockquote 밖)
+        // if (tagName === "ul" || tagName === "ol") {
+        //   $el.find("li").each((idx, li) => {
+        //     // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거 (중복 방지)
+        //     const text = $(li)
+        //       .text()
+        //       .trim()
+        //       .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+        //     if (text) {
+        //       const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
+        //       blocks.push({ type: "list", text, prefix });
+        //     }
+        //   });
+        //   blocks.push({ type: "empty-line", text: "" });
+        //   return;
+        // }
 
         // 일반 테이블 (blockquote 밖)
         if (tagName === "table") {
@@ -639,6 +673,97 @@ export class NaverPublisher {
       throw new Error("자동 로그인 실패. 수동으로 로그인해주세요.");
     }
   }
+  //!---------------------------------------------------------
+  /**
+   * 🖼️ 이미지 업로드 (주석 처리 - 추후 구현)
+   *
+   * @param page Playwright 페이지
+   * @param imagePaths 업로드할 이미지 경로 배열
+   *
+   * 사용 예시:
+   * await this.uploadImages(page, [
+   *   '/path/to/image1.jpg',
+   *   '/path/to/image2.png'
+   * ]);
+   */
+  // private async uploadImages(page: Page, imagePaths: string[]) {
+  //   console.log(`\n📷 이미지 업로드 시작 (${imagePaths.length}개)...`);
+
+  //   try {
+  //     for (let i = 0; i < imagePaths.length; i++) {
+  //       const imagePath = imagePaths[i];
+
+  //       // 1. 이미지 업로드 버튼 클릭
+  //       const uploadButtonSelector = '.se-image-toolbar-button, .se-toolbar-image';
+  //       await page.waitForSelector(uploadButtonSelector, { timeout: 5000 });
+  //       await page.click(uploadButtonSelector);
+  //       await page.waitForTimeout(1000);
+
+  //       // 2. 파일 선택 (input[type="file"] 찾기)
+  //       const fileInput = await page.$('input[type="file"][accept*="image"]');
+
+  //       if (fileInput) {
+  //         // 3. 파일 경로 설정
+  //         await fileInput.setInputFiles(imagePath);
+  //         await page.waitForTimeout(2000); // 업로드 대기
+
+  //         console.log(`   ✅ 이미지 ${i + 1}/${imagePaths.length} 업로드 완료`);
+  //       } else {
+  //         console.error(`   ❌ 파일 입력 필드를 찾을 수 없음`);
+  //       }
+
+  //       // 4. 업로드 완료 대기 (썸네일 확인)
+  //       await page.waitForSelector('.se-image-resource, img[data-lazy-src]', {
+  //         timeout: 10000,
+  //       });
+  //       await page.waitForTimeout(1000);
+  //     }
+
+  //     console.log(`✅ 모든 이미지 업로드 완료`);
+  //   } catch (error) {
+  //     console.error(`❌ 이미지 업로드 실패:`, error);
+  //     throw error;
+  //   }
+  // }
+
+  /**
+   * 이미지 폴더에서 업로드할 이미지 찾기
+   */
+  // private async findImagesInFolder(folderPath: string): Promise<string[]> {
+  //   const fs = require('fs').promises;
+  //   const path = require('path');
+
+  //   try {
+  //     const files = await fs.readdir(folderPath);
+
+  //     // 이미지 파일만 필터링 (jpg, jpeg, png, gif, webp)
+  //     const imageFiles = files.filter((file: string) => {
+  //       const ext = path.extname(file).toLowerCase();
+  //       return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+  //     });
+
+  //     // 전체 경로 생성
+  //     return imageFiles.map((file: string) => path.join(folderPath, file));
+  //   } catch (error) {
+  //     console.error('이미지 폴더 읽기 실패:', error);
+  //     return [];
+  //   }
+  // }
+
+  // postToBlog에서 사용하는 방법:
+  // async postToBlog(...) {
+  //   // ... 제목, 본문 입력 후 ...
+  //
+  //   // 이미지 업로드 (선택사항)
+  //   // if (imageFolderPath) {
+  //   //   const imagePaths = await this.findImagesInFolder(imageFolderPath);
+  //   //   if (imagePaths.length > 0) {
+  //   //     await this.uploadImages(page, imagePaths);
+  //   //   }
+  //   // }
+  // }
+
+  //!---------------------------------------------------------
 
   // private async publish(page: Page, tags: string[] = []) {
   //   console.log("\n🚀 발행 프로세스 시작...");
