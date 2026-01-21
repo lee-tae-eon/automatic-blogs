@@ -65,23 +65,23 @@ export class NaverPublisher {
         }
 
         await page.waitForURL("https://blog.naver.com/**", {
-          timeout: 100000,
+          timeout: 120000,
         });
         console.log("✅ 로그인 완료 감지");
 
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
 
         console.log("📝 글쓰기 페이지 재진입 중...");
         await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
           waitUntil: "domcontentloaded",
-          timeout: 20000,
+          timeout: 30000,
         });
       }
 
       await this.clearPopups(page);
 
       console.log("⏳ 에디터 로딩 대기 중...");
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(5000);
 
       await page.keyboard.press("Escape");
       await page.waitForTimeout(1000);
@@ -102,7 +102,7 @@ export class NaverPublisher {
 
         // 본문 입력
         await this.enterContent(page, htmlContent);
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000);
 
         // 최종 검증
         console.log("\n🔍 최종 검증 중...");
@@ -134,7 +134,7 @@ export class NaverPublisher {
       );
 
       console.log("⏰ 브라우저는 5분 후 자동 종료됩니다...");
-      await page.waitForTimeout(100000);
+      await page.waitForTimeout(300000);
     } catch (error) {
       console.error("❌ 네이버 발행 오류:", error);
 
@@ -222,13 +222,11 @@ export class NaverPublisher {
 
         // 이모지 정규화 비교
         const normalize = (str: string) => {
-          return (
-            str
-              // .replace(/[\uFE00-\uFE0F]/g, "") // Variation Selectors 전체 제거
-              // .replace(/[\u200B-\u200D\uFEFF]/g, "") // Zero-width 문자 제거
-              // .normalize("NFC") // 유니코드 정규화
-              .trim()
-          );
+          return str
+            .replace(/[\uFE00-\uFE0F]/g, "") // Variation Selectors 전체 제거
+            .replace(/[\u200B-\u200D\uFEFF]/g, "") // Zero-width 문자 제거
+            .normalize("NFC") // 유니코드 정규화
+            .trim();
         };
 
         const normalizedTitle = normalize(title);
@@ -348,27 +346,20 @@ export class NaverPublisher {
           await page.keyboard.press("Enter");
           await page.waitForTimeout(50);
         } else if (block.type === "table") {
-          console.log(`   [테이블] 클립보드 붙여넣기 시도...`);
+          console.log(`   [테이블] DOM 직접 삽입`);
 
-          // 1. 클립보드에 HTML 쓰기 (브라우저 API 사용)
           await page.evaluate((html) => {
-            const type = "text/html";
-            const blob = new Blob([html], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            return navigator.clipboard.write(data);
+            const editor = document.querySelector(".se-content");
+            if (!editor) return;
+
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html;
+
+            editor.appendChild(wrapper.firstElementChild!);
           }, block.text);
 
-          // 2. 붙여넣기 단축키 (Ctrl+V / Cmd+V)
-          const isMac = process.platform === "darwin";
-          const modifier = isMac ? "Meta" : "Control";
-          await page.keyboard.press(`${modifier}+V`);
-
-          await page.waitForTimeout(1000);
-
-          // 3. 커서 정리 (표 아래로 이동)
-          await page.keyboard.press("ArrowDown");
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(50);
+          await page.waitForTimeout(300);
         } else if (
           block.type === "blockquote-paragraph" ||
           block.type === "paragraph"
@@ -402,11 +393,9 @@ export class NaverPublisher {
         };
       });
 
-      console.log(`\n   === 검증 결과 ===`);
       console.log(
-        `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
+        `  제목: "${verification.titleText}" (${verification.titleLength}자) \n  본문 길이: ${verification.bodyLength}자`,
       );
-      console.log(`   본문 길이: ${verification.bodyLength}자`);
 
       if (verification.titleLength > 150) {
         throw new Error(
@@ -504,35 +493,30 @@ export class NaverPublisher {
 
             // Blockquote 안의 리스트
             if (childTag === "ul" || childTag === "ol") {
-              $child.find("li").each((idx, li) => {
-                // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거
-                const text = $(li).text().trim();
-                // .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+              $child.find("li").each((_, li) => {
+                let text = $(li).text().trim();
+
                 if (text) {
-                  const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
-                  blocks.push({ type: "list", text, prefix });
+                  // 인용구 내부임을 나타내기 위해 앞에 공백 2칸 추가
+                  // const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
+                  blocks.push({ type: "list", text });
                 }
               });
-              blocks.push({ type: "empty-line", text: "" }); // 리스트 아래 빈 줄
+              blocks.push({ type: "empty-line", text: "" });
               return;
             }
 
             // Blockquote 안의 테이블
             if (childTag === "table") {
-              $child.find("tr").each((idx, tr) => {
-                const cells: string[] = [];
-                $(tr)
-                  .find("th, td")
-                  .each((_, cell) => {
-                    cells.push($(cell).text().trim());
-                  });
-
-                if (cells.length > 0) {
-                  const rowText = cells.join(" │ "); // 세로선으로 구분
-                  blocks.push({ type: "table-row", text: rowText });
-                }
-              });
-              blocks.push({ type: "empty-line", text: "" }); // 테이블 아래 빈 줄
+              // 모든 스타일/클래스를 날려야 네이버가 표로 인식함
+              $child
+                .find("*")
+                .removeAttr("class")
+                .removeAttr("style")
+                .removeAttr("id");
+              const tableHtml = $.html($child);
+              blocks.push({ type: "table", text: tableHtml });
+              blocks.push({ type: "empty-line", text: "" });
               return;
             }
 
@@ -561,12 +545,13 @@ export class NaverPublisher {
           return;
         }
 
-        // 일반 리스트 (blockquote 밖)
+        // 일반 리스트도 동일하게
         if (tagName === "ul" || tagName === "ol") {
           $el.find("li").each((idx, li) => {
-            // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거 (중복 방지)
-            const text = $(li).text().trim();
-            // .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
+            let text = $(li).text().trim();
+
+            text = text.replace(/^(\d+[\.\)]\s*|[•\-\*\u2022]\s*)+/g, "");
+
             if (text) {
               const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
               blocks.push({ type: "list", text, prefix });
@@ -578,24 +563,17 @@ export class NaverPublisher {
 
         // 일반 테이블 (blockquote 밖)
         if (tagName === "table") {
-          // 테이블은 HTML 통째로 저장하여 붙여넣기 처리
-          // 네이버 에디터 호환성을 위해 불필요한 속성 제거
+          // 모든 속성을 다 날리고 순수한 구조만 남깁니다.
           $el
             .find("*")
-            .removeAttr("class")
             .removeAttr("style")
+            .removeAttr("class")
             .removeAttr("id");
-          $el.removeAttr("class").removeAttr("style").removeAttr("id");
 
-          // ✅ 스타일 강제 주입 (네이버 에디터가 인식하도록)
-          $el.attr("border", "1");
-          $el.attr("style", "border-collapse: collapse; width: 100%;");
-          $el
-            .find("th, td")
-            .attr("style", "border: 1px solid #ccc; padding: 10px;");
+          // 네이버 에디터가 좋아하는 아주 기본적인 구조로 재조립
+          const cleanTableHtml = `<table>${$el.html()}</table>`;
 
-          const tableHtml = $.html($el);
-          blocks.push({ type: "table", text: tableHtml });
+          blocks.push({ type: "table", text: cleanTableHtml });
           blocks.push({ type: "empty-line", text: "" });
           return;
         }
@@ -610,7 +588,6 @@ export class NaverPublisher {
 
     return blocks;
   }
-
   // 로그인
   private async login(page: Page, id: string, pw: string) {
     try {
