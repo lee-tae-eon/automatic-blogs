@@ -35,3 +35,17 @@ export interface GeneratePostInput {
 }
 
 export type BlogPlatform = "naver" | "tistory";
+
+export interface BlogBatchInput {
+  topic: string;
+  persona: "informative" | "empathetic";
+  category: string; // 필수
+  tone?: string;
+}
+
+export interface BlogPublishSettings {
+  blogId: string;
+  password?: string;
+  defaultCategory: string;
+  useAutoTags: boolean; // AI 자동 태그 생성 여부
+}
