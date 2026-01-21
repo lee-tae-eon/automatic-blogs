@@ -72,13 +72,13 @@ async function batchMain() {
       if (publishSettings.blogId) {
         console.log(`\n🌐 네이버 블로그 업로드 중...`);
 
-        await publisher.postToBlog(
-          publishSettings.blogId,
-          post.title,
-          htmlContent,
-          publishSettings.password,
-          publishSettings.useAutoTags ? post.tags : [], // AI 생성 태그 사용
-        );
+        await publisher.postToBlog({
+          blogId: publishSettings.blogId,
+          password: publishSettings.password,
+          title: post.title,
+          htmlContent: htmlContent,
+          tags: publishSettings.useAutoTags ? post.tags : [],
+        });
 
         console.log(`✅ [${i + 1}/${inputs.length}] 발행 완료!`);
       }

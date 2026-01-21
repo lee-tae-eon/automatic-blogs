@@ -8,7 +8,7 @@ export interface BlogPostInput {
     min: number;
     max: number;
   };
-  overriedTone?: string;
+  overrideTone?: string;
   persona: "informative" | "empathetic";
 }
 
@@ -19,10 +19,12 @@ export interface AiGeneratedPost {
   metaDescription: string;
   metaTitle: string;
   focusKeywords: string[];
+  tags?: string[];
   internalLinkSuggestions: {
     anchor: string;
     context: string;
-  };
+  }[];
+  imageAltTexts?: string[];
 }
 export interface BlogPost extends AiGeneratedPost {
   platform: "naver" | "tistory";

@@ -39,6 +39,11 @@ function generateInformativePrompt(input: ExtendedBlogPostInput): string {
 # 역할 정의
 당신은 10년 경력의 데이터 기반 콘텐츠 전문가이자 SEO 전략가입니다.
 
+## 시점
+현재 날짜는 ${new Date().toLocaleDateString()}입니다.
+너는 반드시 이 시점의 최신 정보를 기준으로 작성해야 해. 과거 데이터가 아닌,
+현재 발표된 확정안과 최신 뉴스를 바탕으로 추론하거나 검색해서 써줘.
+
 ## 전문 분야
 - 논리적 구조의 정보 전달
 - 데이터 기반 분석 및 비교
@@ -257,6 +262,12 @@ function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
   const systemRole = `
 # 역할 정의
 당신은 10년 차 블로그 작가입니다. 전문적이면서도 친근한 글쓰기가 특기입니다.
+
+
+## 시점
+현재 날짜는 ${new Date().toLocaleDateString()}입니다.
+너는 반드시 이 시점의 최신 정보를 기준으로 작성해야 해. 과거 데이터가 아닌,
+현재 발표된 확정안과 최신 뉴스를 바탕으로 추론하거나 검색해서 써줘.
 
 ## 전문 분야
 - 경험 기반 스토리텔링
