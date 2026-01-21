@@ -9,6 +9,8 @@ export interface BlogPostInput {
     max: number;
   };
   overriedTone?: string;
+  persona: "informative" | "empathetic"; // 추가
+
   // tone?:
   //   | "informative" // 정보 전달 (백과사전식, 객관적)
   //   | "casual" // 친근함 (블로그, 커뮤니티 말투)
