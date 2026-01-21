@@ -346,29 +346,21 @@ export class NaverPublisher {
           await page.keyboard.press("Enter");
           await page.waitForTimeout(50);
         } else if (block.type === "table") {
-          console.log(`   [테이블] HTML 붙여넣기...`);
-          // 테이블은 타이핑으로 구현하기 어려우므로 HTML 붙여넣기 방식 사용
+          console.log(`   [테이블] execCommand 주입...`);
+
           await page.evaluate((html) => {
-            const target =
-              document.activeElement ||
-              document.querySelector(
-                '[data-a11y-title="본문"] .se-text-paragraph',
-              );
-            const dataTransfer = new DataTransfer();
-            dataTransfer.setData("text/html", html);
-            const event = new ClipboardEvent("paste", {
-              bubbles: true,
-              cancelable: true,
-              clipboardData: dataTransfer,
-            });
-            target?.dispatchEvent(event);
+            const editor = document.querySelector(
+              ".se-content [contenteditable='true']",
+            );
+            if (editor) {
+              (editor as HTMLElement).focus();
+              // 브라우저 표준 명령어: 현재 커서 위치에 HTML 삽입
+              document.execCommand("insertHTML", false, html);
+            }
           }, block.text);
 
           await page.waitForTimeout(1000);
-          // 표 삽입 후 커서 정리
-          await page.keyboard.press("ArrowDown");
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(50);
         } else if (
           block.type === "blockquote-paragraph" ||
           block.type === "paragraph"
@@ -402,11 +394,9 @@ export class NaverPublisher {
         };
       });
 
-      console.log(`\n   === 검증 결과 ===`);
       console.log(
-        `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
+        `  제목: "${verification.titleText}" (${verification.titleLength}자) \n  본문 길이: ${verification.bodyLength}자`,
       );
-      console.log(`   본문 길이: ${verification.bodyLength}자`);
 
       if (verification.titleLength > 150) {
         throw new Error(
@@ -502,32 +492,16 @@ export class NaverPublisher {
               return;
             }
 
-            // // Blockquote 안의 리스트
-            // if (childTag === "ul" || childTag === "ol") {
-            //   $child.find("li").each((idx, li) => {
-            //     // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거
-            //     const text = $(li)
-            //       .text()
-            //       .trim()
-            //       .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
-            //     if (text) {
-            //       const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
-            //       blocks.push({ type: "list", text, prefix });
-            //     }
-            //   });
-            //   blocks.push({ type: "empty-line", text: "" }); // 리스트 아래 빈 줄
-            //   return;
-            // }
             // Blockquote 안의 리스트
             if (childTag === "ul" || childTag === "ol") {
               $child.find("li").each((idx, li) => {
                 let text = $(li).text().trim();
 
-                // 🔥 AI가 이미 번호를 넣은 경우 제거
-                // "1. 텍스트", "1) 텍스트", "• 텍스트", "- 텍스트" 패턴 제거
-                text = text.replace(/^(\d+[\.\)]\s*|[•\-\*]\s+)/, "");
+                // 🔥 개선된 정규식: 문장 시작점의 모든 중복 번호/기호 패턴 제거 (+ 추가)
+                text = text.replace(/^(\d+[\.\)]\s*|[•\-\*\u2022]\s*)+/g, "");
 
                 if (text) {
+                  // 인용구 내부임을 나타내기 위해 앞에 공백 2칸 추가
                   const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
                   blocks.push({ type: "list", text, prefix });
                 }
@@ -538,20 +512,10 @@ export class NaverPublisher {
 
             // Blockquote 안의 테이블
             if (childTag === "table") {
-              $child.find("tr").each((idx, tr) => {
-                const cells: string[] = [];
-                $(tr)
-                  .find("th, td")
-                  .each((_, cell) => {
-                    cells.push($(cell).text().trim());
-                  });
-
-                if (cells.length > 0) {
-                  const rowText = cells.join(" │ "); // 세로선으로 구분
-                  blocks.push({ type: "table-row", text: rowText });
-                }
-              });
-              blocks.push({ type: "empty-line", text: "" }); // 테이블 아래 빈 줄
+              // 텍스트(table-row)로 변환하지 말고 HTML 구조를 유지
+              const tableHtml = $.html($child);
+              blocks.push({ type: "table", text: tableHtml }); // type을 'table'로 통일
+              blocks.push({ type: "empty-line", text: "" });
               return;
             }
 
@@ -585,8 +549,7 @@ export class NaverPublisher {
           $el.find("li").each((idx, li) => {
             let text = $(li).text().trim();
 
-            // 🔥 중복 번호/불릿 제거
-            text = text.replace(/^(\d+[\.\)]\s*|[•\-\*]\s+)/, "");
+            text = text.replace(/^(\d+[\.\)]\s*|[•\-\*\u2022]\s*)+/g, "");
 
             if (text) {
               const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
@@ -597,26 +560,8 @@ export class NaverPublisher {
           return;
         }
 
-        // // 일반 리스트 (blockquote 밖)
-        // if (tagName === "ul" || tagName === "ol") {
-        //   $el.find("li").each((idx, li) => {
-        //     // 리스트 내부 텍스트에 이미 번호나 불렛이 있다면 제거 (중복 방지)
-        //     const text = $(li)
-        //       .text()
-        //       .trim()
-        //       .replace(/^(\d+[\.\)]|[-•*])\s+/, "");
-        //     if (text) {
-        //       const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
-        //       blocks.push({ type: "list", text, prefix });
-        //     }
-        //   });
-        //   blocks.push({ type: "empty-line", text: "" });
-        //   return;
-        // }
-
         // 일반 테이블 (blockquote 밖)
         if (tagName === "table") {
-          // 테이블은 HTML 통째로 저장하여 붙여넣기 처리
           const tableHtml = $.html($el);
           blocks.push({ type: "table", text: tableHtml });
           blocks.push({ type: "empty-line", text: "" });
@@ -633,6 +578,7 @@ export class NaverPublisher {
 
     return blocks;
   }
+  // 로그인
   private async login(page: Page, id: string, pw: string) {
     try {
       console.log("🔐 로그인 진행 중...");
@@ -673,95 +619,6 @@ export class NaverPublisher {
       throw new Error("자동 로그인 실패. 수동으로 로그인해주세요.");
     }
   }
-  //!---------------------------------------------------------
-  /**
-   * 🖼️ 이미지 업로드 (주석 처리 - 추후 구현)
-   *
-   * @param page Playwright 페이지
-   * @param imagePaths 업로드할 이미지 경로 배열
-   *
-   * 사용 예시:
-   * await this.uploadImages(page, [
-   *   '/path/to/image1.jpg',
-   *   '/path/to/image2.png'
-   * ]);
-   */
-  // private async uploadImages(page: Page, imagePaths: string[]) {
-  //   console.log(`\n📷 이미지 업로드 시작 (${imagePaths.length}개)...`);
-
-  //   try {
-  //     for (let i = 0; i < imagePaths.length; i++) {
-  //       const imagePath = imagePaths[i];
-
-  //       // 1. 이미지 업로드 버튼 클릭
-  //       const uploadButtonSelector = '.se-image-toolbar-button, .se-toolbar-image';
-  //       await page.waitForSelector(uploadButtonSelector, { timeout: 5000 });
-  //       await page.click(uploadButtonSelector);
-  //       await page.waitForTimeout(1000);
-
-  //       // 2. 파일 선택 (input[type="file"] 찾기)
-  //       const fileInput = await page.$('input[type="file"][accept*="image"]');
-
-  //       if (fileInput) {
-  //         // 3. 파일 경로 설정
-  //         await fileInput.setInputFiles(imagePath);
-  //         await page.waitForTimeout(2000); // 업로드 대기
-
-  //         console.log(`   ✅ 이미지 ${i + 1}/${imagePaths.length} 업로드 완료`);
-  //       } else {
-  //         console.error(`   ❌ 파일 입력 필드를 찾을 수 없음`);
-  //       }
-
-  //       // 4. 업로드 완료 대기 (썸네일 확인)
-  //       await page.waitForSelector('.se-image-resource, img[data-lazy-src]', {
-  //         timeout: 10000,
-  //       });
-  //       await page.waitForTimeout(1000);
-  //     }
-
-  //     console.log(`✅ 모든 이미지 업로드 완료`);
-  //   } catch (error) {
-  //     console.error(`❌ 이미지 업로드 실패:`, error);
-  //     throw error;
-  //   }
-  // }
-
-  /**
-   * 이미지 폴더에서 업로드할 이미지 찾기
-   */
-  // private async findImagesInFolder(folderPath: string): Promise<string[]> {
-  //   const fs = require('fs').promises;
-  //   const path = require('path');
-
-  //   try {
-  //     const files = await fs.readdir(folderPath);
-
-  //     // 이미지 파일만 필터링 (jpg, jpeg, png, gif, webp)
-  //     const imageFiles = files.filter((file: string) => {
-  //       const ext = path.extname(file).toLowerCase();
-  //       return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-  //     });
-
-  //     // 전체 경로 생성
-  //     return imageFiles.map((file: string) => path.join(folderPath, file));
-  //   } catch (error) {
-  //     console.error('이미지 폴더 읽기 실패:', error);
-  //     return [];
-  //   }
-  // }
-
-  // postToBlog에서 사용하는 방법:
-  // async postToBlog(...) {
-  //   // ... 제목, 본문 입력 후 ...
-  //
-  //   // 이미지 업로드 (선택사항)
-  //   // if (imageFolderPath) {
-  //   //   const imagePaths = await this.findImagesInFolder(imageFolderPath);
-  //   //   if (imagePaths.length > 0) {
-  //   //     await this.uploadImages(page, imagePaths);
-  //   //   }
-  //   // }
-  // }
 
   //!---------------------------------------------------------
 

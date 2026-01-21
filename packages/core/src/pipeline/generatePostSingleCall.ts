@@ -145,7 +145,7 @@ function generateInformativePrompt(input: ExtendedBlogPostInput): string {
 
 ### 문단 구성
 - 1문단 = 1개 핵심 정보
-- 최대 3-4줄 (모바일 기준)
+- 최대 2-3줄 (모바일 기준)
 - 문단 간 반드시 빈 줄 삽입
 
 ### 시각적 요소
@@ -160,9 +160,9 @@ function generateInformativePrompt(input: ExtendedBlogPostInput): string {
 
 ### 리스트 및 표
 **번호 리스트:**
-1. 우선순위/중요도 순서
-2. 단계별 프로세스
-3. 순위/랭킹
+- 번호는 마크다운이 자동 생성하므로 텍스트에 번호 포함 금지
+- 예: "객실 선택(o)" / "2. 객실 선택(x)"
+
 
 **불릿 리스트:**
 - 동등한 중요도 항목
