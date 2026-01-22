@@ -1,7 +1,7 @@
 # 프로젝트 정보
 
 - 프로젝트명: 블로그 자동화 시스템
-- 기술 스택: Node.js, TypeScript, NestJS(또는 Express)
+- 기술 스택: Node.js, TypeScript, Electron, React, Vite
 - 목적: 네이버 블로그, 티스토리 자동 포스팅
 - 핵심 기능: AI 콘텐츠 생성, SEO 최적화, 자동 발행, 스케줄링
 
@@ -20,3 +20,4 @@
 - DI(Dependency Injection) 활용
 - 단일 책임 원칙
 - 인터페이스 기반 설계
+- 가독성을 중요시한 설계
