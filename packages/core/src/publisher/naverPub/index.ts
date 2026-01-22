@@ -3,6 +3,7 @@
 import { chromium, Page, BrowserContext } from "playwright";
 import path from "path";
 import * as cheerio from "cheerio";
+import { findProjectRoot } from "../../util/findProjectRoot";
 
 export interface NaverPostInput {
   blogId: string;
@@ -13,7 +14,12 @@ export interface NaverPostInput {
 }
 
 export class NaverPublisher {
-  private userDataDir: string = path.join(process.cwd(), "../../.auth/naver");
+  private userDataDir: string;
+
+  constructor() {
+    const projectRoot = findProjectRoot(__dirname);
+    this.userDataDir = path.join(projectRoot, ".auth/naver");
+  }
 
   async postToBlog({
     blogId,

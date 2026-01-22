@@ -6,3 +6,4 @@ export * from "./util/markdownToHtml";
 export * from "./pipeline/pubProcess";
 export * from "./publisher/naverPub";
 export * from "./batch/excelProcessor";
+export * from "./util/findProjectRoot";
