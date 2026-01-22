@@ -5,3 +5,4 @@ export * from "./util/saveMarkdown";
 export * from "./util/markdownToHtml";
 export * from "./pipeline/pubProcess";
 export * from "./publisher/naverPub";
+export * from "./batch/excelProcessor";
