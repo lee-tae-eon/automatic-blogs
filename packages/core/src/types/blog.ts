@@ -9,7 +9,7 @@ export interface BlogPostInput {
     max: number;
   };
   overrideTone?: string;
-  persona: "informative" | "empathetic";
+  persona: string;
 }
 
 export interface AiGeneratedPost {

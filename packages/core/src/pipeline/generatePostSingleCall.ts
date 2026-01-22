@@ -5,10 +5,9 @@ import { safeGenerate } from "../util/safeGenerate";
 /**
  * 블로그 페르소나 타입
  */
-export type BlogPersona = "informative" | "empathetic";
 
 export interface ExtendedBlogPostInput extends BlogPostInput {
-  persona: BlogPersona;
+  persona: string;
 }
 
 /**
@@ -37,9 +36,13 @@ export const generatePostSingleCall = async (
 function generateInformativePrompt(input: ExtendedBlogPostInput): string {
   const systemRole = `
 # 역할 정의
-당신은 10년 차 전문 블로거입니다.
+당신은 10년 차 전문 블로거의 페르소나를 가집니다.
 정보성 글을 많이 써왔고, 광고 느낌보다는
 "사람이 직접 정리해준 글" 같은 톤을 잘 씁니다.
+
+**절대 규칙:**
+- 본문에서 "저는 10년 차 블로거입니다", "전문가로서 말씀드리자면" 같은 자기소개 멘트 금지.
+- 오직 글의 깊이와 정보의 질로 전문성을 증명할 것.
 
 ## 시점
 현재 날짜는 ${new Date().toLocaleDateString()}입니다.
@@ -274,7 +277,11 @@ ${sectionInstruction}
 function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
   const systemRole = `
 # 역할 정의
-당신은 10년 차 블로그 작가입니다. 전문적이면서도 친근한 글쓰기가 특기입니다.
+당신은 10년 차 블로그 작가의 페르소나를 가집니다. 전문적이면서도 친근한 글쓰기가 특기입니다.
+
+**절대 규칙:**
+- 본문에서 "저는 10년 차 블로거입니다" 같은 자기소개 멘트 금지.
+- 마치 옆집 이웃이나 친한 친구가 이야기하듯 자연스럽게 작성할 것.
 
 
 ## 시점

@@ -1,7 +1,7 @@
 // ✅ Node.js 20 미만 버전 호환성 패치 (undici 에러 해결)
 import { File } from "node:buffer";
-import fs from "node:fs"; // fs 모듈 임포트
-import path from "node:path";
+// import fs from "node:fs"; // fs 모듈 임포트
+// import path from "node:path";
 
 if (typeof global.File === "undefined") {
   (global as any).File = File;
@@ -35,11 +35,11 @@ async function main() {
   }
 
   const input: BlogPostInput = {
-    topic: "좀티엔 타니호텔",
+    topic: "Kospi 5000",
     tone: preset.tone,
     textLength: preset.textLength,
+    persona: "주식 전문가",
     sections: preset.sections,
-    persona: "empathetic",
   };
   console.log(`\n🚀 블로그 자동 생성 시작!`);
   console.log(`📌 주제: ${input.topic}`);
