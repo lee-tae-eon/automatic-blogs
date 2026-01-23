@@ -7,6 +7,6 @@
   },
   "dependencies": {
     "@blog-automation/core": "workspace:*",
-    "marked": "^17.0.1"
+    "marked": "^13.0.1"
   }
 }
