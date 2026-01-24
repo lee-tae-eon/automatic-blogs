@@ -51,3 +51,12 @@ export interface BlogPublishSettings {
   defaultCategory: string;
   useAutoTags: boolean; // AI 자동 태그 생성 여부
 }
+
+export interface BatchTask {
+  topic: string;
+  persona: string;
+  tone: string;
+  category: string;
+  keywords?: string; // Optional로 설정
+  status: "대기" | "진행" | "완료" | "실패";
+}
