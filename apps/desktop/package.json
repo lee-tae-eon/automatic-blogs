@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "electron:start": "electron .",
-    "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron:start\"",
+    "start": "concurrently \"pnpm run dev\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
     "build": "vite build && electron-builder"
   },
   "keywords": [],
