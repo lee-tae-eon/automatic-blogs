@@ -36,6 +36,9 @@ export const App: React.FC = () => {
           <tr>
             <th>주제</th>
             <th>페르소나</th>
+            <th>카테고리</th>
+            <th>키워드</th>
+            <th>플랫폼</th>
             <th>상태</th>
           </tr>
         </thead>
