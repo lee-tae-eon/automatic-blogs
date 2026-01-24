@@ -16,7 +16,7 @@
     "core:build": "pnpm --filter @blog-automation/core build",
     "core:add": "pnpm --filter @blog-automation/core add",
     "core:remove": "pnpm --filter @blog-automation/core remove",
-    "desktop:vite": "pnpm --filter @blog-automation/desktop concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron:start\""
+    "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

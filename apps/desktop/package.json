@@ -1,12 +1,12 @@
 {
-  "name": "desktop",
+  "name": "@blog-automation/desktop",
   "version": "1.0.0",
   "description": "",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:start": "electron .",
-    "start": "concurrently \"pnpm run dev\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
     "build": "vite build && electron-builder"
   },
   "keywords": [],
