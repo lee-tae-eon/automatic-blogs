@@ -1,6 +1,6 @@
+import { BatchTask } from "@blog-automation/core/types/blog";
 import React, { useState } from "react";
 // core에서 정의한 인터페이스 재사용
-import { BatchTask } from "@blog-automation/core";
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);

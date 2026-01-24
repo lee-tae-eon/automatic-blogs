@@ -1,12 +1,5 @@
+import { BatchTask } from "@/types/blog";
 import * as XLSX from "xlsx";
-
-export interface BatchTask {
-  topic: string;
-  persona: string;
-  tone: string;
-  category: string;
-  status: "대기" | "진행중" | "완료" | "실패";
-}
 
 export class ExcelProcessor {
   /**
@@ -26,6 +19,7 @@ export class ExcelProcessor {
         persona: row["페르소나"] || row["Persona"],
         tone: row["톤"] || row["Tone"],
         category: row["카테고리"] || row["Category"],
+        platform: row["플랫폼"] || row["Platform"],
         status: "대기",
       }));
     } catch (error) {
