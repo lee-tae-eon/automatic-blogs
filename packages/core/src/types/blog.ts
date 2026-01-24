@@ -43,5 +43,6 @@ export interface BatchTask {
   tone: string;
   category: string;
   keywords?: string; // Optional로 설정
+  platform?: BlogPlatform;
   status: "대기" | "진행" | "완료" | "실패";
 }
