@@ -27,7 +27,7 @@ export interface AiGeneratedPost {
   imageAltTexts?: string[];
 }
 export interface BlogPost extends AiGeneratedPost {
-  platform: "naver" | "tistory";
+  platform: BlogPlatform;
   createdAt: string;
 }
 
@@ -37,24 +37,9 @@ export interface GeneratePostInput {
 }
 
 export type BlogPlatform = "naver" | "tistory";
-
-export interface BlogBatchInput {
-  topic: string;
-  persona: "informative" | "empathetic";
-  category: string; // 필수
-  tone?: string;
-}
-
-export interface BlogPublishSettings {
-  blogId: string;
-  password?: string;
-  defaultCategory: string;
-  useAutoTags: boolean; // AI 자동 태그 생성 여부
-}
-
 export interface BatchTask {
   topic: string;
-  persona: string;
+  persona: BlogPlatform;
   tone: string;
   category: string;
   keywords?: string; // Optional로 설정
