@@ -11,6 +11,7 @@ export interface NaverPostInput {
   htmlContent: string;
   password?: string;
   tags?: string[];
+  category?: string;
 }
 
 export class NaverPublisher {
@@ -27,6 +28,7 @@ export class NaverPublisher {
     htmlContent,
     password,
     tags = [],
+    category,
   }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
@@ -135,12 +137,8 @@ export class NaverPublisher {
         throw error;
       }
 
-      console.log(
-        "\n🎉 모든 작업이 완료되었습니다!\n👉 브라우저에서 '발행' 버튼을 직접 눌러주세요.",
-      );
-
-      console.log("⏰ 브라우저는 5분 후 자동 종료됩니다...");
-      await page.waitForTimeout(100000);
+      // 발행 로직 실행
+      await this.publish(page, tags, category);
     } catch (error) {
       console.error("❌ 네이버 발행 오류:", error);
 
@@ -656,6 +654,83 @@ export class NaverPublisher {
     } catch (error) {
       console.error("❌ 자동 로그인 실패:", error);
       throw new Error("자동 로그인 실패. 수동으로 로그인해주세요.");
+    }
+  }
+
+  /**
+   * 발행 버튼 클릭 및 태그 입력
+   */
+  private async publish(page: Page, tags: string[] = [], category?: string) {
+    console.log("\n🚀 발행 프로세스 시작...");
+
+    try {
+      // 1. 상단 '발행' 버튼 클릭
+      const openPublishLayerBtn = ".is_active.btn_publish";
+      await page.waitForSelector(openPublishLayerBtn, {
+        state: "visible",
+        timeout: 5000,
+      });
+      await page.click(openPublishLayerBtn);
+      console.log("   발행 설정 레이어 열기 성공");
+
+      await page.waitForTimeout(1000);
+
+      // 1.5 카테고리 선택
+      if (category) {
+        try {
+          console.log(`   카테고리 선택 시도: ${category}`);
+          // 카테고리 드롭다운 버튼 (발행 레이어 내 첫 번째 셀렉트박스라고 가정)
+          const categoryDropdown = page.locator(".selectbox-source").first();
+          if (await categoryDropdown.isVisible()) {
+            await categoryDropdown.click();
+            await page.waitForTimeout(500);
+
+            // 텍스트로 카테고리 항목 찾기
+            const categoryItem = page.locator(
+              `.selectbox-list .selectbox-item:has-text("${category}")`,
+            );
+
+            if ((await categoryItem.count()) > 0) {
+              await categoryItem.first().click();
+              console.log(`   ✅ 카테고리 선택 완료`);
+            } else {
+              console.log(`   ⚠️ 카테고리 항목을 찾을 수 없음: ${category}`);
+              // 드롭다운 닫기 (다시 클릭)
+              await categoryDropdown.click();
+            }
+          }
+          await page.waitForTimeout(500);
+        } catch (error) {
+          console.error("   ❌ 카테고리 선택 중 오류 (무시하고 진행):", error);
+        }
+      }
+
+      // 2. 태그 입력
+      if (tags && tags.length > 0) {
+        console.log(`   태그 입력 중: ${tags.join(", ")}`);
+        const tagInputSelector = ".tag_input";
+
+        for (const tag of tags) {
+          await page.click(tagInputSelector);
+          await page.keyboard.type(tag);
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(200);
+        }
+      }
+
+      // 3. 최종 '발행' 버튼 클릭
+      const finalPublishBtn = ".confirm_btn___v9_6W, .btn_confirm";
+      await page.waitForSelector(finalPublishBtn, {
+        state: "visible",
+        timeout: 5000,
+      });
+      await page.click(finalPublishBtn);
+      console.log("✅ 최종 발행 완료!");
+
+      await page.waitForTimeout(3000); // 발행 후 리다이렉트 대기
+    } catch (error) {
+      console.error("❌ 발행 중 에러 발생:", error);
+      throw error;
     }
   }
 }
