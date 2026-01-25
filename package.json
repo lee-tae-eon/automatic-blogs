@@ -16,6 +16,8 @@
     "core:build": "pnpm --filter @blog-automation/core build",
     "core:add": "pnpm --filter @blog-automation/core add",
     "core:remove": "pnpm --filter @blog-automation/core remove",
+    "desktop:add": "pnpm --filter @blog-automation/desktop add",
+    "desktop:remove": "pnpm --filter @blog-automation/desktop remove",
     "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start"
   },
   "devDependencies": {

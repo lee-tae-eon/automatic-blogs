@@ -1,5 +1,6 @@
 import { BatchTask } from "@blog-automation/core/types/blog";
 import React, { useState, useRef } from "react";
+import "./App.scss";
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
@@ -64,6 +65,19 @@ export const App: React.FC = () => {
   };
 
   /**
+   * 목록 초기화 핸들러
+   */
+  const handleClearAll = () => {
+    if (isProcessing) return;
+    if (confirm("업로드된 목록을 모두 삭제하시겠습니까?")) {
+      setTasks([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  /**
    * 일괄 발행 버튼 핸들러
    * 목록에 있는 모든 작업을 순차적으로 실행합니다.
    */
@@ -111,56 +125,6 @@ export const App: React.FC = () => {
 
   return (
     <div className="container">
-      <style>{`
-        .container {
-          padding: 40px;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        th, td {
-          padding: 16px 40px; /* 요청하신 좌우 패딩 40px */
-          text-align: left;
-          border-bottom: 1px solid #eee;
-        }
-        th {
-          background-color: #f8f9fa;
-          font-weight: 600;
-          color: #333;
-        }
-        tr:hover {
-          background-color: #f1f3f5;
-        }
-        .btn-primary {
-          background-color: #007bff;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: 600;
-          transition: background-color 0.2s;
-        }
-        .btn-primary:hover {
-          background-color: #0056b3;
-        }
-        .btn-primary:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-        .actions {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 20px;
-        }
-      `}</style>
       <h1>🚀 AI 블로그 대량 발행기 (Desktop)</h1>
 
       {/* 숨겨진 파일 인풋 */}
@@ -173,20 +137,21 @@ export const App: React.FC = () => {
       />
 
       {/* 클릭 가능한 드롭존 (실제로는 버튼 역할) */}
-      <div
-        className="drop-zone"
-        onClick={handleZoneClick}
-        style={{ cursor: "pointer", marginBottom: "30px" }}
-      >
+      <div className="drop-zone" onClick={handleZoneClick}>
         <p>📁 클릭하여 엑셀 파일을 선택하세요.</p>
-        <span style={{ fontSize: "12px", color: "#888" }}>
-          지원 형식: .xlsx, .csv
-        </span>
+        <span>지원 형식: .xlsx, .csv</span>
       </div>
 
       {/* 액션 버튼 영역 */}
       {tasks.length > 0 && (
         <div className="actions">
+          <button
+            className="btn-secondary"
+            onClick={handleClearAll}
+            disabled={isProcessing}
+          >
+            목록 삭제
+          </button>
           <button
             className="btn-primary"
             onClick={handlePublishAll}
@@ -204,6 +169,7 @@ export const App: React.FC = () => {
             <th>페르소나</th>
             <th>카테고리</th>
             <th>키워드</th>
+            <th>플랫폼</th>
             <th>상태</th>
           </tr>
         </thead>
@@ -215,12 +181,13 @@ export const App: React.FC = () => {
                 <td>{task.persona}</td>
                 <td>{task.category}</td>
                 <td>{task.keywords || "-"}</td>
+                <td>{task.platform || "-"}</td>
                 <td className={`status-${task.status}`}>{task.status}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={5} style={{ textAlign: "center", padding: "20px" }}>
+              <td colSpan={6} className="empty-message">
                 데이터가 없습니다. 파일을 먼저 업로드해주세요.
               </td>
             </tr>
