@@ -1,61 +1,141 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
-const path_1 = __importDefault(require("path"));
-// 개발 환경 여부 (패키징되지 않았으면 개발 환경으로 간주)
-const isDev = !electron_1.app.isPackaged;
-function createWindow() {
-    const win = new electron_1.BrowserWindow({
+const path = __importStar(require("path"));
+const fs = __importStar(require("fs/promises"));
+let mainWindow = null;
+const createWindow = () => {
+    mainWindow = new electron_1.BrowserWindow({
         width: 1200,
         height: 800,
         webPreferences: {
-            // preload 스크립트 로드 (컴파일된 JS 파일 경로 지정 필요)
-            // 보통 빌드 설정에 따라 __dirname 주변에 위치합니다.
-            preload: path_1.default.join(__dirname, "preload.js"),
             nodeIntegration: false,
             contextIsolation: true,
+            // ✅ Preload 스크립트 추가
+            preload: path.join(__dirname, "preload.js"),
         },
     });
-    if (isDev) {
-        // Vite 개발 서버 URL (기본 포트 5173, 필요시 수정)
-        win.loadURL("http://localhost:5173");
-        win.webContents.openDevTools();
+    // 개발 환경
+    if (process.env.NODE_ENV !== "production") {
+        mainWindow.loadURL("http://localhost:5173");
+        mainWindow.webContents.openDevTools();
     }
     else {
-        // 프로덕션 빌드 결과물 로드
-        win.loadFile(path_1.default.join(__dirname, "../dist/index.html"));
+        mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
     }
+    mainWindow.on("closed", () => {
+        mainWindow = null;
+    });
+};
+// ✅ IPC 핸들러 등록
+function registerIpcHandlers() {
+    // Excel 파일 파싱
+    electron_1.ipcMain.handle("parse-excel", async (event, filePath) => {
+        try {
+            console.log("📁 파일 경로:", filePath);
+            // 파일 존재 확인
+            await fs.access(filePath);
+            // Core 패키지의 Excel 파서 사용
+            // const { parseExcel } = require('@blog-automation/core');
+            // const result = await parseExcel(filePath);
+            // 임시 테스트 데이터
+            const result = [
+                {
+                    topic: "테스트 주제 1",
+                    persona: "개발자",
+                    category: "기술",
+                    keywords: "Node.js, TypeScript",
+                    status: "pending",
+                },
+                {
+                    topic: "테스트 주제 2",
+                    persona: "마케터",
+                    category: "마케팅",
+                    keywords: "SEO, 블로그",
+                    status: "pending",
+                },
+            ];
+            return { success: true, data: result };
+        }
+        catch (error) {
+            console.error("❌ 파일 파싱 오류:", error);
+            return {
+                success: false,
+                error: error.message || "파일 파싱 중 오류가 발생했습니다.",
+            };
+        }
+    });
+    // 포스트 생성
+    electron_1.ipcMain.handle("generate-post", async (event, task) => {
+        try {
+            // const { generatePost } = require('@blog-automation/core');
+            // const result = await generatePost(task);
+            // 임시 응답
+            return {
+                success: true,
+                data: { title: "생성된 포스트", content: "..." },
+            };
+        }
+        catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
+    // 포스트 발행
+    electron_1.ipcMain.handle("publish-post", async (event, post) => {
+        try {
+            // 발행 로직
+            return { success: true };
+        }
+        catch (error) {
+            return { success: false, error: error.message };
+        }
+    });
 }
 electron_1.app.whenReady().then(() => {
+    registerIpcHandlers();
     createWindow();
-    // IPC 핸들러: React 앱에서 보낸 'parse-excel' 요청 처리
-    electron_1.ipcMain.handle("parse-excel", async (event, filePath) => {
-        console.log("📂 엑셀 파일 파싱 요청:", filePath);
-        // TODO: 실제 엑셀 파싱 로직 구현 (xlsx 라이브러리 등 사용)
-        // 연결 테스트를 위한 더미 데이터 반환
-        return {
-            success: true,
-            data: [
-                {
-                    topic: "Electron 연결 성공",
-                    persona: "테스트 봇",
-                    category: "테스트",
-                    keywords: "IPC, Electron",
-                    status: "ready",
-                },
-            ],
-        };
-    });
-    electron_1.app.on("activate", () => {
-        if (electron_1.BrowserWindow.getAllWindows().length === 0)
-            createWindow();
-    });
 });
 electron_1.app.on("window-all-closed", () => {
-    if (process.platform !== "darwin")
+    if (process.platform !== "darwin") {
         electron_1.app.quit();
+    }
+});
+electron_1.app.on("activate", () => {
+    if (electron_1.BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });
 //# sourceMappingURL=main.js.map

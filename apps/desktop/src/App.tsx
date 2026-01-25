@@ -5,10 +5,13 @@ export const App: React.FC = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null); // input 참조를 위한 ref
 
-  // 파일 처리 공통 로직
+  /**
+   * 선택된 파일을 처리하여 Electron Main 프로세스로 전송합니다.
+   * @param file - 선택된 File 객체
+   */
   const processFile = async (file: File) => {
-    // @ts-ignore (Electron 환경의 file 객체 path 속성 사용)
-    const filePath = file.path;
+    // Preload 스크립트를 통해 실제 파일 경로 가져오기
+    const filePath = window.ipcRenderer.getFilePath(file);
 
     if (!filePath) {
       alert(
@@ -18,10 +21,7 @@ export const App: React.FC = () => {
     }
 
     try {
-      const result = await (window as any).ipcRenderer.invoke(
-        "parse-excel",
-        filePath,
-      );
+      const result = await window.ipcRenderer.invoke("parse-excel", filePath);
 
       if (result.success) {
         setTasks(result.data);
@@ -34,13 +34,19 @@ export const App: React.FC = () => {
     }
   };
 
-  // 1. 클릭하여 파일 선택 시 실행
+  /**
+   * 파일 입력 변경 이벤트 핸들러 (클릭하여 파일 선택 시)
+   * @param e - ChangeEvent 객체
+   */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
   };
 
-  // 2. 드롭존 클릭 시 input 클릭 이벤트 트리거
+  /**
+   * 드롭존 클릭 핸들러
+   * 숨겨진 file input 요소를 클릭하여 파일 선택 창을 엽니다.
+   */
   const handleZoneClick = () => {
     fileInputRef.current?.click();
   };

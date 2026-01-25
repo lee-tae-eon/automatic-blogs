@@ -1,60 +1,134 @@
 import { app, BrowserWindow, ipcMain } from "electron";
-import path from "path";
+import * as path from "path";
+import * as fs from "fs/promises";
 
-// 개발 환경 여부 (패키징되지 않았으면 개발 환경으로 간주)
-const isDev = !app.isPackaged;
+let mainWindow: BrowserWindow | null = null;
 
-function createWindow() {
-  const win = new BrowserWindow({
+/**
+ * 메인 윈도우를 생성하고 설정을 초기화합니다.
+ */
+const createWindow = () => {
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      // preload 스크립트 로드 (컴파일된 JS 파일 경로 지정 필요)
-      // 보통 빌드 설정에 따라 __dirname 주변에 위치합니다.
-      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
+      // ✅ Preload 스크립트 추가
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
-  if (isDev) {
-    // Vite 개발 서버 URL (기본 포트 5173, 필요시 수정)
-    win.loadURL("http://localhost:5173");
-    win.webContents.openDevTools();
+  // 개발 환경
+  if (process.env.NODE_ENV !== "production") {
+    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools();
   } else {
-    // 프로덕션 빌드 결과물 로드
-    win.loadFile(path.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+};
+
+/**
+ * IPC(Inter-Process Communication) 핸들러를 등록합니다.
+ * Renderer 프로세스에서 오는 요청을 처리합니다.
+ */
+function registerIpcHandlers() {
+  /**
+   * 엑셀 파일 파싱 요청 핸들러
+   * @param event - IPC 이벤트 객체
+   * @param filePath - 파싱할 엑셀 파일의 경로
+   */
+  ipcMain.handle("parse-excel", async (event, filePath: string) => {
+    try {
+      console.log("📁 파일 경로:", filePath);
+
+      // 파일 존재 확인
+      await fs.access(filePath);
+
+      // Core 패키지의 Excel 파서 사용
+      // const { parseExcel } = require('@blog-automation/core');
+      // const result = await parseExcel(filePath);
+
+      // 임시 테스트 데이터
+      const result = [
+        {
+          topic: "테스트 주제 1",
+          persona: "개발자",
+          category: "기술",
+          keywords: "Node.js, TypeScript",
+          status: "pending",
+        },
+        {
+          topic: "테스트 주제 2",
+          persona: "마케터",
+          category: "마케팅",
+          keywords: "SEO, 블로그",
+          status: "pending",
+        },
+      ];
+
+      return { success: true, data: result };
+    } catch (error: any) {
+      console.error("❌ 파일 파싱 오류:", error);
+      return {
+        success: false,
+        error: error.message || "파일 파싱 중 오류가 발생했습니다.",
+      };
+    }
+  });
+
+  /**
+   * 블로그 포스트 생성 요청 핸들러
+   * @param event - IPC 이벤트 객체
+   * @param task - 생성할 포스트의 작업 정보
+   */
+  ipcMain.handle("generate-post", async (event, task) => {
+    try {
+      // const { generatePost } = require('@blog-automation/core');
+      // const result = await generatePost(task);
+
+      // 임시 응답
+      return {
+        success: true,
+        data: { title: "생성된 포스트", content: "..." },
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  /**
+   * 블로그 포스트 발행 요청 핸들러
+   * @param event - IPC 이벤트 객체
+   * @param post - 발행할 포스트 데이터
+   */
+  ipcMain.handle("publish-post", async (event, post) => {
+    try {
+      // 발행 로직
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 app.whenReady().then(() => {
+  registerIpcHandlers();
   createWindow();
-
-  // IPC 핸들러: React 앱에서 보낸 'parse-excel' 요청 처리
-  ipcMain.handle("parse-excel", async (event, filePath: string) => {
-    console.log("📂 엑셀 파일 파싱 요청:", filePath);
-
-    // TODO: 실제 엑셀 파싱 로직 구현 (xlsx 라이브러리 등 사용)
-    // 연결 테스트를 위한 더미 데이터 반환
-    return {
-      success: true,
-      data: [
-        {
-          topic: "Electron 연결 성공",
-          persona: "테스트 봇",
-          category: "테스트",
-          keywords: "IPC, Electron",
-          status: "ready",
-        },
-      ],
-    };
-  });
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
+
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
