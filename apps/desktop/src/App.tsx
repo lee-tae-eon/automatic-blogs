@@ -5,6 +5,7 @@ import "./App.scss";
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null); // input 참조를 위한 ref
 
   /**
@@ -32,6 +33,8 @@ export const App: React.FC = () => {
       );
       return;
     }
+
+    setCurrentFilePath(filePath);
 
     try {
       const result = await window.ipcRenderer.invoke("parse-excel", filePath);
@@ -87,21 +90,35 @@ export const App: React.FC = () => {
     if (!confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
 
     setIsProcessing(true);
-    const newTasks = [...tasks];
 
-    for (let i = 0; i < newTasks.length; i++) {
+    // 상태 업데이트 헬퍼 함수 (함수형 업데이트 사용)
+    const updateStatus = (index: number, status: BatchTask["status"]) => {
+      setTasks((prev) =>
+        prev.map((t, i) => (i === index ? { ...t, status } : t)),
+      );
+    };
+
+    // for...of 문으로 순차 처리 (가독성 향상)
+    for (const [i, task] of tasks.entries()) {
       // 이미 완료된 작업은 건너뜀
-      if (newTasks[i].status === "완료") continue;
+      if (task.status === "완료") continue;
 
-      // 상태 업데이트: 진행중
-      newTasks[i] = { ...newTasks[i], status: "진행" };
-      setTasks([...newTasks]);
+      // 상태 업데이트: 진행
+      updateStatus(i, "진행");
+
+      if (currentFilePath) {
+        await window.ipcRenderer.invoke("update-task-status", {
+          filePath: currentFilePath,
+          index: i,
+          status: "진행",
+        });
+      }
 
       try {
         // 1. 포스트 생성 요청
         const genResult = await window.ipcRenderer.invoke(
           "generate-post",
-          newTasks[i],
+          task,
         );
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
 
@@ -112,12 +129,25 @@ export const App: React.FC = () => {
         );
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
-        newTasks[i] = { ...newTasks[i], status: "완료" };
+        updateStatus(i, "완료");
+        if (currentFilePath) {
+          await window.ipcRenderer.invoke("update-task-status", {
+            filePath: currentFilePath,
+            index: i,
+            status: "완료",
+          });
+        }
       } catch (error) {
         console.error(error);
-        newTasks[i] = { ...newTasks[i], status: "실패" };
+        updateStatus(i, "실패");
+        if (currentFilePath) {
+          await window.ipcRenderer.invoke("update-task-status", {
+            filePath: currentFilePath,
+            index: i,
+            status: "실패",
+          });
+        }
       }
-      setTasks([...newTasks]);
     }
     setIsProcessing(false);
     alert("모든 작업이 종료되었습니다.");

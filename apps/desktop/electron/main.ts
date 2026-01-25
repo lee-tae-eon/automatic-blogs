@@ -96,6 +96,23 @@ function registerIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+
+  /**
+   * 작업 상태 업데이트 요청 핸들러
+   */
+  ipcMain.handle(
+    "update-task-status",
+    async (event, { filePath, index, status }) => {
+      try {
+        const { ExcelProcessor } = require("@blog-automation/core");
+        ExcelProcessor.updateTaskStatus(filePath, index, status);
+        return { success: true };
+      } catch (error: any) {
+        console.error("❌ 상태 업데이트 오류:", error);
+        return { success: false, error: error.message };
+      }
+    },
+  );
 }
 
 app.whenReady().then(() => {
