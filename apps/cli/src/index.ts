@@ -34,12 +34,14 @@ async function main() {
     return;
   }
 
-  const input: BlogPostInput = {
+  const input = {
     topic: "Kospi 5000",
     tone: preset.tone,
     textLength: preset.textLength,
     persona: "주식 전문가",
     sections: preset.sections,
+    keywords: "코스피, 주식, 전망", // 테스트용 키워드 추가
+    category: "경제", // 테스트용 카테고리 추가
   };
   console.log(`\n🚀 블로그 자동 생성 시작!`);
   console.log(`📌 주제: ${input.topic}`);
@@ -47,7 +49,26 @@ async function main() {
   const aiClient = new GeminiClient(apiKey, modelName);
 
   try {
-    const post = await generatePost({ client: aiClient, input });
+    // 페르소나 정규화 (Desktop 앱과 동일 로직)
+    let persona = input.persona;
+    if (
+      ["정보성", "정보", "info", "informative", "전문가", "분석"].some((k) =>
+        persona.includes(k),
+      )
+    ) {
+      persona = "informative";
+    } else if (
+      ["공감형", "공감", "empathy", "empathetic"].some((k) =>
+        persona.includes(k),
+      )
+    ) {
+      persona = "empathetic";
+    }
+
+    const post = await generatePost({
+      client: aiClient,
+      input: { ...input, persona },
+    });
 
     try {
       console.log("\n✅ 포스트 생성이 완료되었습니다!");
@@ -101,6 +122,7 @@ async function main() {
         htmlContent: fileHtml,
         password: naverIdProfile.password,
         tags: post.focusKeywords,
+        category: input.category, // 카테고리 정보 전달
       });
     } catch (fileError) {
       // 포스트는 생성됐는데 파일 시스템 에러가 난 경우

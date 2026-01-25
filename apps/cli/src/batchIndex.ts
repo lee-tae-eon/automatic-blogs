@@ -1,6 +1,6 @@
 // apps/cli/src/batchIndex.ts
 
-import { readBlogInputsFromExcel } from "@blog-automation/core/src/batch/excelProcessor";
+import { ExcelProcessor } from "@blog-automation/core/src/batch/excelProcessor";
 import { generatePost, NaverPublisher } from "@blog-automation/core/src";
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import { ENV } from "./env";
@@ -20,7 +20,7 @@ async function batchMain() {
   const excelPath = process.env.EXCEL_PATH || "./blog-inputs.xlsx";
   console.log(`📊 엑셀 파일 읽는 중: ${excelPath}`);
 
-  const inputs = await readBlogInputsFromExcel(excelPath);
+  const inputs = ExcelProcessor.readTasks(excelPath);
   console.log(`✅ ${inputs.length}개 포스트 입력 데이터 로드 완료\n`);
 
   // 2. AI 클라이언트 초기화
@@ -49,11 +49,28 @@ async function batchMain() {
       // 프리셋 적용
       const preset = BLOG_PRESET["naver"];
 
+      // 페르소나 정규화 (Electron Main과 동일 로직)
+      let persona = input.persona?.toLowerCase() || "informative";
+      if (
+        ["정보성", "정보", "info", "informative"].some((k) =>
+          persona.includes(k),
+        )
+      ) {
+        persona = "informative";
+      } else if (
+        ["공감형", "공감", "empathy", "empathetic"].some((k) =>
+          persona.includes(k),
+        )
+      ) {
+        persona = "empathetic";
+      }
+
       // 포스트 생성
       const post = await generatePost({
         client: aiClient,
         input: {
           ...input,
+          persona, // 정규화된 페르소나 적용
           tone: input.tone || preset.tone,
           textLength: preset.textLength,
           sections: preset.sections,
@@ -78,6 +95,7 @@ async function batchMain() {
           title: post.title,
           htmlContent: htmlContent,
           tags: publishSettings.useAutoTags ? post.tags : [],
+          category: input.category, // 카테고리 정보 전달
         });
 
         console.log(`✅ [${i + 1}/${inputs.length}] 발행 완료!`);
