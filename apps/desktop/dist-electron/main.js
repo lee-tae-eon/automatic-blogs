@@ -37,6 +37,9 @@ const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs/promises"));
 let mainWindow = null;
+/**
+ * 메인 윈도우를 생성하고 설정을 초기화합니다.
+ */
 const createWindow = () => {
     mainWindow = new electron_1.BrowserWindow({
         width: 1200,
@@ -60,9 +63,16 @@ const createWindow = () => {
         mainWindow = null;
     });
 };
-// ✅ IPC 핸들러 등록
+/**
+ * IPC(Inter-Process Communication) 핸들러를 등록합니다.
+ * Renderer 프로세스에서 오는 요청을 처리합니다.
+ */
 function registerIpcHandlers() {
-    // Excel 파일 파싱
+    /**
+     * 엑셀 파일 파싱 요청 핸들러
+     * @param event - IPC 이벤트 객체
+     * @param filePath - 파싱할 엑셀 파일의 경로
+     */
     electron_1.ipcMain.handle("parse-excel", async (event, filePath) => {
         try {
             console.log("📁 파일 경로:", filePath);
@@ -98,7 +108,11 @@ function registerIpcHandlers() {
             };
         }
     });
-    // 포스트 생성
+    /**
+     * 블로그 포스트 생성 요청 핸들러
+     * @param event - IPC 이벤트 객체
+     * @param task - 생성할 포스트의 작업 정보
+     */
     electron_1.ipcMain.handle("generate-post", async (event, task) => {
         try {
             // const { generatePost } = require('@blog-automation/core');
@@ -113,7 +127,11 @@ function registerIpcHandlers() {
             return { success: false, error: error.message };
         }
     });
-    // 포스트 발행
+    /**
+     * 블로그 포스트 발행 요청 핸들러
+     * @param event - IPC 이벤트 객체
+     * @param post - 발행할 포스트 데이터
+     */
     electron_1.ipcMain.handle("publish-post", async (event, post) => {
         try {
             // 발행 로직

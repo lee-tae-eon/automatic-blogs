@@ -5,7 +5,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "electron:build": "tsc -p tsconfig.electron.json",
+    "electron:build": "rm -rf dist-electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
     "build": "vite build && electron-builder"

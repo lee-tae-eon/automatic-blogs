@@ -11,6 +11,17 @@ export const App: React.FC = () => {
    */
   const processFile = async (file: File) => {
     // Preload 스크립트를 통해 실제 파일 경로 가져오기
+    if (typeof window.ipcRenderer?.getFilePath !== "function") {
+      console.error(
+        "IPC Error: getFilePath function missing",
+        window.ipcRenderer,
+      );
+      alert(
+        "Electron 초기화 오류: 앱을 재시작하거나 빌드를 다시 실행해주세요.",
+      );
+      return;
+    }
+
     const filePath = window.ipcRenderer.getFilePath(file);
 
     if (!filePath) {
@@ -22,7 +33,7 @@ export const App: React.FC = () => {
 
     try {
       const result = await window.ipcRenderer.invoke("parse-excel", filePath);
-
+      console.log(result);
       if (result.success) {
         setTasks(result.data);
       } else {
