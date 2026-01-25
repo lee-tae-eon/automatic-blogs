@@ -5,8 +5,9 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:start": "electron .",
+    "electron:build": "tsc -p tsconfig.electron.json",
+    "electron:start": "pnpm electron:build && electron .",
+    "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
     "build": "vite build && electron-builder"
   },
   "keywords": [],
