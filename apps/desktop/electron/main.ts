@@ -92,12 +92,31 @@ function registerIpcHandlers() {
       const platform = task.platform?.toLowerCase() || "naver";
       const preset = BLOG_PRESET[platform] || BLOG_PRESET["naver"];
 
+      // 페르소나 매핑 (한글/영어 대응 및 정규화)
+      let persona = task.persona?.toLowerCase() || "informative";
+      if (
+        ["정보성", "정보", "info", "informative"].some((k) =>
+          persona.includes(k),
+        )
+      ) {
+        persona = "informative";
+      } else if (
+        ["공감형", "공감", "empathy", "empathetic"].some((k) =>
+          persona.includes(k),
+        )
+      ) {
+        persona = "empathetic";
+      }
+
       // 4. 포스트 생성
-      console.log(`🤖 [${task.topic}] 포스트 생성 시작...`);
+      console.log(
+        `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona})`,
+      );
       const post = await generatePost({
         client: aiClient,
         input: {
           ...task,
+          persona, // 정규화된 페르소나로 덮어쓰기
           tone: task.tone || preset.tone,
           textLength: preset.textLength,
           sections: preset.sections,

@@ -20,6 +20,7 @@ export class ExcelProcessor {
         tone: row["톤"] || row["Tone"],
         category: row["카테고리"] || row["Category"],
         platform: row["플랫폼"] || row["Platform"],
+        keywords: row["키워드"] || row["Keywords"],
         status: row["상태"] || row["Status"] || "대기",
       }));
     } catch (error) {
