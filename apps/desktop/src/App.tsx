@@ -7,6 +7,7 @@ export const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null); // input 참조를 위한 ref
+  const shouldStopRef = useRef(false); // 작업 중단 플래그
 
   /**
    * 선택된 파일을 처리하여 Electron Main 프로세스로 전송합니다.
@@ -81,6 +82,13 @@ export const App: React.FC = () => {
   };
 
   /**
+   * 작업 중지 핸들러
+   */
+  const handleStop = () => {
+    shouldStopRef.current = true;
+  };
+
+  /**
    * 일괄 발행 버튼 핸들러
    * 목록에 있는 모든 작업을 순차적으로 실행합니다.
    */
@@ -90,6 +98,7 @@ export const App: React.FC = () => {
     if (!confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
 
     setIsProcessing(true);
+    shouldStopRef.current = false;
 
     // 상태 업데이트 헬퍼 함수 (함수형 업데이트 사용)
     const updateStatus = (index: number, status: BatchTask["status"]) => {
@@ -100,6 +109,12 @@ export const App: React.FC = () => {
 
     // for...of 문으로 순차 처리 (가독성 향상)
     for (const [i, task] of tasks.entries()) {
+      // 중단 요청 확인
+      if (shouldStopRef.current) {
+        alert("작업이 사용자에 의해 중단되었습니다.");
+        break;
+      }
+
       // 이미 완료된 작업은 건너뜀
       if (task.status === "완료") continue;
 
@@ -182,13 +197,19 @@ export const App: React.FC = () => {
           >
             목록 삭제
           </button>
-          <button
-            className="btn-primary"
-            onClick={handlePublishAll}
-            disabled={isProcessing}
-          >
-            {isProcessing ? "발행 진행 중..." : "일괄 발행 시작"}
-          </button>
+          {isProcessing ? (
+            <button className="btn-danger" onClick={handleStop}>
+              ⛔ 작업 중지
+            </button>
+          ) : (
+            <button
+              className="btn-primary"
+              onClick={handlePublishAll}
+              disabled={isProcessing}
+            >
+              일괄 발행 시작
+            </button>
+          )}
         </div>
       )}
 
