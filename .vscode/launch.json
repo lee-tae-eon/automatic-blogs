@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Electron Main",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/desktop",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "args": ["."],
+      "outFiles": ["${workspaceFolder}/apps/desktop/dist-electron/**/*.js"],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "sourceMaps": true
+    }
+  ]
+}
