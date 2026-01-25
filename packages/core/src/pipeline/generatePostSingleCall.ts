@@ -8,6 +8,7 @@ import { safeGenerate } from "../util/safeGenerate";
 
 export interface ExtendedBlogPostInput extends BlogPostInput {
   persona: string;
+  keywords?: string;
 }
 
 /**
@@ -226,6 +227,18 @@ function generateInformativePrompt(input: ExtendedBlogPostInput): string {
 - **소제목(H2) 개수:** 3-5개
 `;
 
+  const keywordInstruction = input.keywords
+    ? `
+## 🔑 키워드 전략
+- **필수 키워드:** ${input.keywords}
+- 제목과 본문, 소제목에 적절히 배분하여 작성해주세요.
+`
+    : `
+## 🔑 키워드 전략
+- 주제에 가장 적합한 **핵심 키워드 2-3개**를 스스로 선정하세요.
+- 선정된 키워드를 제목, 첫 문단, 소제목, 본문에 자연스럽게 배분하여 SEO 점수를 높이세요.
+`;
+
   return `
 ${systemRole}
 
@@ -234,6 +247,8 @@ ${contentStructure}
 ${lengthInstruction}
 
 ${sectionInstruction}
+
+${keywordInstruction}
 
 ---
 
@@ -396,6 +411,18 @@ function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
 
   // ... lengthInstruction, sectionInstruction 동일
 
+  const keywordInstruction = input.keywords
+    ? `
+## 🔑 키워드
+- **포함할 단어:** ${input.keywords}
+- 너무 기계적으로 넣지 말고, 대화하듯이 자연스럽게 녹여내세요.
+`
+    : `
+## 🔑 키워드
+- 주제와 어울리는 **자연스러운 키워드**를 스스로 선정하세요.
+- 글의 흐름을 방해하지 않는 선에서 본문에 녹여내세요.
+`;
+
   return `
 ${systemRole}
 
@@ -419,6 +446,8 @@ ${
 `
     : ""
 }
+
+${keywordInstruction}
 
 ---
 
