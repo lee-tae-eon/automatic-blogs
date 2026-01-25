@@ -50,26 +50,8 @@ function registerIpcHandlers() {
       await fs.access(filePath);
 
       // Core 패키지의 Excel 파서 사용
-      // const { parseExcel } = require('@blog-automation/core');
-      // const result = await parseExcel(filePath);
-
-      // 임시 테스트 데이터
-      const result = [
-        {
-          topic: "테스트 주제 1",
-          persona: "개발자",
-          category: "기술",
-          keywords: "Node.js, TypeScript",
-          status: "pending",
-        },
-        {
-          topic: "테스트 주제 2",
-          persona: "마케터",
-          category: "마케팅",
-          keywords: "SEO, 블로그",
-          status: "pending",
-        },
-      ];
+      const { ExcelProcessor } = require("@blog-automation/core");
+      const result = await ExcelProcessor.readTasks(filePath);
 
       return { success: true, data: result };
     } catch (error: any) {
