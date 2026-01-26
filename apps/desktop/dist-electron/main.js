@@ -107,7 +107,10 @@ function registerIpcHandlers() {
     electron_1.ipcMain.handle("generate-post", async (event, task) => {
         try {
             // 1. Core 모듈 및 AI 클라이언트 준비
-            const { generatePost, GeminiClient, BLOG_PRESET, } = require("@blog-automation/core");
+            const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
+            // GeminiClient는 CLI와 동일하게 별도 경로에서 가져옵니다.
+            // 'src' 경로는 컴파일된 Node.js 환경에서 인식할 수 없으므로, 패키지의 export 경로를 사용합니다.
+            const { GeminiClient } = require("@blog-automation/core/ai");
             // 2. 환경 변수에서 API 키 가져오기 (중요: .env 파일 등으로 관리 필요)
             // TODO: API 키를 안전한 방법으로 설정/관리하는 기능 추가 필요
             const apiKey = process.env.GEMINI_API_KEY;

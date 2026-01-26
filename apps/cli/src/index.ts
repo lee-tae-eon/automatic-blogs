@@ -8,15 +8,15 @@ if (typeof global.File === "undefined") {
 }
 
 import { GeminiClient } from "@blog-automation/core/src/ai";
-import { BlogPostInput } from "@blog-automation/core/src/types/blog";
 import {
+  BlogPostInput,
   generatePost,
   NaverPublisher,
   pubProcess,
   saveMarkdown,
+  BLOG_PRESET,
 } from "@blog-automation/core/src";
 import { ENV } from "./env";
-import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
 import { naverIdProfile } from "./testConstant";
 
 const preset = BLOG_PRESET["naver"];

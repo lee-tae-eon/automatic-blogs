@@ -1,11 +1,14 @@
 // apps/cli/src/batchIndex.ts
 
-import { ExcelProcessor } from "@blog-automation/core/src/batch/excelProcessor";
-import { generatePost, NaverPublisher } from "@blog-automation/core/src";
-import { GeminiClient } from "@blog-automation/core/src/ai";
+import {
+  ExcelProcessor,
+  generatePost,
+  NaverPublisher,
+  BLOG_PRESET,
+  markdownToHtml,
+} from "@blog-automation/core";
+import { GeminiClient } from "@blog-automation/core/ai";
 import { ENV } from "./env";
-import { BLOG_PRESET } from "@blog-automation/core/src/util/platform";
-import { markdownToHtml } from "@blog-automation/core";
 
 async function batchMain() {
   const apiKey = ENV.GEMINI_API_KEY;

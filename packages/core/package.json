@@ -2,10 +2,22 @@
   "name": "@blog-automation/core",
   "version": "0.0.1",
   "private": true,
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ai": {
+      "import": "./dist/ai/index.js",
+      "require": "./dist/ai/index.js",
+      "types": "./dist/ai/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -p ."
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

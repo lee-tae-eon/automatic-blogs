@@ -239,6 +239,14 @@ function generateInformativePrompt(input: ExtendedBlogPostInput): string {
 - 선정된 키워드를 제목, 첫 문단, 소제목, 본문에 자연스럽게 배분하여 SEO 점수를 높이세요.
 `;
 
+  const toneInstruction = input.tone
+    ? `
+## 🗣️ 어조 및 말투
+- **지정된 톤:** ${input.tone}
+- 이 어조를 글 전체에 일관되게 유지해주세요.
+`
+    : "";
+
   return `
 ${systemRole}
 
@@ -249,6 +257,8 @@ ${lengthInstruction}
 ${sectionInstruction}
 
 ${keywordInstruction}
+
+${toneInstruction}
 
 ---
 
@@ -290,6 +300,14 @@ ${keywordInstruction}
  * 공감형 프롬프트 - 자연스러운 버전
  */
 function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
+  const toneInstruction = input.tone
+    ? `
+### 지정된 톤
+- **어조:** ${input.tone}
+- 이 어조를 글 전체에 일관되게 유지해주세요.
+`
+    : "";
+
   const systemRole = `
 # 역할 정의
 당신은 10년 차 블로그 작가의 페르소나를 가집니다. 전문적이면서도 친근한 글쓰기가 특기입니다.
@@ -317,6 +335,8 @@ function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
 ✅ 사용 권장:
 - "도움이 되었어요", "편했어요", "좋았어요"
 - "추천드려요", "참고하세요", "알려드릴게요"
+
+${toneInstruction}
 
 ### 표현 가이드
 - 유튜브식 과장 표현은 사용하지 않습니다.

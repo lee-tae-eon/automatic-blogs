@@ -1,4 +1,4 @@
-import { findProjectRoot } from "@blog-automation/core/src";
+import { findProjectRoot } from "@blog-automation/core";
 import dotenv from "dotenv";
 import path from "path";
 
