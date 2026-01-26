@@ -158,6 +158,7 @@ function registerIpcHandlers() {
       const htmlContent = await markdownToHtml(post.content);
 
       const publisher = new NaverPublisher();
+
       await publisher.postToBlog({
         blogId,
         password,

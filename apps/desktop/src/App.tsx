@@ -27,6 +27,7 @@ export const App: React.FC = () => {
     }
 
     const filePath = window.ipcRenderer.getFilePath(file);
+    console.log(filePath);
 
     if (!filePath) {
       alert(

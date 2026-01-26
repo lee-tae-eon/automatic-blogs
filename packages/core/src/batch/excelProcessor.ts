@@ -1,4 +1,4 @@
-import { BatchTask } from "@/types/blog";
+import { BatchTask } from "../types/blog";
 import * as XLSX from "xlsx";
 
 export class ExcelProcessor {
@@ -11,8 +11,24 @@ export class ExcelProcessor {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
-      // 엑셀의 데이터를 JSON 형태로 변환
-      const rawData = XLSX.utils.sheet_to_json(worksheet);
+      // 헤더 행 동적 탐색 (상위 10행 검사)
+      // 엑셀 파일 상단에 제목이나 빈 줄이 있을 경우를 대비해 '주제' 또는 'Topic' 컬럼이 있는 행을 찾습니다.
+      const rows = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+      }) as any[][];
+      let headerIndex = 0;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const row = rows[i];
+        if (row && row.some((c) => c === "Topic" || c === "주제")) {
+          headerIndex = i;
+          break;
+        }
+      }
+
+      // 엑셀의 데이터를 JSON 형태로 변환 (찾은 헤더 위치부터 시작)
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
+        range: headerIndex,
+      });
 
       return rawData.map((row: any) => ({
         topic: row["주제"] || row["Topic"],
