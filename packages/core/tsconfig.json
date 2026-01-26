@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": false, // 👈 true에서 false로 변경
+    "composite": true, // 👈 true에서 false로 변경
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src", // 👈 명시적으로 src 지정

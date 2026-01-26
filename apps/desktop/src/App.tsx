@@ -9,6 +9,20 @@ export const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null); // input 참조를 위한 ref
   const shouldStopRef = useRef(false); // 작업 중단 플래그
 
+  // 1. 계정 정보 상태 추가 (실제 서비스 시에는 보안을 위해 electron-store 등에 저장하는 것이 좋습니다)
+  const [credentials, setCredentials] = useState({
+    naverId: "",
+    naverPw: "",
+    tistoryToken: "",
+    tistoryBlogName: "",
+  });
+
+  // 계정 정보 변경 핸들러
+  const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentials((prev) => ({ ...prev, [name]: value }));
+  };
+
   /**
    * 선택된 파일을 처리하여 Electron Main 프로세스로 전송합니다.
    * @param file - 선택된 File 객체
@@ -171,7 +185,48 @@ export const App: React.FC = () => {
 
   return (
     <div className="container">
-      <h1>🚀 AI 블로그 대량 발행기 (Desktop)</h1>
+      {/* 헤더 영역: 제목과 계정 설정 분리 */}
+      <header className="app-header">
+        <h1>🚀 AI 블로그 대량 발행기</h1>
+
+        {/* 유저가 요청한 우측 상단 입력 영역 */}
+        <div className="account-settings">
+          <div className="platform-group">
+            <span className="label">Naver</span>
+            <input
+              name="naverId"
+              type="text"
+              placeholder="아이디"
+              value={credentials.naverId}
+              onChange={handleCredentialChange}
+            />
+            <input
+              name="naverPw"
+              type="password"
+              placeholder="비밀번호"
+              value={credentials.naverPw}
+              onChange={handleCredentialChange}
+            />
+          </div>
+          <div className="platform-group">
+            <span className="label">Tistory</span>
+            <input
+              name="tistoryToken"
+              type="text"
+              placeholder="API 토큰"
+              value={credentials.tistoryToken}
+              onChange={handleCredentialChange}
+            />
+            <input
+              name="tistoryBlogName"
+              type="text"
+              placeholder="블로그명"
+              value={credentials.tistoryBlogName}
+              onChange={handleCredentialChange}
+            />
+          </div>
+        </div>
+      </header>
 
       {/* 숨겨진 파일 인풋 */}
       <input

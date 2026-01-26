@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@blog-automation/core": "workspace:*",
+    "electron-store": "^11.0.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   }
