@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import Store from "electron-store";
 import * as path from "path";
 import * as fs from "fs/promises";
 import dotenv from "dotenv";
@@ -7,6 +8,9 @@ import dotenv from "dotenv";
 // Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
 dotenv.config({ path: path.join(__dirname, "../../../.env") });
 dotenv.config(); // 혹시 apps/desktop/.env 에 있을 경우를 대비해 기본 경로도 시도
+
+// 스토어 초기화
+const store = new Store();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -43,6 +47,16 @@ const createWindow = () => {
  * Renderer 프로세스에서 오는 요청을 처리합니다.
  */
 function registerIpcHandlers() {
+  // 데이터 저장 (아이디, 비번 등)
+  ipcMain.on("set-store-data", (event, key, value) => {
+    store.set(key, value);
+  });
+
+  // 데이터 불러오기
+  ipcMain.handle("get-store-data", (event, key) => {
+    return store.get(key);
+  });
+
   /**
    * 엑셀 파일 파싱 요청 핸들러
    * @param event - IPC 이벤트 객체
@@ -50,22 +64,12 @@ function registerIpcHandlers() {
    */
   ipcMain.handle("parse-excel", async (event, filePath: string) => {
     try {
-      console.log("📁 파일 경로:", filePath);
-
-      // 파일 존재 확인
       await fs.access(filePath);
-
-      // Core 패키지의 Excel 파서 사용
       const { ExcelProcessor } = require("@blog-automation/core");
       const result = await ExcelProcessor.readTasks(filePath);
-
       return { success: true, data: result };
     } catch (error: any) {
-      console.error("❌ 파일 파싱 오류:", error);
-      return {
-        success: false,
-        error: error.message || "파일 파싱 중 오류가 발생했습니다.",
-      };
+      return { success: false, error: error.message };
     }
   });
 
@@ -154,14 +158,16 @@ function registerIpcHandlers() {
         markdownToHtml,
       } = require("@blog-automation/core");
 
-      // TODO: 네이버 ID/PW를 안전하게 관리하는 기능 필요
-      const blogId = process.env.NAVER_BLOG_ID;
-      const password = process.env.NAVER_PASSWORD;
+      // 1. 우선 사용자가 UI에서 입력한 정보를 Store에서 가져옵니다.
+      const credentials: any = store.get("user-credentials");
+
+      // 2. 우선순위: 사용자가 입력한 값(Store) -> 없으면 개발자 설정(.env)
+      const blogId = credentials?.naverId || process.env.NAVER_BLOG_ID;
+      const password = credentials?.naverPw || process.env.NAVER_PASSWORD;
 
       if (!blogId) throw new Error("네이버 블로그 ID가 설정되지 않았습니다.");
 
       const htmlContent = await markdownToHtml(post.content);
-
       const publisher = new NaverPublisher();
 
       await publisher.postToBlog({
@@ -173,14 +179,9 @@ function registerIpcHandlers() {
         category: post.category,
       });
 
-      console.log(`✅ [${post.title}] 포스트 발행 완료!`);
       return { success: true };
     } catch (error: any) {
-      console.error(`❌ [${post.title}] 포스트 발행 오류:`, error);
-      return {
-        success: false,
-        error: error.message || "포스트 발행 중 오류가 발생했습니다.",
-      };
+      return { success: false, error: error.message };
     }
   });
 
