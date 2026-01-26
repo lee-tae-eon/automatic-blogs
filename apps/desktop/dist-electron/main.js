@@ -32,10 +32,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs/promises"));
+const dotenv_1 = __importDefault(require("dotenv"));
+// 환경 변수 로드
+// Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
+dotenv_1.default.config({ path: path.join(__dirname, "../../../.env") });
+dotenv_1.default.config(); // 혹시 apps/desktop/.env 에 있을 경우를 대비해 기본 경로도 시도
 let mainWindow = null;
 /**
  * 메인 윈도우를 생성하고 설정을 초기화합니다.

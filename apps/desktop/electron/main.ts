@@ -1,6 +1,12 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import * as fs from "fs/promises";
+import dotenv from "dotenv";
+
+// 환경 변수 로드
+// Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
+dotenv.config({ path: path.join(__dirname, "../../../.env") });
+dotenv.config(); // 혹시 apps/desktop/.env 에 있을 경우를 대비해 기본 경로도 시도
 
 let mainWindow: BrowserWindow | null = null;
 

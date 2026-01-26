@@ -10,7 +10,6 @@ export class ExcelProcessor {
       const workbook = XLSX.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-
       // 헤더 행 동적 탐색 (상위 10행 검사)
       // 엑셀 파일 상단에 제목이나 빈 줄이 있을 경우를 대비해 '주제' 또는 'Topic' 컬럼이 있는 행을 찾습니다.
       const rows = XLSX.utils.sheet_to_json(worksheet, {
@@ -24,7 +23,6 @@ export class ExcelProcessor {
           break;
         }
       }
-
       // 엑셀의 데이터를 JSON 형태로 변환 (찾은 헤더 위치부터 시작)
       const rawData = XLSX.utils.sheet_to_json(worksheet, {
         range: headerIndex,
