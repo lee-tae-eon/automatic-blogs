@@ -11,15 +11,6 @@ export async function safeGenerate<T>(fn: () => Promise<T>): Promise<T> {
       attempt++;
       if (attempt >= maxRetries) throw e;
 
-      // Gemini 429 대응
-      if (e?.status === 429 || e?.message?.includes("429")) {
-        console.log(
-          `⏳ Gemini quota 초과, 25초 대기 후 재시도... (${attempt}/${maxRetries})`,
-        );
-        await delay(25000);
-        continue;
-      }
-
       // JSON 파싱 에러 대응
       if (
         e?.message?.includes("JSON") ||

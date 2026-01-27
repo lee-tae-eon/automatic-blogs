@@ -38,6 +38,16 @@ export async function generatePost({
         error instanceof Error ? error.name : error,
       );
 
+      // 429 에러(Quota Exceeded)인 경우 재시도하지 않고 즉시 상위로 던져서 모델 변경을 유도함
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (
+        errorMsg.includes("429") ||
+        errorMsg.includes("Too Many Requests") ||
+        errorMsg.includes("exhausted")
+      ) {
+        throw error;
+      }
+
       if (attempt < MAX_RETRIES) {
         // 다음 시도 전 대기 (재시도 횟수가 늘어날수록 더 오래 대기하는 '지수 백오프' 전략)
         const waitTime = attempt * 2000;
