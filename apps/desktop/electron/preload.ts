@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
     }
   },
 
+  // 데이터 보내기 (단방향)
+  send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+
   /**
    * Main 프로세스에서 오는 이벤트를 수신합니다.
    * @param channel - 채널명
