@@ -41,13 +41,24 @@ export class NaverPublisher {
       });
 
       page = await context.newPage();
-
       page.on("dialog", async (dialog) => {
-        console.log(`🔔 다이얼로그 감지: ${dialog.message()}`);
-        if (dialog.type() === "beforeunload") {
+        const message = dialog.message();
+        console.log(`🔔 다이얼로그 감지: ${message}`);
+
+        // 1. 발행 확인이나 저장 관련은 무조건 '확인(accept)'
+        if (
+          message.includes("발행") ||
+          message.includes("등록") ||
+          message.includes("저장") ||
+          dialog.type() === "beforeunload"
+        ) {
+          console.log("   ✅ 다이얼로그 승인(accept)");
           await dialog.accept();
-        } else {
-          await dialog.dismiss();
+        }
+        // 2. 그 외(오류 알림 등)는 내용을 확인하기 위해 일단 수용하거나 상황에 따라 처리
+        else {
+          console.log("   ℹ️ 기타 다이얼로그 승인 처리");
+          await dialog.accept();
         }
       });
 
@@ -657,135 +668,66 @@ export class NaverPublisher {
     }
   }
 
-  /**
-   * 발행 버튼 클릭 및 태그 입력
-   */
   private async publish(page: Page, tags: string[] = [], category?: string) {
     console.log("\n🚀 발행 프로세스 시작...");
 
     try {
-      // 1. 상단 '발행' 버튼 클릭
-      const openPublishLayerBtn = ".is_active.btn_publish";
-      await page.waitForSelector(openPublishLayerBtn, {
-        state: "visible",
-        timeout: 5000,
-      });
-      await page.click(openPublishLayerBtn);
+      // 1. 우측 상단 '발행' 버튼 (텍스트로 찾기)
+      const openPublishLayerBtn = page
+        .getByRole("button", { name: "발행" })
+        .first();
+      await openPublishLayerBtn.waitFor({ state: "visible", timeout: 5000 });
+      await openPublishLayerBtn.click();
       console.log("   발행 설정 레이어 열기 성공");
-
       await page.waitForTimeout(1000);
 
-      // 1.5 카테고리 선택
+      // 2. 카테고리 선택
       if (category) {
-        try {
-          console.log(`   카테고리 선택 시도: ${category}`);
-          // 카테고리 드롭다운 버튼 (발행 레이어 내 첫 번째 셀렉트박스라고 가정)
-          const categoryDropdown = page.locator(".selectbox-source").first();
-          if (await categoryDropdown.isVisible()) {
-            await categoryDropdown.click();
-            await page.waitForTimeout(500);
+        console.log(`   카테고리 선택 시도: ${category}`);
+        // 카테고리 영역 클릭 (보통 첫 번째 셀렉트 박스)
+        const categoryArea = page
+          .locator(".publish_layer .select_category, .selectbox-source")
+          .first();
+        await categoryArea.click();
+        await page.waitForTimeout(500);
 
-            // 텍스트로 카테고리 항목 찾기
-            const categoryItem = page.locator(
-              `.selectbox-list .selectbox-item:has-text("${category}")`,
-            );
-
-            if ((await categoryItem.count()) > 0) {
-              await categoryItem.first().click();
-              console.log(`   ✅ 카테고리 선택 완료`);
-            } else {
-              console.log(`   ⚠️ 카테고리 항목을 찾을 수 없음: ${category}`);
-              // 드롭다운 닫기 (다시 클릭)
-              await categoryDropdown.click();
-            }
-          }
-          await page.waitForTimeout(500);
-        } catch (error) {
-          console.error("   ❌ 카테고리 선택 중 오류 (무시하고 진행):", error);
+        // 리스트에서 정확한 텍스트 찾아서 클릭
+        const item = page
+          .getByRole("listitem")
+          .filter({ hasText: new RegExp(`^${category}$`) });
+        if ((await item.count()) > 0) {
+          await item.first().click();
+          console.log(`   ✅ 카테고리 선택 완료`);
+        } else {
+          console.log(`   ⚠️ 카테고리 찾지 못함, 기본값 유지`);
         }
       }
 
-      // 2. 태그 입력
-      if (tags && tags.length > 0) {
-        console.log(`   태그 입력 중: ${tags.join(", ")}`);
-        const tagInputSelector = ".tag_input";
-
+      // 3. 태그 입력 (입력 후 엔터)
+      if (tags.length > 0) {
+        const tagInput = page.locator('.tag_input, input[placeholder*="태그"]');
         for (const tag of tags) {
-          await page.click(tagInputSelector);
-          await page.keyboard.type(tag);
+          await tagInput.fill(tag);
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(200);
+          await page.waitForTimeout(300);
         }
       }
 
-      // 3. 최종 '발행' 버튼 클릭
-      const finalPublishBtn = ".confirm_btn___v9_6W, .btn_confirm";
-      await page.waitForSelector(finalPublishBtn, {
-        state: "visible",
-        timeout: 5000,
-      });
-      await page.click(finalPublishBtn);
-      console.log("✅ 최종 발행 완료!");
+      // 4. 진짜 '발행' 버튼 클릭 (레이어 하단의 초록색 버튼)
+      // 클래스명보다는 '발행'이라는 글자가 들어간 confirm 버튼을 찾는 게 정확함
+      const finalBtn = page.locator(
+        '.publish_layer .btn_confirm, .publish_layer button:has-text("발행")',
+      );
+      await finalBtn.waitFor({ state: "visible" });
+      await finalBtn.click();
 
-      await page.waitForTimeout(3000); // 발행 후 리다이렉트 대기
+      console.log("✅ 최종 발행 성공!");
+      await page.waitForTimeout(5000); // 실제 반영 대기
     } catch (error) {
-      console.error("❌ 발행 중 에러 발생:", error);
+      console.error("❌ 발행 중 에러:", error);
+      // 에러 시 스크린샷을 찍어두면 디버깅하기 편함
+      await page.screenshot({ path: `error-publish-${Date.now()}.png` });
       throw error;
     }
   }
 }
-//!---------------------------------------------------------
-
-// private async publish(page: Page, tags: string[] = []) {
-//   console.log("\n🚀 발행 프로세스 시작...");
-
-//   try {
-//     // 1. 상단 '발행' 버튼 클릭
-//     const openPublishLayerBtn = ".is_active.btn_publish"; // 발행 레이어를 여는 버튼
-//     await page.waitForSelector(openPublishLayerBtn, {
-//       state: "visible",
-//       timeout: 5000,
-//     });
-//     await page.click(openPublishLayerBtn);
-//     console.log("   발행 설정 레이어 열기 성공");
-
-//     // 레이어가 애니메이션으로 뜨는 시간 대기
-//     await page.waitForTimeout(1000);
-
-//     // 2. 태그 입력 (옵션)
-//     if (tags && tags.length > 0) {
-//       console.log(`   태그 입력 중: ${tags.join(", ")}`);
-//       const tagInputSelector = ".tag_input"; // 태그 입력창
-
-//       for (const tag of tags) {
-//         await page.click(tagInputSelector);
-//         await page.keyboard.type(tag);
-//         await page.keyboard.press("Enter");
-//         await page.waitForTimeout(200);
-//       }
-//     }
-
-//     // 3. 최종 '발행' 버튼 클릭
-//     // 네이버는 이 버튼에 .btn_confirm 또는 .publish_btn 등의 클래스를 씁니다.
-//     const finalPublishBtn = ".confirm_btn___v9_6W, .btn_confirm";
-
-//     await page.waitForSelector(finalPublishBtn, {
-//       state: "visible",
-//       timeout: 5000,
-//     });
-
-//     // 실제 발행을 원하시면 아래 주석을 해제하세요.
-//     // 현재는 안전을 위해 버튼이 있는지 확인만 하고 로그를 남깁니다.
-//     /*
-//   await page.click(finalPublishBtn);
-//   console.log("✅ 최종 발행 완료!");
-//   */
-
-//     console.log(
-//       "📢 [안내] 실제 발행 버튼 클릭 직전입니다. 코드를 확인하고 주석을 해제하세요.",
-//     );
-//   } catch (error) {
-//     console.error("❌ 발행 중 에러 발생:", error);
-//     throw error;
-//   }
-// }

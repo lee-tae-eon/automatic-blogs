@@ -15,7 +15,13 @@ electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
      * @param args - 인수 목록
      */
     invoke: (channel, ...args) => {
-        const validChannels = ["parse-excel", "generate-post", "publish-post"];
+        const validChannels = [
+            "parse-excel",
+            "generate-post",
+            "publish-post",
+            "get-store-data",
+            "update-task-status",
+        ];
         if (validChannels.includes(channel)) {
             return electron_1.ipcRenderer.invoke(channel, ...args);
         }

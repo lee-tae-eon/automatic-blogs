@@ -1,6 +1,6 @@
 import { BaseAiClient } from "../ai";
 import { BlogPostInput, AiGeneratedPost } from "../types/blog";
-import { safeGenerate } from "../util/safeGenerate";
+import { extractJson, safeGenerate } from "../util/safeGenerate";
 
 /**
  * 블로그 페르소나 타입
@@ -24,9 +24,10 @@ export const generatePostSingleCall = async (
       ? generateInformativePrompt(input)
       : generateEmpatheticPrompt(input);
 
-  const response = await safeGenerate(() =>
-    client.generateJson<AiGeneratedPost>(prompt),
-  );
+  const response = await safeGenerate(async () => {
+    const rawText = await client.generateJson<AiGeneratedPost>(prompt);
+    return extractJson(rawText);
+  });
 
   return response;
 };
