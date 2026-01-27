@@ -342,20 +342,35 @@ export class NaverPublisher {
         } else if (block.type === "empty-line") {
           await page.keyboard.press("Enter");
         } else if (block.type === "blockquote-heading") {
-          // ✅ 핵심 수정: 네이버 에디터에서 인용구를 만들려면 > 문자를 직접 타이핑해야 함
           console.log(`   [인용구 제목] ${block.text.substring(0, 30)}...`);
 
-          // > 문자를 타이핑하면 네이버가 자동으로 인용구 블록으로 변환
-          await page.keyboard.type("> ", { delay: 50 });
+          // 1. 인용구 트리거: '>' 입력 후 반드시 'Space'를 눌러야 박스가 생성됨
+          await page.keyboard.type(">", { delay: 100 });
+          await page.keyboard.press("Space");
+          await page.waitForTimeout(500); // 박스 생성 애니메이션 대기
+
+          // 2. 소제목 스타일 트리거: '##' 입력 후 'Space'
+          await page.keyboard.type("##", { delay: 100 });
+          await page.keyboard.press("Space");
           await page.waitForTimeout(300);
 
-          // 그 다음 제목 텍스트 입력
-          await page.keyboard.type(`${block.prefix}${block.text}`, {
-            delay: 15,
-          });
+          // 3. 실제 텍스트 입력 (prefix는 생략하거나 포함 선택)
+          await page.keyboard.type(block.text, { delay: 30 });
+
+          // 4. 블록 탈출: Enter를 두 번 눌러야 인용구 밖으로 나감
           await page.keyboard.press("Enter");
-          await page.keyboard.press("Enter"); // 인용구 빠져나오기
-          await page.waitForTimeout(50);
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(200);
+        } else if (block.type === "blockquote-paragraph") {
+          // 인용구 본문 처리도 동일한 트리거 방식 적용
+          await page.keyboard.type(">", { delay: 100 });
+          await page.keyboard.press("Space");
+          await page.waitForTimeout(300);
+
+          await page.keyboard.type(block.text, { delay: 30 });
+          await page.keyboard.press("Enter");
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(200);
         } else if (block.type === "heading") {
           console.log(
             `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
@@ -390,14 +405,6 @@ export class NaverPublisher {
 
           await page.keyboard.press("ArrowDown");
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(50);
-        } else if (block.type === "blockquote-paragraph") {
-          // ✅ 인용구 안의 일반 문단도 > 로 시작
-          await page.keyboard.type("> ", { delay: 50 });
-          await page.waitForTimeout(200);
-          await page.keyboard.type(block.text, { delay: 15 });
-          await page.keyboard.press("Enter");
-          await page.keyboard.press("Enter"); // 인용구 빠져나오기
           await page.waitForTimeout(50);
         } else if (block.type === "paragraph") {
           await page.keyboard.type(block.text, { delay: 15 });
