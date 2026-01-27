@@ -83,34 +83,18 @@ function registerIpcHandlers() {
    */
   ipcMain.handle("generate-post", async (event, task) => {
     try {
+      // 1. 필요한 모듈 불러오기 (GroqClient 추가)
       const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
-      const { GeminiClient } = require("@blog-automation/core/ai");
+      const { GeminiClient, GroqClient } = require("@blog-automation/core/ai");
 
       const store = new Store();
+      const credentials: any = store.get("user-credentials");
+      const { geminiKey, groqKey } = credentials || {};
 
-      // 1. Store에서 계정 정보를 가져옵니다.
-      const { geminiKey, groqKey }: any = store.get("user-credentials");
-
-      // 2. 우선순위 설정: 사용자가 입력한 API 키 -> 없으면 .env의 API 키
-      const apiKey = groqKey | geminiKey || process.env.GEMINI_API_KEY;
-      const models = [
-        process.env.GEMINI_MODEL_FAST,
-        process.env.GEMINI_MODEL_NORMAL,
-        process.env.GEMINI_MODEL_OLD_FAST,
-        process.env.GEMINI_MODEL_OLD,
-      ].filter((m): m is string => !!m);
-
-      if (!apiKey || models.length === 0) {
-        throw new Error(
-          "Gemini API 키가 설정되지 않았거나 사용 가능한 모델이 없습니다.",
-        );
-      }
-
-      // 3. 플랫폼 프리셋 적용 (task.platform을 기반으로 동적으로 프리셋을 가져옴)
+      // 2. 플랫폼 프리셋 및 페르소나 정규화 (기존 로직 유지)
       const platform = task.platform?.toLowerCase() || "naver";
       const preset = BLOG_PRESET[platform] || BLOG_PRESET["naver"];
 
-      // 페르소나 매핑 (한글/영어 대응 및 정규화)
       let persona = task.persona?.toLowerCase() || "informative";
       if (
         ["정보성", "정보", "info", "informative"].some((k) =>
@@ -126,61 +110,80 @@ function registerIpcHandlers() {
         persona = "empathetic";
       }
 
-      // 4. 포스트 생성
-      const runGeneration = async (modelName: string) => {
-        const aiClient = new GeminiClient(apiKey, modelName);
-        return await generatePost({
-          client: aiClient,
-          input: {
-            ...task,
-            persona, // 정규화된 페르소나로 덮어쓰기
-            tone: task.tone || preset.tone,
-            textLength: preset.textLength,
-            sections: preset.sections,
-          },
-        });
+      const inputParams = {
+        ...task,
+        persona,
+        tone: task.tone || preset.tone,
+        textLength: preset.textLength,
+        sections: preset.sections,
       };
 
       let post;
       let lastError;
 
-      for (const modelName of models) {
+      // 3. 전략 선택: GroqKey가 있으면 Groq을 먼저 시도
+      if (groqKey) {
         try {
-          console.log(
-            `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona}, Model: ${modelName})`,
-          );
-          post = await runGeneration(modelName);
-          break; // 성공 시 루프 종료
+          console.log(`🚀 [${task.topic}] Groq(Llama 3) 엔진으로 생성 시도...`);
+          const groqClient = new GroqClient(groqKey);
+          post = await generatePost({
+            client: groqClient,
+            input: inputParams,
+          });
         } catch (error: any) {
+          console.error(
+            "⚠️ Groq 생성 실패, Gemini로 전환을 시도합니다:",
+            error.message,
+          );
           lastError = error;
-          const errorMsg = error.message || "";
-          // 429 (Too Many Requests) 또는 Resource exhausted 에러 체크
-          if (
-            errorMsg.includes("429") ||
-            errorMsg.includes("Too Many Requests") ||
-            errorMsg.includes("exhausted")
-          ) {
-            console.warn(
-              `⚠️ [${task.topic}] 모델(${modelName}) 한도 초과. 다음 모델로 전환합니다...`,
-            );
-            continue;
-          } else {
+        }
+      }
+
+      // 4. Groq이 없거나 실패했을 때 Gemini 루프 실행
+      if (!post) {
+        const apiKey = geminiKey || process.env.GEMINI_API_KEY;
+        const models = [
+          process.env.GEMINI_MODEL_FAST,
+          process.env.GEMINI_MODEL_NORMAL,
+          process.env.GEMINI_MODEL_OLD_FAST,
+        ].filter((m): m is string => !!m);
+
+        if (!apiKey)
+          throw new Error(
+            "사용 가능한 AI API 키가 없습니다. (Groq 또는 Gemini)",
+          );
+
+        for (const modelName of models) {
+          try {
+            console.log(`🤖 [${task.topic}] Gemini 모델 시도: ${modelName}`);
+            const geminiClient = new GeminiClient(apiKey, modelName);
+            post = await generatePost({
+              client: geminiClient,
+              input: inputParams,
+            });
+            break;
+          } catch (error: any) {
+            lastError = error;
+            if (
+              error.message.includes("429") ||
+              error.message.includes("limit")
+            ) {
+              continue;
+            }
             throw error;
           }
         }
       }
 
-      if (!post) {
-        throw lastError || new Error("모든 모델의 할당량이 초과되었습니다.");
-      }
+      if (!post)
+        throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
 
-      console.log(`✅ [${task.topic}] 포스트 생성 완료: ${post.title}`);
-
-      return {
-        success: true,
-        data: { ...post, category: task.category }, // 발행을 위해 카테고리 정보 추가
-      };
-    } catch (error: any) {}
+      console.log(`✅ [${task.topic}] 포스트 생성 성공: ${post.title}`);
+      return { success: true, data: { ...post, category: task.category } };
+    } catch (error: any) {
+      console.error("❌ 포스트 생성 에러:", error.message);
+      return { success: false, error: error.message };
+    }
   });
 
   /**

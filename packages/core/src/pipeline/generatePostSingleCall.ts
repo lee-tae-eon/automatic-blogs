@@ -1,6 +1,6 @@
 import { BaseAiClient } from "../ai";
 import { BlogPostInput, AiGeneratedPost } from "../types/blog";
-import { extractJson, safeGenerate } from "../util/safeGenerate";
+import { safeGenerate } from "../util/safeGenerate";
 
 /**
  * 블로그 페르소나 타입
