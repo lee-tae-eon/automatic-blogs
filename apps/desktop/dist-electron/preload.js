@@ -20,6 +20,8 @@ electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
             return electron_1.ipcRenderer.invoke(channel, ...args);
         }
     },
+    // 데이터 보내기 (단방향)
+    send: (channel, ...args) => electron_1.ipcRenderer.send(channel, ...args),
     /**
      * Main 프로세스에서 오는 이벤트를 수신합니다.
      * @param channel - 채널명

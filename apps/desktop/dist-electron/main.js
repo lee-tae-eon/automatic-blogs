@@ -81,11 +81,14 @@ const createWindow = () => {
 function registerIpcHandlers() {
     // 데이터 저장 (아이디, 비번 등)
     electron_1.ipcMain.on("set-store-data", (event, key, value) => {
+        console.log(`💾 저장 요청: ${key}`, value);
         store.set(key, value);
     });
     // 데이터 불러오기
     electron_1.ipcMain.handle("get-store-data", (event, key) => {
-        return store.get(key);
+        const data = store.get(key);
+        console.log(`📂 불러오기 요청: ${key}`, data); // undefined인지 확인
+        return data;
     });
     /**
      * 엑셀 파일 파싱 요청 핸들러

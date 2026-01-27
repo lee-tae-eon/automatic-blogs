@@ -24,6 +24,8 @@ export const App: React.FC = () => {
         "get-store-data",
         "user-credentials",
       );
+
+      console.log(storedCreds);
       if (storedCreds) {
         setCredentials((prev) => ({ ...prev, ...storedCreds }));
       }
