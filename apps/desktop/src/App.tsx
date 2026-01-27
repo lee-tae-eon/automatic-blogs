@@ -179,6 +179,12 @@ export const App: React.FC = () => {
           "generate-post",
           task,
         );
+
+        // 2. 생성 직후 중단 확인 (발행으로 넘어가기 전 골든타임)
+        if (shouldStopRef.current) {
+          updateStatus(i, "대기"); // 진행 중이었던 건 다시 대기로
+          break;
+        }
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
 
         // 2. 발행 요청
@@ -208,8 +214,13 @@ export const App: React.FC = () => {
         }
       }
     }
+    // 루프가 끝난 후 중단된 건지 완료된 건지 판단
+    if (shouldStopRef.current) {
+      alert("작업이 중단되었습니다.");
+    } else {
+      alert("모든 작업이 종료되었습니다.");
+    }
     setIsProcessing(false);
-    alert("모든 작업이 종료되었습니다.");
   };
 
   return (
