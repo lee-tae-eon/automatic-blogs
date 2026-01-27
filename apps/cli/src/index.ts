@@ -9,7 +9,6 @@ if (typeof global.File === "undefined") {
 
 import { GeminiClient } from "@blog-automation/core/src/ai";
 import {
-  BlogPostInput,
   generatePost,
   NaverPublisher,
   pubProcess,

@@ -64,3 +64,36 @@ Call log:
 
 🔗 발생 URL: https://blog.naver.com/eongon/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 8:15:26]
+📍 대상 포스트: [2026년 방콕 짜뚜짝 주말시장] 쇼핑 완벽 가이드 & 필수 팁
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    25 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 8:24:27]
+📍 대상 포스트: 2026년 육아휴직, 똑똑하게 활용하는 방법: 최신 가이드
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    24 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 8:31:27]
+📍 대상 포스트: 2026년 육아휴직 완벽 가이드: 급여부터 신청, 복귀까지 👨‍👩‍👧‍👦
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    24 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
