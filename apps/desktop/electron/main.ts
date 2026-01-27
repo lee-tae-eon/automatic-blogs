@@ -1,8 +1,8 @@
 import { app, BrowserWindow, ipcMain } from "electron";
-import Store from "electron-store";
 import * as path from "path";
 import * as fs from "fs/promises";
 import dotenv from "dotenv";
+import Store from "electron-store";
 
 // 환경 변수 로드
 // Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
@@ -80,19 +80,20 @@ function registerIpcHandlers() {
    */
   ipcMain.handle("generate-post", async (event, task) => {
     try {
-      // 1. Core 모듈 및 AI 클라이언트 준비
       const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
-      // GeminiClient는 CLI와 동일하게 별도 경로에서 가져옵니다.
-      // 'src' 경로는 컴파일된 Node.js 환경에서 인식할 수 없으므로, 패키지의 export 경로를 사용합니다.
       const { GeminiClient } = require("@blog-automation/core/ai");
 
-      // 2. 환경 변수에서 API 키 가져오기 (중요: .env 파일 등으로 관리 필요)
-      // TODO: API 키를 안전한 방법으로 설정/관리하는 기능 추가 필요
-      const apiKey = process.env.GEMINI_API_KEY;
+      // 1. Store에서 계정 정보를 가져옵니다.
+      const credentials: any = store.get("user-credentials");
+
+      // 2. 우선순위 설정: 사용자가 입력한 API 키 -> 없으면 .env의 API 키
+      const apiKey = credentials?.geminiKey || process.env.GEMINI_API_KEY;
       const modelName = process.env.GEMINI_MODEL_FAST;
 
       if (!apiKey || !modelName) {
-        throw new Error("Gemini API 키 또는 모델 이름이 설정되지 않았습니다.");
+        throw new Error(
+          "Gemini API 키가 설정되지 않았습니다. 설정을 확인해주세요.",
+        );
       }
 
       const aiClient = new GeminiClient(apiKey, modelName);
