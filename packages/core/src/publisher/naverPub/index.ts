@@ -683,31 +683,57 @@ export class NaverPublisher {
 
       // 2. 카테고리 선택
       if (category) {
-        console.log(`   카테고리 선택 시도: ${category}`);
-        // 카테고리 영역 클릭 (보통 첫 번째 셀렉트 박스)
-        const categoryArea = page
-          .locator(".publish_layer .select_category, .selectbox-source")
-          .first();
-        await categoryArea.click();
-        await page.waitForTimeout(500);
+        try {
+          console.log(`   카테고리 선택 시도: ${category}`);
 
-        // 리스트에서 정확한 텍스트 찾아서 클릭
-        const item = page
-          .getByRole("listitem")
-          .filter({ hasText: new RegExp(`^${category}$`) });
-        if ((await item.count()) > 0) {
-          await item.first().click();
-          console.log(`   ✅ 카테고리 선택 완료`);
-        } else {
-          console.log(`   ⚠️ 카테고리 찾지 못함, 기본값 유지`);
+          // 발행 레이어 내의 카테고리 선택 버튼 찾기 (.selectbox-source 클래스 사용)
+          const categoryButton = page
+            .locator(".publish_layer .selectbox-source")
+            .first();
+
+          await categoryButton.waitFor({ state: "visible", timeout: 3000 });
+
+          const currentCategory = await categoryButton.innerText();
+          console.log(`   현재 설정된 카테고리: [${currentCategory.trim()}]`);
+
+          // 이미 선택된 카테고리와 같다면 변경 스킵
+          if (currentCategory.trim() === category) {
+            console.log(`   ✅ 이미 선택된 카테고리입니다. 변경을 건너뜁니다.`);
+          } else {
+            await categoryButton.click();
+            await page.waitForTimeout(500);
+
+            // 드롭다운 목록에서 항목 찾기
+            const item = page
+              .locator(".selectbox-list .selectbox-item")
+              .filter({ hasText: category })
+              .first();
+
+            if ((await item.count()) > 0) {
+              await item.click();
+              console.log(`   ✅ 카테고리 변경 완료`);
+            } else {
+              console.warn(
+                `   ⚠️ 목록에서 "${category}"를 찾을 수 없습니다. 기본값 유지.`,
+              );
+              // 드롭다운 닫기 위해 다시 클릭
+              await categoryButton.click();
+            }
+          }
+        } catch (e) {
+          console.warn(`   ⚠️ 카테고리 선택 중 오류 발생 (무시하고 진행):`, e);
         }
       }
 
       // 3. 태그 입력 (입력 후 엔터)
       if (tags.length > 0) {
-        const tagInput = page.locator('.tag_input, input[placeholder*="태그"]');
+        console.log(`   태그 입력 시도: ${tags.join(", ")}`);
+        const tagInput = page.locator(".tag_input").first();
+        await tagInput.click(); // 포커스 확보
+        await page.waitForTimeout(500);
+
         for (const tag of tags) {
-          await tagInput.fill(tag);
+          await page.keyboard.type(tag, { delay: 50 }); // 타이핑 시뮬레이션
           await page.keyboard.press("Enter");
           await page.waitForTimeout(300);
         }

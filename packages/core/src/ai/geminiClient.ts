@@ -1,4 +1,9 @@
-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  GenerativeModel,
+  HarmCategory,
+  HarmBlockThreshold,
+} from "@google/generative-ai";
 import { BaseAiClient } from "./types";
 
 export class GeminiClient implements BaseAiClient {
@@ -13,6 +18,24 @@ export class GeminiClient implements BaseAiClient {
     // 최신 모델인 gemini-1.5-flash-latest 사용
     this.model = this.genAI.getGenerativeModel({
       model: modelName,
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ],
     });
   }
 
@@ -20,9 +43,9 @@ export class GeminiClient implements BaseAiClient {
     try {
       const result = await this.model.generateContent(prompt);
       return result.response.text();
-    } catch (err) {
+    } catch (err: any) {
       console.log(`🛑 ${err}`);
-      throw new Error("🛑 Fail to Generate Content");
+      throw new Error(`🛑 Fail to Generate Content: ${err.message || err}`);
     }
   }
 
@@ -51,9 +74,12 @@ export class GeminiClient implements BaseAiClient {
       }
       cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
       return JSON.parse(cleanedText.trim()) as T;
-    } catch (error) {
+    } catch (error: any) {
       console.error("JSON 파싱 에러. 원문 데이터:", cleanedText);
-      throw new Error("AI가 유효한 JSON 형식을 반환하지 않았습니다.");
+      console.error("상세 에러:", error);
+      throw new Error(
+        `AI가 유효한 JSON 형식을 반환하지 않았습니다. ${error?.message || ""}`,
+      );
     }
   }
 }

@@ -91,15 +91,14 @@ function registerIpcHandlers() {
 
       // 2. 우선순위 설정: 사용자가 입력한 API 키 -> 없으면 .env의 API 키
       const apiKey = credentials?.geminiKey || process.env.GEMINI_API_KEY;
-      const modelName = process.env.GEMINI_MODEL_FAST;
+      const fastModel = process.env.GEMINI_MODEL_FAST;
+      const normalModel = process.env.GEMINI_MODEL_NORMAL;
 
-      if (!apiKey || !modelName) {
+      if (!apiKey || !fastModel) {
         throw new Error(
           "Gemini API 키가 설정되지 않았습니다. 설정을 확인해주세요.",
         );
       }
-
-      const aiClient = new GeminiClient(apiKey, modelName);
 
       // 3. 플랫폼 프리셋 적용 (task.platform을 기반으로 동적으로 프리셋을 가져옴)
       const platform = task.platform?.toLowerCase() || "naver";
@@ -122,19 +121,44 @@ function registerIpcHandlers() {
       }
 
       // 4. 포스트 생성
-      console.log(
-        `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona})`,
-      );
-      const post = await generatePost({
-        client: aiClient,
-        input: {
-          ...task,
-          persona, // 정규화된 페르소나로 덮어쓰기
-          tone: task.tone || preset.tone,
-          textLength: preset.textLength,
-          sections: preset.sections,
-        },
-      });
+      const runGeneration = async (modelName: string) => {
+        const aiClient = new GeminiClient(apiKey, modelName);
+        return await generatePost({
+          client: aiClient,
+          input: {
+            ...task,
+            persona, // 정규화된 페르소나로 덮어쓰기
+            tone: task.tone || preset.tone,
+            textLength: preset.textLength,
+            sections: preset.sections,
+          },
+        });
+      };
+
+      let post;
+      try {
+        console.log(
+          `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona}, Model: ${fastModel})`,
+        );
+        post = await runGeneration(fastModel);
+      } catch (error: any) {
+        const errorMsg = error.message || "";
+        // 429 (Too Many Requests) 또는 Resource exhausted 에러 체크
+        if (
+          normalModel &&
+          (errorMsg.includes("429") ||
+            errorMsg.includes("Too Many Requests") ||
+            errorMsg.includes("exhausted"))
+        ) {
+          console.warn(
+            `⚠️ [${task.topic}] FAST 모델 한도 초과. NORMAL 모델(${normalModel})로 재시도합니다...`,
+          );
+          post = await runGeneration(normalModel);
+        } else {
+          throw error;
+        }
+      }
+
       console.log(`✅ [${task.topic}] 포스트 생성 완료: ${post.title}`);
 
       return {

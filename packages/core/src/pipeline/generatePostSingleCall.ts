@@ -25,8 +25,8 @@ export const generatePostSingleCall = async (
       : generateEmpatheticPrompt(input);
 
   const response = await safeGenerate(async () => {
-    const rawText = await client.generateJson<AiGeneratedPost>(prompt);
-    return extractJson(rawText);
+    // const rawText = await client.generateJson<AiGeneratedPost>(prompt);
+    return client.generateJson<AiGeneratedPost>(prompt);
   });
 
   return response;
