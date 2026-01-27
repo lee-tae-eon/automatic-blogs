@@ -60,6 +60,8 @@ function registerIpcHandlers() {
     return data;
   });
 
+  store.delete("user-credentials.groqKey");
+  store.delete("user-credentials.sub-gemini");
   /**
    * 엑셀 파일 파싱 요청 핸들러
    * @param event - IPC 이벤트 객체

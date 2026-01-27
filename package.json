@@ -9,12 +9,11 @@
   "scripts": {
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "core:watch": "pnpm --filter @blog-automation/core exec tsc --watch",
+    "core:watch": "pnpm --filter @blog-automation/core exec tsc --watch --preserveWatchOutput",
     "dev": "concurrently -n \"CORE,APP\" -c \"cyan,magenta\" \"npm run core:watch\" \"pnpm desktop:start\"",
     "cli:build": "pnpm --filter @blog-automation/cli build",
     "core:build": "pnpm --filter @blog-automation/core build",
-    "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start",
-    "dev:start": "pnpm core:build && pnpm desktop:start"
+    "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

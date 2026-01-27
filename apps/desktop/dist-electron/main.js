@@ -113,12 +113,11 @@ function registerIpcHandlers() {
      */
     electron_1.ipcMain.handle("generate-post", async (event, task) => {
         try {
-            // 1. 필요한 모듈 불러오기 (GroqClient 추가)
             const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
-            const { GeminiClient, GroqClient } = require("@blog-automation/core/ai");
+            const { GeminiClient } = require("@blog-automation/core/ai");
             const store = new electron_store_1.default();
             const credentials = store.get("user-credentials");
-            const { geminiKey, groqKey } = credentials || {};
+            const { geminiKey, subGemini } = credentials || {};
             // 2. 플랫폼 프리셋 및 페르소나 정규화 (기존 로직 유지)
             const platform = task.platform?.toLowerCase() || "naver";
             const preset = BLOG_PRESET[platform] || BLOG_PRESET["naver"];
@@ -138,49 +137,29 @@ function registerIpcHandlers() {
             };
             let post;
             let lastError;
-            // 3. 전략 선택: GroqKey가 있으면 Groq을 먼저 시도
-            if (groqKey) {
+            const apiKeys = [geminiKey, subGemini, process.env.GEMINI_API_KEY].filter((k) => !!k);
+            // 2. 키 배열을 순회 (이게 진짜 스위칭!)
+            for (const apiKey of apiKeys) {
                 try {
-                    console.log(`🚀 [${task.topic}] Groq(Llama 3) 엔진으로 생성 시도...`);
-                    const groqClient = new GroqClient(groqKey);
+                    console.log(`🔑 현재 사용 중인 키: ${apiKey.slice(0, 8)}***`);
+                    const geminiClient = new GeminiClient(apiKey, process.env.GEMINI_MODEL_NORMAL);
                     post = await generatePost({
-                        client: groqClient,
+                        client: geminiClient,
                         input: inputParams,
                     });
+                    if (post)
+                        break; // ✅ 성공하면 루프 종료 (다음 키 안 씀)
                 }
                 catch (error) {
-                    console.error("⚠️ Groq 생성 실패, Gemini로 전환을 시도합니다:", error.message);
                     lastError = error;
-                }
-            }
-            // 4. Groq이 없거나 실패했을 때 Gemini 루프 실행
-            if (!post) {
-                const apiKey = geminiKey || process.env.GEMINI_API_KEY;
-                const models = [
-                    process.env.GEMINI_MODEL_FAST,
-                    process.env.GEMINI_MODEL_NORMAL,
-                    process.env.GEMINI_MODEL_OLD_FAST,
-                ].filter((m) => !!m);
-                if (!apiKey)
-                    throw new Error("사용 가능한 AI API 키가 없습니다. (Groq 또는 Gemini)");
-                for (const modelName of models) {
-                    try {
-                        console.log(`🤖 [${task.topic}] Gemini 모델 시도: ${modelName}`);
-                        const geminiClient = new GeminiClient(apiKey, modelName);
-                        post = await generatePost({
-                            client: geminiClient,
-                            input: inputParams,
-                        });
-                        break;
+                    // 3. 429(Quota Exceeded) 에러일 때만 다음 키로 스위칭
+                    if (error.message.includes("429") ||
+                        error.message.includes("limit")) {
+                        console.warn("⚠️ 메인 키 한도 초과! 서브 키로 전환합니다...");
+                        continue; // ✅ 다음 apiKey로 이동
                     }
-                    catch (error) {
-                        lastError = error;
-                        if (error.message.includes("429") ||
-                            error.message.includes("limit")) {
-                            continue;
-                        }
-                        throw error;
-                    }
+                    // 429가 아닌 다른 에러(인증 실패 등)는 즉시 중단
+                    throw error;
                 }
             }
             if (!post)
