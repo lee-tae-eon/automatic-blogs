@@ -15,6 +15,13 @@ export interface IElectronAPI {
   invoke: (channel: string, ...args: any[]) => Promise<any>;
 
   /**
+   * Main 프로세스로 비동기 메시지를 보냅니다.
+   * @param channel - 채널명
+   * @param args - 전달할 인수 목록
+   */
+  send: (channel: string, ...args: any[]) => void;
+
+  /**
    * Main 프로세스에서 보내는 이벤트를 수신합니다.
    * @param channel - 수신할 채널명
    * @param callback - 이벤트 발생 시 실행할 콜백 함수

@@ -1,5 +1,5 @@
 import { BatchTask } from "@blog-automation/core/types/blog";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "./App.scss";
 
 export const App: React.FC = () => {
@@ -8,20 +8,47 @@ export const App: React.FC = () => {
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null); // input 참조를 위한 ref
   const shouldStopRef = useRef(false); // 작업 중단 플래그
+  const [isStoreLoaded, setIsStoreLoaded] = useState(false);
 
-  // 1. 계정 정보 상태 추가 (실제 서비스 시에는 보안을 위해 electron-store 등에 저장하는 것이 좋습니다)
+  // 1. 계정 정보 상태 추가 (electron-store에 저장/로드 됩니다)
   const [credentials, setCredentials] = useState({
     naverId: "",
     naverPw: "",
-    tistoryToken: "",
-    tistoryBlogName: "",
+    geminiKey: "",
   });
+
+  // 앱 마운트 시 스토어에서 계정 정보 불러오기
+  useEffect(() => {
+    const loadCredentials = async () => {
+      const storedCreds = await window.ipcRenderer.invoke(
+        "get-store-data",
+        "user-credentials",
+      );
+      if (storedCreds) {
+        setCredentials((prev) => ({ ...prev, ...storedCreds }));
+      }
+      setIsStoreLoaded(true); // 로딩 완료 플래그 설정
+    };
+    loadCredentials();
+  }, []); // 빈 배열: 마운트 시 한 번만 실행
 
   // 계정 정보 변경 핸들러
   const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials((prev) => ({ ...prev, [name]: value }));
   };
+
+  // 계정 정보 변경 시 스토어에 저장
+  useEffect(() => {
+    // 초기 데이터 로딩이 완료된 후에만 저장 로직을 실행
+    if (isStoreLoaded) {
+      window.ipcRenderer.send(
+        "set-store-data",
+        "user-credentials",
+        credentials,
+      );
+    }
+  }, [credentials, isStoreLoaded]);
 
   /**
    * 선택된 파일을 처리하여 Electron Main 프로세스로 전송합니다.
@@ -209,19 +236,12 @@ export const App: React.FC = () => {
             />
           </div>
           <div className="platform-group">
-            <span className="label">Tistory</span>
+            <span className="label">Gemini</span>
             <input
-              name="tistoryToken"
-              type="text"
-              placeholder="API 토큰"
-              value={credentials.tistoryToken}
-              onChange={handleCredentialChange}
-            />
-            <input
-              name="tistoryBlogName"
-              type="text"
-              placeholder="블로그명"
-              value={credentials.tistoryBlogName}
+              name="geminiKey"
+              type="password"
+              placeholder="API Key"
+              value={credentials.geminiKey}
               onChange={handleCredentialChange}
             />
           </div>
