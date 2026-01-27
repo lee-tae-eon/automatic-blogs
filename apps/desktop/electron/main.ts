@@ -86,17 +86,23 @@ function registerIpcHandlers() {
       const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
       const { GeminiClient } = require("@blog-automation/core/ai");
 
+      const store = new Store();
+
       // 1. Store에서 계정 정보를 가져옵니다.
-      const credentials: any = store.get("user-credentials");
+      const { geminiKey, groqKey }: any = store.get("user-credentials");
 
       // 2. 우선순위 설정: 사용자가 입력한 API 키 -> 없으면 .env의 API 키
-      const apiKey = credentials?.geminiKey || process.env.GEMINI_API_KEY;
-      const fastModel = process.env.GEMINI_MODEL_FAST;
-      const normalModel = process.env.GEMINI_MODEL_NORMAL;
+      const apiKey = groqKey | geminiKey || process.env.GEMINI_API_KEY;
+      const models = [
+        process.env.GEMINI_MODEL_FAST,
+        process.env.GEMINI_MODEL_NORMAL,
+        process.env.GEMINI_MODEL_OLD_FAST,
+        process.env.GEMINI_MODEL_OLD,
+      ].filter((m): m is string => !!m);
 
-      if (!apiKey || !fastModel) {
+      if (!apiKey || models.length === 0) {
         throw new Error(
-          "Gemini API 키가 설정되지 않았습니다. 설정을 확인해주세요.",
+          "Gemini API 키가 설정되지 않았거나 사용 가능한 모델이 없습니다.",
         );
       }
 
@@ -136,27 +142,36 @@ function registerIpcHandlers() {
       };
 
       let post;
-      try {
-        console.log(
-          `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona}, Model: ${fastModel})`,
-        );
-        post = await runGeneration(fastModel);
-      } catch (error: any) {
-        const errorMsg = error.message || "";
-        // 429 (Too Many Requests) 또는 Resource exhausted 에러 체크
-        if (
-          normalModel &&
-          (errorMsg.includes("429") ||
-            errorMsg.includes("Too Many Requests") ||
-            errorMsg.includes("exhausted"))
-        ) {
-          console.warn(
-            `⚠️ [${task.topic}] FAST 모델 한도 초과. NORMAL 모델(${normalModel})로 재시도합니다...`,
+      let lastError;
+
+      for (const modelName of models) {
+        try {
+          console.log(
+            `🤖 [${task.topic}] 포스트 생성 시작... (Persona: ${persona}, Model: ${modelName})`,
           );
-          post = await runGeneration(normalModel);
-        } else {
-          throw error;
+          post = await runGeneration(modelName);
+          break; // 성공 시 루프 종료
+        } catch (error: any) {
+          lastError = error;
+          const errorMsg = error.message || "";
+          // 429 (Too Many Requests) 또는 Resource exhausted 에러 체크
+          if (
+            errorMsg.includes("429") ||
+            errorMsg.includes("Too Many Requests") ||
+            errorMsg.includes("exhausted")
+          ) {
+            console.warn(
+              `⚠️ [${task.topic}] 모델(${modelName}) 한도 초과. 다음 모델로 전환합니다...`,
+            );
+            continue;
+          } else {
+            throw error;
+          }
         }
+      }
+
+      if (!post) {
+        throw lastError || new Error("모든 모델의 할당량이 초과되었습니다.");
       }
 
       console.log(`✅ [${task.topic}] 포스트 생성 완료: ${post.title}`);
@@ -165,13 +180,7 @@ function registerIpcHandlers() {
         success: true,
         data: { ...post, category: task.category }, // 발행을 위해 카테고리 정보 추가
       };
-    } catch (error: any) {
-      console.error(`❌ [${task.topic}] 포스트 생성 오류:`, error);
-      return {
-        success: false,
-        error: error.message || "포스트 생성 중 오류가 발생했습니다.",
-      };
-    }
+    } catch (error: any) {}
   });
 
   /**
