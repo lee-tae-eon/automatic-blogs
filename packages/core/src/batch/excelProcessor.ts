@@ -3,29 +3,39 @@ import * as XLSX from "xlsx";
 
 export class ExcelProcessor {
   /**
-   * 엑셀 파일을 읽어 작업 목록으로 변환
+   * 헤더 행의 위치와 특정 컬럼의 인덱스를 동적으로 탐색합니다.
    */
+  private static findHeaderInfo(worksheet: XLSX.WorkSheet) {
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+    let headerRowIndex = -1;
+    let statusColIndex = -1;
+
+    // 상위 10행을 검사하여 헤더 행 탐색
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const row = rows[i];
+      if (row && row.some((c) => c === "Topic" || c === "주제")) {
+        headerRowIndex = i;
+        // 해당 행에서 Status/상태 컬럼 위치 파악
+        statusColIndex = row.findIndex((c) => c === "Status" || c === "상태");
+        break;
+      }
+    }
+
+    return { headerRowIndex, statusColIndex };
+  }
+
   static readTasks(filePath: string): BatchTask[] {
     try {
       const workbook = XLSX.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      // 헤더 행 동적 탐색 (상위 10행 검사)
-      // 엑셀 파일 상단에 제목이나 빈 줄이 있을 경우를 대비해 '주제' 또는 'Topic' 컬럼이 있는 행을 찾습니다.
-      const rows = XLSX.utils.sheet_to_json(worksheet, {
-        header: 1,
-      }) as any[][];
-      let headerIndex = 0;
-      for (let i = 0; i < Math.min(rows.length, 10); i++) {
-        const row = rows[i];
-        if (row && row.some((c) => c === "Topic" || c === "주제")) {
-          headerIndex = i;
-          break;
-        }
-      }
-      // 엑셀의 데이터를 JSON 형태로 변환 (찾은 헤더 위치부터 시작)
+
+      const { headerRowIndex } = this.findHeaderInfo(worksheet);
+      if (headerRowIndex === -1) throw new Error("헤더를 찾을 수 없습니다.");
+
+      // 찾은 헤더 위치부터 데이터 읽기
       const rawData = XLSX.utils.sheet_to_json(worksheet, {
-        range: headerIndex,
+        range: headerRowIndex,
       });
 
       return rawData.map((row: any) => ({
@@ -43,61 +53,52 @@ export class ExcelProcessor {
     }
   }
 
-  /**
-   * 특정 작업의 상태를 엑셀 파일에 업데이트합니다.
-   * @param filePath 엑셀 파일 경로
-   * @param taskIndex 작업 인덱스 (0부터 시작)
-   * @param status 변경할 상태 값
-   */
   static updateTaskStatus(filePath: string, taskIndex: number, status: string) {
     try {
       const workbook = XLSX.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
-      // 헤더(1행)에서 '상태' 또는 'Status' 컬럼 찾기
-      const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
-      let statusColIndex = -1;
+      // 1. 헤더 행 위치와 Status 컬럼 인덱스 동적 탐색
+      const { headerRowIndex, statusColIndex } = this.findHeaderInfo(worksheet);
 
-      // 헤더 행(row 0) 스캔
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-        const cell = worksheet[cellAddress];
-        if (cell && (cell.v === "상태" || cell.v === "Status")) {
-          statusColIndex = C;
-          break;
-        }
+      if (headerRowIndex === -1) {
+        throw new Error("엑셀에서 헤더(Topic/주제)를 찾을 수 없습니다.");
       }
 
-      // '상태' 컬럼이 없으면 마지막 컬럼 다음에 추가
-      if (statusColIndex === -1) {
-        statusColIndex = range.e.c + 1;
-        const headerAddress = XLSX.utils.encode_cell({
-          r: 0,
-          c: statusColIndex,
-        });
-        XLSX.utils.sheet_add_aoa(worksheet, [["상태"]], {
-          origin: headerAddress,
+      // 2. Status 컬럼이 없는 경우에만 마지막에 추가 (기존 Status 열이 있으면 활용)
+      let finalColIndex = statusColIndex;
+      if (finalColIndex === -1) {
+        const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+        finalColIndex = range.e.c + 1;
+        // 헤더 행에 'Status' 추가
+        XLSX.utils.sheet_add_aoa(worksheet, [["Status"]], {
+          origin: XLSX.utils.encode_cell({
+            r: headerRowIndex,
+            c: finalColIndex,
+          }),
         });
       }
 
-      // 데이터 행 업데이트 (Header가 0행이므로 데이터는 taskIndex + 1 행)
-      const targetRow = taskIndex + 1;
+      // 3. 데이터 행 업데이트
+      // 실제 데이터는 headerRowIndex 바로 다음행부터 시작하므로 인덱스 합산
+      const targetRow = headerRowIndex + 1 + taskIndex;
       const targetCell = XLSX.utils.encode_cell({
         r: targetRow,
-        c: statusColIndex,
+        c: finalColIndex,
       });
 
-      // 셀 값 업데이트
+      // 셀 값 업데이트 (기존 양식 유지하며 값만 덮어쓰기)
       XLSX.utils.sheet_add_aoa(worksheet, [[status]], { origin: targetCell });
 
-      // 파일 저장
+      // 4. 파일 저장
       XLSX.writeFile(workbook, filePath);
+      console.log(
+        `✅ 엑셀 업데이트 완료: ${targetRow + 1}행 Status -> ${status}`,
+      );
     } catch (error) {
       console.error("Excel Update Error:", error);
-      throw new Error(
-        "엑셀 파일 업데이트 실패 (파일이 열려있는지 확인해주세요)",
-      );
+      throw new Error("엑셀 파일 업데이트 실패 (파일 열림 여부 확인)");
     }
   }
 }
