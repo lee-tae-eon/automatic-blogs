@@ -1,0 +1,66 @@
+
+==================================================
+[2026. 1. 27. 오후 7:49:15]
+📍 대상 포스트: 2026 짜뚜짝 주말시장 완벽 가이드: 쇼핑 & 맛집 핵심 체크리스트
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    25 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 7:53:16]
+📍 대상 포스트: 2026년 방콕 짜뚜짝 주말시장 완벽 가이드: 효율적인 쇼핑 전략과 꿀팁
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    25 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 7:55:03]
+📍 대상 포스트: 2026 정보처리기사 자격증: 합격부터 실무 활용까지 완벽 가이드
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    24 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 7:59:10]
+📍 대상 포스트: [방콕 여행 필수 가이드] 2026년 짜뚜짝 주말시장 100% 즐기기 노하우 분석
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    25 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 8:03:11]
+📍 대상 포스트: 짜뚜짝 주말시장 2026년 완전 정복 가이드: 방콕 쇼핑 핵심 노하우
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    24 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 1. 27. 오후 8:04:28]
+📍 대상 포스트: 💡 2026년 정보처리기사, 효율적인 합격 전략 가이드
+❌ 에러 메시지: locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('button:has-text("발행"), .btn_publish').first() to be visible[22m
+[2m    25 × locator resolved to hidden <button type="button" class="reserve_btn__Km5Xh" data-click-area="tpb*t.schedule">…</button>[22m
+
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------

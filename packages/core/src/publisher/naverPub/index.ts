@@ -781,10 +781,6 @@ export class NaverPublisher {
       // 7. 발행 후 완료 페이지 이동 대기 (URL 변화 또는 특정 요소 사라짐 대기)
       await page.waitForTimeout(5000);
     } catch (error) {
-      console.error("❌ 발행 중 에러 발생:", error);
-      const screenshotPath = `error-publish-final-${Date.now()}.png`;
-      await page.screenshot({ path: screenshotPath, fullPage: true });
-      console.log(`📸 에러 스크린샷 저장됨: ${screenshotPath}`);
       throw error;
     }
   }
