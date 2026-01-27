@@ -23,6 +23,8 @@ export async function generatePost({
 
       const aiPost = await generatePostSingleCall(client, input);
 
+      console.log("aiPost");
+
       const post: BlogPost = {
         ...aiPost,
         platform: "naver",

@@ -15,7 +15,7 @@ export const App: React.FC = () => {
     naverId: "",
     naverPw: "",
     geminiKey: "",
-    groqKey: "",
+    subGemini: "",
   });
 
   // 앱 마운트 시 스토어에서 계정 정보 불러오기
@@ -260,10 +260,10 @@ export const App: React.FC = () => {
             />
             {/* Groq 입력란 추가 */}
             <input
-              name="groqKey"
+              name="subGemini"
               type="password"
-              placeholder="Groq Key (Llama 3)"
-              value={credentials.groqKey}
+              placeholder="sub-gemini"
+              value={credentials.subGemini}
               onChange={handleCredentialChange}
             />
           </div>

@@ -32,7 +32,8 @@ export class NaverPublisher {
   }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
-
+    // 1. 변수를 try 외부에서 선언 (Scope 확장)
+    let currentTaskName = title;
     try {
       context = await chromium.launchPersistentContext(this.userDataDir, {
         headless: false,
@@ -150,24 +151,33 @@ export class NaverPublisher {
 
       // 발행 로직 실행
       await this.publish(page, tags, category);
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ 네이버 발행 오류:", error);
 
       if (page) {
-        const screenshotPath = path.join(
-          process.cwd(),
-          `error-${Date.now()}.png`,
-        );
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        console.log(`📸 에러 스크린샷 저장: ${screenshotPath}`);
+        const fs = require("fs");
+        const path = require("path");
+
+        const logPath = path.join(process.cwd(), "error-log.txt");
+        const timestamp = new Date().toLocaleString("ko-KR");
+
+        // 이제 try 밖에서 선언한 currentTaskName을 안전하게 사용 가능
+        const errorEntry = `
+==================================================
+[${timestamp}]
+📍 대상 포스트: ${currentTaskName}
+❌ 에러 메시지: ${error.message || error}
+🔗 발생 URL: ${page.url()}
+--------------------------------------------------
+`;
 
         try {
-          await page.goto("about:blank", { timeout: 3000 });
-        } catch (e) {
-          // 무시
+          fs.appendFileSync(logPath, errorEntry, "utf8");
+          console.log(`📝 에러 로그 저장 완료: ${logPath}`);
+        } catch (err) {
+          console.error("💾 로그 파일 저장 실패:", err);
         }
       }
-
       throw error;
     } finally {
       if (context) {
@@ -671,42 +681,55 @@ export class NaverPublisher {
     console.log("\n🚀 발행 프로세스 시작...");
 
     try {
-      // 1. 우측 상단 '발행' 버튼 클릭 (클릭이 씹히지 않게 force 추가)
-      const openPublishLayerBtn = page
-        .getByRole("button", { name: "발행" })
-        .first();
-      await openPublishLayerBtn.click({ force: true });
-      console.log("   발행 버튼 클릭함. 레이어 대기 중...");
+      // 1. 에디터 상태 안정화 (불필요한 팝업/포커스 제거)
+      await page.keyboard.press("Escape");
+      await page.evaluate(() => window.scrollTo(0, 0)); // 최상단으로 스크롤하여 버튼 노출 보장
+      await page.waitForTimeout(1000);
 
-      // 2. 레이어 내부 요소가 보일 때까지 대기
-      // 클래스명 대신 '카테고리' 혹은 '주제'라는 텍스트가 화면에 나오는지 체크
+      // 2. 우측 상단 '발행' 버튼 클릭
+      // .btn_publish 클래스나 "발행" 텍스트를 가진 버튼을 찾습니다.
+      const openPublishLayerBtn = page
+        .locator('button:has-text("발행"), .btn_publish')
+        .first();
+      await openPublishLayerBtn.waitFor({ state: "visible", timeout: 10000 });
+
+      // Playwright의 click이 타임아웃 날 경우를 대비해 evaluate 클릭 병행
+      await openPublishLayerBtn.click({ force: true }).catch(async () => {
+        console.warn("   ⚠️ 일반 클릭 실패, JS 주입 클릭 시도...");
+        await openPublishLayerBtn.evaluate((el: HTMLElement) => el.click());
+      });
+      console.log("   발행 설정 레이어 호출 완료");
+
+      // 3. 레이어 감지 (텍스트 기반 검증)
+      // 네이버 레이어는 .publish_layer 또는 .section_publish 등 클래스가 자주 바뀜
+      const layerSelector =
+        ".publish_layer, .section_publish, .publish_layer_container";
       const categoryLabel = page
-        .locator('span:has-text("카테고리"), label:has-text("카테고리")')
+        .locator(
+          `${layerSelector} span:has-text("카테고리"), ${layerSelector} label:has-text("카테고리")`,
+        )
         .first();
 
       try {
-        await categoryLabel.waitFor({ state: "visible", timeout: 7000 });
+        await categoryLabel.waitFor({ state: "visible", timeout: 8000 });
+        console.log("   ✅ 발행 설정 레이어 감지 성공");
       } catch (e) {
-        console.log("   ⚠️ 클래스로 재시도...");
-        await page
-          .locator(".publish_layer_container, .section_publish")
-          .waitFor({ state: "visible", timeout: 3000 });
+        console.warn("   ⚠️ 레이어 미감지, 재클릭 시도...");
+        await openPublishLayerBtn.evaluate((el: HTMLElement) => el.click());
+        await categoryLabel.waitFor({ state: "visible", timeout: 5000 });
       }
 
-      // 레이어 객체를 다시 잡기 (부모 요소 찾기)
-      const publishLayer = page.locator("body").filter({ has: categoryLabel });
-
-      // 3. 카테고리 선택 (더 정교하게)
+      // 4. 카테고리 선택
       if (category) {
         console.log(`   카테고리 선택 시도: ${category}`);
-        // '카테고리' 글자 옆의 셀렉트 박스 클릭
+        // 레이어 내부의 카테고리 셀렉트 박스
         const categorySelect = page
-          .locator(".selectbox-source, .select_category")
+          .locator(`${layerSelector} .selectbox-source`)
           .first();
-        await categorySelect.click();
+        await categorySelect.click({ force: true });
         await page.waitForTimeout(1000);
 
-        // 리스트에서 정확한 카테고리 명칭 클릭
+        // 정확히 카테고리 텍스트와 일치하는 아이템 선택 (RegExp ^$ 사용)
         const item = page
           .locator(".selectbox-item, .list_category li")
           .filter({ hasText: new RegExp(`^${category}$`) })
@@ -714,43 +737,54 @@ export class NaverPublisher {
 
         if (await item.isVisible()) {
           await item.click();
-          console.log(`   ✅ 카테고리 변경 완료`);
+          console.log(`   ✅ 카테고리 변경 완료: ${category}`);
         } else {
-          console.warn(`   ⚠️ 카테고리 [${category}]를 목록에서 못 찾음`);
-          await categorySelect.click(); // 닫기
+          console.warn(
+            `   ⚠️ [${category}]를 목록에서 찾을 수 없어 기본 설정 유지`,
+          );
+          await categorySelect.click(); // 다시 눌러서 닫기
         }
       }
 
-      // 4. 태그 입력 (포커스 문제 해결을 위해 대기 추가)
-      if (tags.length > 0) {
+      // 5. 태그 입력
+      if (tags && tags.length > 0) {
         const tagInput = page
-          .locator('.tag_input, input[placeholder*="태그"]')
+          .locator(
+            `${layerSelector} .tag_input, ${layerSelector} input[placeholder*="태그"]`,
+          )
           .first();
         await tagInput.scrollIntoViewIfNeeded();
-        await tagInput.click();
-        await page.waitForTimeout(500);
+        await tagInput.click({ force: true });
 
         for (const tag of tags) {
-          await page.keyboard.type(tag, { delay: 50 });
+          // 태그 한 글자씩 입력하는 대신 한꺼번에 입력 후 엔터 (속도 및 안정성)
+          await page.keyboard.type(tag, { delay: 30 });
           await page.keyboard.press("Enter");
-          await page.waitForTimeout(300);
+          await page.waitForTimeout(200);
         }
         console.log("   ✅ 태그 입력 완료");
       }
 
-      // 5. 진짜 최종 '발행' 버튼 (초록색 버튼)
-      // 네이버는 이 버튼에 'btn_confirm'이나 'confirm_btn'을 씀
+      // 6. 최종 '발행' 버튼 (초록색 버튼)
+      // 레이어 내부에 있는 버튼 중 '발행' 텍스트를 가진 마지막 버튼을 찾습니다.
       const finalBtn = page
-        .locator('button[class*="confirm"], button:has-text("발행")')
+        .locator(
+          `${layerSelector} button.btn_confirm, ${layerSelector} button:has-text("발행")`,
+        )
         .last();
+
       await finalBtn.waitFor({ state: "visible" });
       await finalBtn.click({ force: true });
 
-      console.log("✅ 최종 발행 성공!");
+      console.log("✅ 최종 발행 완료 버튼 클릭 성공!");
+
+      // 7. 발행 후 완료 페이지 이동 대기 (URL 변화 또는 특정 요소 사라짐 대기)
       await page.waitForTimeout(5000);
     } catch (error) {
       console.error("❌ 발행 중 에러 발생:", error);
-      await page.screenshot({ path: `error-publish-final-${Date.now()}.png` });
+      const screenshotPath = `error-publish-final-${Date.now()}.png`;
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      console.log(`📸 에러 스크린샷 저장됨: ${screenshotPath}`);
       throw error;
     }
   }

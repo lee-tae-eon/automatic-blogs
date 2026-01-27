@@ -18,20 +18,22 @@ export const generatePostSingleCall = async (
   client: BaseAiClient,
   input: ExtendedBlogPostInput,
 ): Promise<AiGeneratedPost> => {
-  // 페르소나별 프롬프트 생성
   const prompt =
     input.persona === "informative"
       ? generateInformativePrompt(input)
       : generateEmpatheticPrompt(input);
 
   const response = await safeGenerate(async () => {
-    // const rawText = await client.generateJson<AiGeneratedPost>(prompt);
-    return client.generateJson<AiGeneratedPost>(prompt);
+    return await client.generateJson<AiGeneratedPost>(prompt);
   });
+
+  // 중요: 응답이 없으면 여기서 에러를 발생시켜야 재시도 로직으로 넘어감
+  if (!response || !response.title) {
+    throw new Error("AI가 유효한 JSON 데이터를 생성하지 못했습니다.");
+  }
 
   return response;
 };
-
 /**
  * 정보공유형 프롬프트
  */
