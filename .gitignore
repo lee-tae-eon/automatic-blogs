@@ -145,3 +145,4 @@ apps/cli/output/*
 .auth/
 *.auth/
 user-data-dir/
+temp_images/
