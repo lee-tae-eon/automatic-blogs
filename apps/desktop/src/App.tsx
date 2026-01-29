@@ -27,7 +27,10 @@ export const App: React.FC = () => {
         onPublish={actions.handlePublishAll}
       />
 
-      <TaskTable tasks={tasks} />
+      <TaskTable
+        tasks={tasks}
+        onPersonaChange={actions.handlePersonaChange}
+      />
     </div>
   );
 };

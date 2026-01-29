@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import dotenv from "dotenv";
 import Store from "electron-store";
+import type { Persona } from "@blog-automation/core/types/blog";
 
 // 환경 변수 로드
 // Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
@@ -85,41 +86,14 @@ function registerIpcHandlers() {
    */
   ipcMain.handle("generate-post", async (event, task) => {
     try {
-      const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
+      const { generatePost } = require("@blog-automation/core");
       const { GeminiClient } = require("@blog-automation/core/ai");
 
       const store = new Store();
       const credentials: any = store.get("user-credentials");
       const { geminiKey, subGemini } = credentials || {};
 
-      // 2. 플랫폼 프리셋 및 페르소나 정규화 (기존 로직 유지)
-      const platform = task.platform?.toLowerCase() || "naver";
-      const preset = BLOG_PRESET[platform] || BLOG_PRESET["naver"];
-
-      let persona = task.persona?.toLowerCase() || "informative";
-      if (
-        ["정보성", "정보", "info", "informative"].some((k) =>
-          persona.includes(k),
-        )
-      ) {
-        persona = "informative";
-      } else if (
-        ["공감형", "공감", "empathy", "empathetic"].some((k) =>
-          persona.includes(k),
-        )
-      ) {
-        persona = "empathetic";
-      }
-
-      const inputParams = {
-        ...task,
-        persona,
-        tone: task.tone || preset.tone,
-        textLength: preset.textLength,
-        sections: preset.sections,
-      };
-
-      let post;
+      let publication;
       let lastError;
 
       const apiKeys = [geminiKey, subGemini, process.env.GEMINI_API_KEY].filter(
@@ -135,12 +109,12 @@ function registerIpcHandlers() {
             apiKey,
             process.env.GEMINI_MODEL_NORMAL,
           );
-          post = await generatePost({
+          publication = await generatePost({
             client: geminiClient,
-            input: inputParams,
+            task: task,
           });
 
-          if (post) break; // ✅ 성공하면 루프 종료 (다음 키 안 씀)
+          if (publication) break; // ✅ 성공하면 루프 종료 (다음 키 안 씀)
         } catch (error: any) {
           lastError = error;
           // 3. 429(Quota Exceeded) 에러일 때만 다음 키로 스위칭
@@ -155,11 +129,11 @@ function registerIpcHandlers() {
           throw error;
         }
       }
-      if (!post)
+      if (!publication)
         throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
 
-      console.log(`✅ [${task.topic}] 포스트 생성 성공: ${post.title}`);
-      return { success: true, data: { ...post, category: task.category } };
+      console.log(`✅ [${task.topic}] 포스트 생성 성공: ${publication.title}`);
+      return { success: true, data: publication };
     } catch (error: any) {
       console.error("❌ 포스트 생성 에러:", error.message);
       return { success: false, error: error.message };

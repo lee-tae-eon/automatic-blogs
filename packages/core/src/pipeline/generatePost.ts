@@ -1,8 +1,5 @@
 import { delay } from "../util/delay";
-import { BlogPost, GeneratePostInput } from "../types/blog";
-// import { generateOutline } from "./generateOutline";
-// import { generateArticle } from "./generateArticle";
-// import { delay } from "../util/delay";
+import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
 
 /**
@@ -12,8 +9,8 @@ import { generatePostSingleCall } from "./generatePostSingleCall";
  */
 export async function generatePost({
   client,
-  input,
-}: GeneratePostInput): Promise<BlogPost> {
+  task,
+}: GeneratePostInput): Promise<Publication> {
   const MAX_RETRIES = 1; // 최대 3번 재시도
   let lastError: any;
 
@@ -21,17 +18,21 @@ export async function generatePost({
     try {
       console.log(`🤖 AI 포스팅 생성 시도 중... (${attempt}/${MAX_RETRIES})`);
 
-      const aiPost = await generatePostSingleCall(client, input);
+      const inputParams: BlogPostInput = {
+        ...task,
+        tone: task.tone,
+      };
 
-      console.log("aiPost");
+      const aiPost = await generatePostSingleCall(client, inputParams);
 
-      const post: BlogPost = {
+      const publication: Publication = {
         ...aiPost,
-        platform: "naver",
+        platform: task.platform || "naver",
+        category: task.category,
         createdAt: new Date().toISOString(),
       };
 
-      return post; // 성공 시 즉시 반환
+      return publication; // 성공 시 즉시 반환
     } catch (error) {
       lastError = error;
       console.warn(

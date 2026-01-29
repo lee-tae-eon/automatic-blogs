@@ -1,9 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
-import { BlogPost } from "../types/blog";
+import { Publication } from "../types/blog";
 import { toMarkdown } from "./toMarkdown";
 
-export async function saveMarkdown(post: BlogPost, dir = "output") {
+export async function saveMarkdown(post: Publication, dir = "output") {
   await fs.mkdir(dir, { recursive: true });
 
   const safeTitle = post.title

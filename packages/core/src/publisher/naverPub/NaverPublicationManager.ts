@@ -129,21 +129,18 @@ export class NaverPublicationManager {
             await selectElement.click();
             await this.page.waitForTimeout(1000);
 
+            console.log(`   드롭다운에서 '${category}' 항목을 찾는 중...`);
             const categoryItem = this.page
-              .locator(
-                '[role="option"], .selectbox_list_item, .list_category li, ._select_option_area li button',
-              )
-              .filter({
-                hasText: new RegExp(`^${category}(\s*\(\d+\))?$`),
-              })
+              .getByText(new RegExp(`^${category}(\\s*\\(\\d+\\))?$`))
               .first();
 
-            if (await categoryItem.isVisible({ timeout: 5000 })) {
+            try {
+              await categoryItem.waitFor({ state: "visible", timeout: 5000 });
               await categoryItem.click();
               console.log(`   ✅ 카테고리 변경 완료: ${category}`);
-            } else {
+            } catch (e) {
               console.warn(
-                `   ⚠️ 드롭다운에서 [${category}] 항목을 찾지 못했습니다.`, 
+                `   ⚠️ 드롭다운에서 [${category}] 항목을 찾을 수 없거나 클릭에 실패했습니다.`, 
               );
               await this.page.keyboard.press("Escape").catch(() => {});
             }
@@ -158,7 +155,7 @@ export class NaverPublicationManager {
         console.log(`   태그 입력 시작...`);
         try {
           const tagInput = await this.page.waitForSelector(
-            `${layerSelector} input[placeholder*="태그"], .tag_input`,
+            `${layerSelector} input[placeholder*=\"태그\"], .tag_input`,
             { timeout: 3000 },
           );
 

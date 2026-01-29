@@ -1,11 +1,22 @@
 import React from "react";
-import { BatchTask } from "@blog-automation/core/types/blog";
+import { BatchTask, Persona } from "@blog-automation/core/types/blog";
 
 interface TaskTableProps {
   tasks: BatchTask[];
+  onPersonaChange: (taskIndex: number, newPersona: Persona) => void;
 }
 
-export const TaskTable: React.FC<TaskTableProps> = ({ tasks }) => {
+const personaOptions: { label: string; value: Persona }[] = [
+  { label: "공감형", value: "empathetic" },
+  { label: "스토리텔링형", value: "storytelling" },
+  { label: "친근형", value: "friendly" },
+  { label: "체험형", value: "experiential" },
+];
+
+export const TaskTable: React.FC<TaskTableProps> = ({
+  tasks,
+  onPersonaChange,
+}) => {
   return (
     <table>
       <thead>
@@ -23,7 +34,20 @@ export const TaskTable: React.FC<TaskTableProps> = ({ tasks }) => {
           tasks.map((task, idx) => (
             <tr key={idx}>
               <td>{task.topic}</td>
-              <td>{task.persona}</td>
+              <td>
+                <select
+                  value={task.persona}
+                  onChange={(e) =>
+                    onPersonaChange(idx, e.target.value as Persona)
+                  }
+                >
+                  {personaOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
               <td>{task.category}</td>
               <td>{task.keywords || "-"}</td>
               <td>{task.platform || "-"}</td>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { BatchTask } from "@blog-automation/core/types/blog";
+import { BatchTask, Persona } from "@blog-automation/core/types/blog";
 
 export const useAppViewModel = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
@@ -45,6 +45,14 @@ export const useAppViewModel = () => {
   const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePersonaChange = (taskIndex: number, newPersona: Persona) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task, index) =>
+        index === taskIndex ? { ...task, persona: newPersona } : task,
+      ),
+    );
   };
 
   const processFile = async (file: File) => {
@@ -173,6 +181,7 @@ export const useAppViewModel = () => {
       handleClearAll,
       handleStop,
       handlePublishAll,
+      handlePersonaChange,
     },
   };
 };

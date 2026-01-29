@@ -1,15 +1,17 @@
 import { BaseAiClient } from "../ai";
 
+export type Persona =
+  | "empathetic"
+  | "storytelling"
+  | "friendly"
+  | "experiential";
+
 export interface BlogPostInput {
   topic: string;
   tone: string;
-  sections: number;
-  textLength: {
-    min: number;
-    max: number;
-  };
   overrideTone?: string;
-  persona: string;
+  persona: Persona;
+  keywords?: string;
 }
 
 export interface AiGeneratedPost {
@@ -26,20 +28,21 @@ export interface AiGeneratedPost {
   }[];
   imageAltTexts?: string[];
 }
-export interface BlogPost extends AiGeneratedPost {
+export interface Publication extends AiGeneratedPost {
   platform: BlogPlatform;
+  category: string;
   createdAt: string;
 }
 
 export interface GeneratePostInput {
   client: BaseAiClient;
-  input: BlogPostInput;
+  task: BatchTask;
 }
 
 export type BlogPlatform = "naver" | "tistory";
 export interface BatchTask {
   topic: string;
-  persona: BlogPlatform;
+  persona: Persona;
   tone: string;
   category: string;
   keywords?: string; // Optional로 설정

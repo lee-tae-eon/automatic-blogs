@@ -1,26 +1,26 @@
 import { BaseAiClient } from "../ai";
-import { BlogPostInput, AiGeneratedPost } from "../types/blog";
+import { BlogPostInput, AiGeneratedPost, Persona } from "../types/blog";
 import { safeGenerate } from "../util/safeGenerate";
-
-/**
- * 블로그 페르소나 타입 확장
- */
-export interface ExtendedBlogPostInput extends BlogPostInput {
-  persona: string;
-  keywords?: string;
-}
 
 /**
  * 메인 블로그 포스트 생성 함수
  */
 export const generatePostSingleCall = async (
   client: BaseAiClient,
-  input: ExtendedBlogPostInput,
+  input: BlogPostInput,
 ): Promise<AiGeneratedPost> => {
-  const prompt =
-    input.persona === "informative"
-      ? generateInformativePrompt(input)
-      : generateEmpatheticPrompt(input);
+  let prompt;
+  switch (input.persona) {
+    case "empathetic":
+      prompt = generateEmpatheticPrompt(input);
+      break;
+    case "experiential":
+    case "storytelling":
+    case "friendly":
+    default:
+      prompt = generateExperientialPrompt(input);
+      break;
+  }
 
   const response = await safeGenerate(async () => {
     return await client.generateJson<AiGeneratedPost>(prompt);
@@ -34,9 +34,9 @@ export const generatePostSingleCall = async (
 };
 
 /**
- * 정보공유형 프롬프트 생성
+ * 체험형 프롬프트 생성 (구. 정보공유형)
  */
-function generateInformativePrompt(input: ExtendedBlogPostInput): string {
+function generateExperientialPrompt(input: BlogPostInput): string {
   const systemRole = `
 # 역할 정의
 당신은 최신 정보를 잘 정리하여 핵심내용을 전달하는 전문 블로거입니다. 정보의 깊이와 신뢰성을 바탕으로 사람이 직접 정리한 듯한 글을 씁니다.
@@ -101,7 +101,7 @@ ${commonInstructions}
 3. 응답은 오직 순수한 JSON 형식만 허용하며, 줄바꿈은 \`\\n\` 기호로 처리하세요.
 `;
 }
-function generateEmpatheticPrompt(input: ExtendedBlogPostInput): string {
+function generateEmpatheticPrompt(input: BlogPostInput): string {
   const systemRole = `
 # 역할 정의
 당신은 직접 경험하고 느낀 점을 잘 표현하는 체험형 블로거입니다. 내가 직접 체험한 자연스러운 경험 기반 스토리텔링을 구사합니다.
@@ -151,7 +151,7 @@ ${systemRole}
  */
 export const validatePostQuality = (
   post: AiGeneratedPost,
-  input: ExtendedBlogPostInput,
+  input: BlogPostInput,
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -171,12 +171,21 @@ export const validatePostQuality = (
   }
 
   // 3. 페르소나별 필수 요소 검증
-  if (input.persona === "informative") {
-    const hasTable = post.content.includes("|");
-    if (!hasTable) errors.push("정보공유형: 비교 표가 없습니다.");
-  } else if (input.persona === "empathetic") {
-    const hasTable = post.content.includes("|");
-    if (hasTable) errors.push("공감형: 표를 제거하고 서술형으로 작성하세요.");
+  switch (input.persona) {
+    case "experiential":
+      if (!post.content.includes("|")) {
+        errors.push("체험형: 비교 표가 없습니다.");
+      }
+      break;
+    case "empathetic":
+    case "storytelling":
+    case "friendly":
+      if (post.content.includes("|")) {
+        errors.push(
+          `${input.persona}: 표를 제거하고 서술형으로 작성하세요.`,
+        );
+      }
+      break;
   }
 
   return {

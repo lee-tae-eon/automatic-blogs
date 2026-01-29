@@ -1,4 +1,4 @@
-import { BatchTask } from "../types/blog";
+import { BatchTask, Persona } from "../types/blog";
 import * as XLSX from "xlsx";
 
 export class ExcelProcessor {
@@ -38,15 +38,21 @@ export class ExcelProcessor {
         range: headerRowIndex,
       });
 
-      return rawData.map((row: any) => ({
-        topic: row["주제"] || row["Topic"],
-        persona: row["페르소나"] || row["Persona"],
-        tone: row["톤"] || row["Tone"],
-        category: row["카테고리"] || row["Category"],
-        platform: row["플랫폼"] || row["Platform"],
-        keywords: row["키워드"] || row["Keywords"],
-        status: row["상태"] || row["Status"] || "대기",
-      }));
+      return rawData.map((row: any) => {
+        const persona = row["페르소나"] || row["Persona"];
+        return {
+          topic: row["주제"] || row["Topic"],
+          persona:
+            persona === "informative"
+              ? "experiential"
+              : (persona as Persona),
+          tone: row["톤"] || row["Tone"],
+          category: row["카테고리"] || row["Category"],
+          platform: row["플랫폼"] || row["Platform"],
+          keywords: row["키워드"] || row["Keywords"],
+          status: row["상태"] || row["Status"] || "대기",
+        };
+      });
     } catch (error) {
       console.error("Excel Parsing Error:", error);
       throw Error("Excel Parsing Error");
