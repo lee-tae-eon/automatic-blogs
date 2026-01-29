@@ -193,6 +193,7 @@ export class NaverEditor {
           const imagePath = await this.unsplashService.downloadImage(
             cleanText,
             this.tempDir,
+            { width: 1280, height: 720 }, // 이미지 크기 지정
           );
 
           if (imagePath) {
