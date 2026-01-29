@@ -115,29 +115,12 @@ function registerIpcHandlers() {
      */
     electron_1.ipcMain.handle("generate-post", async (event, task) => {
         try {
-            const { generatePost, BLOG_PRESET } = require("@blog-automation/core");
+            const { generatePost } = require("@blog-automation/core");
             const { GeminiClient } = require("@blog-automation/core/ai");
             const store = new electron_store_1.default();
             const credentials = store.get("user-credentials");
             const { geminiKey, subGemini } = credentials || {};
-            // 2. 플랫폼 프리셋 및 페르소나 정규화 (기존 로직 유지)
-            const platform = task.platform?.toLowerCase() || "naver";
-            const preset = BLOG_PRESET[platform] || BLOG_PRESET["naver"];
-            let persona = task.persona?.toLowerCase() || "informative";
-            if (["정보성", "정보", "info", "informative"].some((k) => persona.includes(k))) {
-                persona = "informative";
-            }
-            else if (["공감형", "공감", "empathy", "empathetic"].some((k) => persona.includes(k))) {
-                persona = "empathetic";
-            }
-            const inputParams = {
-                ...task,
-                persona,
-                tone: task.tone || preset.tone,
-                textLength: preset.textLength,
-                sections: preset.sections,
-            };
-            let post;
+            let publication;
             let lastError;
             const apiKeys = [geminiKey, subGemini, process.env.GEMINI_API_KEY].filter((k) => !!k);
             // 2. 키 배열을 순회 (이게 진짜 스위칭!)
@@ -145,11 +128,11 @@ function registerIpcHandlers() {
                 try {
                     console.log(`🔑 현재 사용 중인 키: ${apiKey.slice(0, 8)}***`);
                     const geminiClient = new GeminiClient(apiKey, process.env.GEMINI_MODEL_NORMAL);
-                    post = await generatePost({
+                    publication = await generatePost({
                         client: geminiClient,
-                        input: inputParams,
+                        task: task,
                     });
-                    if (post)
+                    if (publication)
                         break; // ✅ 성공하면 루프 종료 (다음 키 안 씀)
                 }
                 catch (error) {
@@ -164,10 +147,10 @@ function registerIpcHandlers() {
                     throw error;
                 }
             }
-            if (!post)
+            if (!publication)
                 throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
-            console.log(`✅ [${task.topic}] 포스트 생성 성공: ${post.title}`);
-            return { success: true, data: { ...post, category: task.category } };
+            console.log(`✅ [${task.topic}] 포스트 생성 성공: ${publication.title}`);
+            return { success: true, data: publication };
         }
         catch (error) {
             console.error("❌ 포스트 생성 에러:", error.message);

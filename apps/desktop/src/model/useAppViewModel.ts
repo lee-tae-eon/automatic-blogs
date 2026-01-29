@@ -47,11 +47,36 @@ export const useAppViewModel = () => {
     setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePersonaChange = (taskIndex: number, newPersona: Persona) => {
+  const updateTaskInExcel = async (
+    index: number,
+    updates: { status?: BatchTask["status"]; persona?: Persona },
+  ) => {
+    if (!currentFilePath) return;
+
+    const task = tasks[index];
+    if (!task) return;
+
+    await window.ipcRenderer.invoke("update-task", {
+      filePath: currentFilePath,
+      index,
+      status: updates.status || task.status,
+      persona: updates.persona || task.persona,
+    });
+  };
+
+  const handlePersonaChange = async (
+    taskIndex: number,
+    newPersona: Persona,
+  ) => {
     setTasks((prevTasks) =>
-      prevTasks.map((task, index) =>
-        index === taskIndex ? { ...task, persona: newPersona } : task,
-      ),
+      prevTasks.map((task, index) => {
+        if (index === taskIndex) {
+          const updatedTask = { ...task, persona: newPersona };
+          updateTaskInExcel(taskIndex, { persona: newPersona });
+          return updatedTask;
+        }
+        return task;
+      }),
     );
   };
 
@@ -103,7 +128,14 @@ export const useAppViewModel = () => {
 
     const updateStatus = (index: number, status: BatchTask["status"]) => {
       setTasks((prev) =>
-        prev.map((t, i) => (i === index ? { ...t, status } : t)),
+        prev.map((t, i) => {
+          if (i === index) {
+            const updatedTask = { ...t, status };
+            updateTaskInExcel(index, { status });
+            return updatedTask;
+          }
+          return t;
+        }),
       );
     };
 
@@ -116,19 +148,12 @@ export const useAppViewModel = () => {
       if (task.status === "완료") continue;
 
       updateStatus(i, "진행");
-      if (currentFilePath) {
-        await window.ipcRenderer.invoke("update-task-status", {
-          filePath: currentFilePath,
-          index: i,
-          status: "진행",
-        });
-      }
 
       try {
         // 생성
         const genResult = await window.ipcRenderer.invoke(
           "generate-post",
-          task,
+          tasks[i], // 최신 상태의 task를 전달
         );
 
         if (shouldStopRef.current) {
@@ -145,23 +170,9 @@ export const useAppViewModel = () => {
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
         updateStatus(i, "완료");
-        if (currentFilePath) {
-          await window.ipcRenderer.invoke("update-task-status", {
-            filePath: currentFilePath,
-            index: i,
-            status: "완료",
-          });
-        }
       } catch (error) {
         console.error(error);
         updateStatus(i, "실패");
-        if (currentFilePath) {
-          await window.ipcRenderer.invoke("update-task-status", {
-            filePath: currentFilePath,
-            index: i,
-            status: "실패",
-          });
-        }
       }
     }
 

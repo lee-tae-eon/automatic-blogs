@@ -3,7 +3,6 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import dotenv from "dotenv";
 import Store from "electron-store";
-import type { Persona } from "@blog-automation/core/types/blog";
 
 // 환경 변수 로드
 // Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
@@ -183,11 +182,11 @@ function registerIpcHandlers() {
    * 작업 상태 업데이트 요청 핸들러
    */
   ipcMain.handle(
-    "update-task-status",
-    async (event, { filePath, index, status }) => {
+    "update-task",
+    async (event, { filePath, index, status, persona }) => {
       try {
         const { ExcelProcessor } = require("@blog-automation/core");
-        ExcelProcessor.updateTaskStatus(filePath, index, status);
+        ExcelProcessor.updateTaskInExcel(filePath, index, { status, persona });
         return { success: true };
       } catch (error: any) {
         console.error("❌ 상태 업데이트 오류:", error);

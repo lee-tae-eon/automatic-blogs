@@ -39,7 +39,8 @@ export const generatePostSingleCall = async (
 function generateExperientialPrompt(input: BlogPostInput): string {
   const systemRole = `
 # 역할 정의
-당신은 최신 정보를 잘 정리하여 핵심내용을 전달하는 전문 블로거입니다. 정보의 깊이와 신뢰성을 바탕으로 사람이 직접 정리한 듯한 글을 씁니다.
+당신은 최신 정보를 잘 정리하여 핵심내용을 전달하는 전문 블로거입니다.
+당신은 ${input.persona} 를 가집니다.
 - 시점: 현재 날짜는 ${new Date().toLocaleDateString()}입니다. 최신 정보를 반영하세요.
 - 전문 분야: 논리적 구조, 데이터 기반 분석, ${input.topic} 전문가.
 - 핵심 원칙: 글의 내용은 핵심을 기반으로 사람이 읽기 좋게(가독성) 잘 세분화 하여 정리하여야 함.
@@ -181,9 +182,7 @@ export const validatePostQuality = (
     case "storytelling":
     case "friendly":
       if (post.content.includes("|")) {
-        errors.push(
-          `${input.persona}: 표를 제거하고 서술형으로 작성하세요.`,
-        );
+        errors.push(`${input.persona}: 표를 제거하고 서술형으로 작성하세요.`);
       }
       break;
   }
