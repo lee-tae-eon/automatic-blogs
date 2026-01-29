@@ -1,0 +1,262 @@
+/// <reference lib="dom" />
+import { Page } from "playwright";
+
+export class NaverPublicationManager {
+  constructor(private page: Page) {}
+
+  public async publish(tags: string[] = [], category?: string) {
+    console.log("\n🚀 발행 프로세스 시작...");
+
+    try {
+      await this.page.evaluate(() => window.scrollTo(0, 0));
+      await this.page.keyboard.press("Escape");
+      await this.page.waitForTimeout(1500);
+
+      const publishButtonSelectors = [
+        "button.publish_btn__m2fHR",
+        'button:has-text("발행")',
+        ".btn_publish",
+        'button[class*="publish"]',
+        '[data-testid="publish-button"]',
+      ];
+
+      let publishButton = null;
+      for (const selector of publishButtonSelectors) {
+        try {
+          publishButton = await this.page.waitForSelector(selector, {
+            state: "visible",
+            timeout: 3000,
+          });
+          if (publishButton) {
+            console.log(`   ✅ 발행 버튼 발견: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      if (!publishButton) {
+        publishButton = await this.page
+          .locator("button")
+          .filter({ hasText: "발행" })
+          .first();
+      }
+
+      await publishButton.scrollIntoViewIfNeeded();
+      await this.page.waitForTimeout(500);
+
+      try {
+        await publishButton.click({ timeout: 5000 });
+      } catch (e) {
+        console.warn("   ⚠️ 일반 클릭 실패, JS 주입 클릭 시도...");
+        await this.page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll("button"));
+          const publishBtn = buttons.find(
+            (btn) =>
+              btn.textContent?.includes("발행") ||
+              btn.className.includes("publish"),
+          );
+          if (publishBtn) {
+            (publishBtn as HTMLElement).click();
+          }
+        });
+      }
+
+      console.log("   발행 설정 레이어 호출 완료");
+      await this.page.waitForTimeout(2000);
+
+      const layerSelectors = [
+        ".publish_layer_container",
+        ".publish_layer",
+        ".section_publish",
+        '[class*="publish"][class*="layer"]',
+        '[class*="PublishLayer"]',
+      ];
+
+      let layerFound = false;
+      let layerSelector = "";
+
+      for (const selector of layerSelectors) {
+        try {
+          const element = await this.page.waitForSelector(selector, {
+            state: "visible",
+            timeout: 3000,
+          });
+          if (element) {
+            layerSelector = selector;
+            layerFound = true;
+            console.log(`   ✅ 발행 레이어 감지: ${selector}`);
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      if (!layerFound) {
+        console.warn("   ⚠️ 레이어를 찾을 수 없음. 기본 진행...");
+        layerSelector = "body";
+      }
+
+      if (category) {
+        console.log(`   카테고리 선택 시도: ${category}`);
+        try {
+          const categoryTrigger = this.page.locator(
+            [
+              `${layerSelector} .form_group:has-text(\"카테고리\") button`,
+              `${layerSelector} .form_group:has-text(\"카테고리\") select`,
+              `${layerSelector} [class*=\"category\"] button`,
+              `${layerSelector} [class*=\"category\"] select`,
+            ].join(", "),
+          );
+
+          if (!(await categoryTrigger.first().isVisible({ timeout: 3000 }))) {
+            throw new Error("카테고리 선택 UI를 찾을 수 없습니다.");
+          }
+
+          const selectElement = categoryTrigger.first();
+          const tagName = await selectElement.evaluate((el) =>
+            el.tagName.toUpperCase(),
+          );
+
+          if (tagName === "SELECT") {
+            console.log("   네이티브 <select> 방식의 카테고리 선택");
+            await selectElement.selectOption({ label: category });
+            console.log(`   ✅ 카테고리 변경 완료: ${category}`);
+          } else {
+            console.log("   커스텀 드롭다운 방식의 카테고리 선택");
+            await selectElement.click();
+            await this.page.waitForTimeout(1000);
+
+            const categoryItem = this.page
+              .locator(
+                '[role="option"], .selectbox_list_item, .list_category li, ._select_option_area li button',
+              )
+              .filter({
+                hasText: new RegExp(`^${category}(\s*\(\d+\))?$`),
+              })
+              .first();
+
+            if (await categoryItem.isVisible({ timeout: 5000 })) {
+              await categoryItem.click();
+              console.log(`   ✅ 카테고리 변경 완료: ${category}`);
+            } else {
+              console.warn(
+                `   ⚠️ 드롭다운에서 [${category}] 항목을 찾지 못했습니다.`, 
+              );
+              await this.page.keyboard.press("Escape").catch(() => {});
+            }
+          }
+        } catch (e) {
+          const errorMessage = e instanceof Error ? e.message : String(e);
+          console.warn(`   ⚠️ 카테고리 선택 실패: ${errorMessage}`);
+        }
+      }
+
+      if (tags && tags.length > 0) {
+        console.log(`   태그 입력 시작...`);
+        try {
+          const tagInput = await this.page.waitForSelector(
+            `${layerSelector} input[placeholder*="태그"], .tag_input`,
+            { timeout: 3000 },
+          );
+
+          if (tagInput) {
+            await tagInput.click({ force: true });
+            for (const tag of tags) {
+              const cleanTag = tag.replace(/[^a-zA-Z0-9가-힣]/g, "");
+              if (cleanTag.length > 0) {
+                await this.page.keyboard.type(cleanTag, { delay: 50 });
+                await this.page.keyboard.press("Enter");
+                await this.page.waitForTimeout(200);
+              }
+            }
+            console.log("   ✅ 태그 입력 완료 (특수기호 제거됨)");
+          }
+        } catch (e) {
+          console.warn(`   ⚠️ 태그 입력 실패:`, e);
+        }
+      }
+
+      console.log("   최종 발행 버튼 클릭 시도...");
+      let published = false;
+
+      try {
+        const finalBtn = this.page
+          .locator(`${layerSelector} button`)
+          .filter({ hasText: /^발행$/ })
+          .filter({ visible: true })
+          .first();
+
+        await finalBtn.waitFor({ state: "visible", timeout: 5000 });
+        await finalBtn.scrollIntoViewIfNeeded();
+        await this.page.waitForTimeout(500);
+        await finalBtn.click({ force: true });
+        console.log("   ✅ 최종 발행 버튼 클릭 성공");
+        published = true;
+      } catch (e) {
+        console.error("   ❌ 일반 클릭 실패, JS 주입으로 강제 클릭 시도...");
+        const jsSuccess = await this.page.evaluate((selector) => {
+          const buttons = Array.from(
+            document.querySelectorAll(`${selector} button`),
+          );
+          const realPublishBtn = buttons.find((btn) => {
+            const style = window.getComputedStyle(btn);
+            return (
+              btn.textContent?.trim() === "발행" &&
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              (btn as HTMLButtonElement).disabled === false
+            );
+          });
+
+          if (realPublishBtn) {
+            (realPublishBtn as HTMLElement).click();
+            return true;
+          }
+          return false;
+        }, layerSelector);
+
+        if (jsSuccess) {
+          console.log("   ✅ JS 주입을 통한 발행 버튼 클릭 성공");
+          published = true;
+        }
+      }
+
+      if (!published) {
+        throw new Error(
+          "발행 버튼을 찾을 수 없거나 클릭에 실패했습니다 (모든 시도 실패)",
+        );
+      }
+
+      await this.page.waitForTimeout(3000);
+
+      try {
+        await this.page.waitForURL(/.*\/\d+/, { timeout: 10000 });
+        console.log("✅ 발행 완료! 포스트 URL로 이동됨");
+      } catch (e) {
+        const currentUrl = this.page.url();
+        if (currentUrl.includes("/postwrite")) {
+          console.warn("   ⚠️ 아직 작성 페이지에 있음. 발행 상태 불명확");
+        } else {
+          console.log("✅ 발행 완료 (URL 변경 감지)");
+        }
+      }
+    } catch (error) {
+      console.error("❌ 발행 프로세스 실패:", error);
+
+      try {
+        await this.page.screenshot({
+          path: `publish-error-${Date.now()}.png`,
+          fullPage: true,
+        });
+        console.log("   📸 에러 스크린샷 저장됨");
+      } catch (e) {
+        // 스크린샷 실패는 무시
+      }
+
+      throw error;
+    }
+  }
+}
