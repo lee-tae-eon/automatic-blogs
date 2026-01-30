@@ -7,7 +7,7 @@ export class PexelsService {
   private apiKey: string;
 
   constructor() {
-    this.apiKey = process.env.PEXELS_API_KEY || "";
+    this.apiKey = (process.env.PEXELS_API_KEY || "").trim();
     if (!this.apiKey) {
       console.warn("⚠️ PEXELS_API_KEY가 설정되지 않았습니다.");
     }
@@ -83,7 +83,7 @@ export class PexelsService {
       console.log(`🔍 Pexels 검색: "${keyword}"`);
 
       // 2. Pexels API 호출
-      const response = await axios.get(`${process.env.PIXEL_ENDPINT}`, {
+      const response = await axios.get("https://api.pexels.com/v1/search", {
         params: {
           query: keyword,
           per_page: 1,
