@@ -4,9 +4,11 @@ import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 import { UnsplashService } from "../../services/unsplashService";
+import { PexelsService } from "../../services/pexelImageService";
 
 export class NaverEditor {
   private unsplashService = new UnsplashService();
+  private pexelsService = new PexelsService();
   private tempDir: string;
 
   constructor(
@@ -99,7 +101,7 @@ export class NaverEditor {
         }
       } catch (error) {
         console.log(
-          `   ❌ 시도 ${attempt} 실패:`, 
+          `   ❌ 시도 ${attempt} 실패:`,
           error instanceof Error ? error.message : error,
         );
 
@@ -190,14 +192,25 @@ export class NaverEditor {
           await this.page.keyboard.press("Enter");
           await this.page.waitForTimeout(300);
 
-          const imagePath = await this.unsplashService.downloadImage(
-            cleanText,
+          const searchQuery = block.text
+            .replace(/[0-9]년|[0-9]월|[0-9]일/g, "") // 날짜 제거
+            .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
+            .split(" ")
+            .filter((word) => word.length > 1) // 한 글자 조사 등 제외
+            .slice(0, 2) // 앞의 핵심 단어 2개만 선택
+            .join(" ");
+
+          console.log(`🔍 이미지 검색 키워드: ${searchQuery}`);
+
+          const imagePath = await this.pexelsService.downloadImage(
+            searchQuery,
             this.tempDir,
-            { width: 1280, height: 720 }, // 이미지 크기 지정
           );
 
           if (imagePath) {
-            await this.uploadImage(imagePath);
+            await this.uploadImage(this.page, imagePath);
+          } else {
+            console.log("   ℹ️ 적절한 이미지가 없어 업로드를 생략합니다.");
           }
 
           await this.page.waitForTimeout(200);
@@ -299,21 +312,21 @@ export class NaverEditor {
   }
 
   private htmlToTextBlocks(html: string) {
-    const blocks: Array<{ 
-        type: 
-          | "heading" 
-          | "paragraph" 
-          | "list" 
-          | "table" 
-          | "table-row" 
-          | "separator" 
-          | "blockquote-heading" 
-          | "blockquote-paragraph" 
-          | "text" 
-          | "empty-line";
-        text: string;
-        prefix?: string;
-      }> = [];
+    const blocks: Array<{
+      type:
+        | "heading"
+        | "paragraph"
+        | "list"
+        | "table"
+        | "table-row"
+        | "separator"
+        | "blockquote-heading"
+        | "blockquote-paragraph"
+        | "text"
+        | "empty-line";
+      text: string;
+      prefix?: string;
+    }> = [];
 
     const $ = cheerio.load(html);
 
@@ -447,27 +460,43 @@ export class NaverEditor {
 
     return blocks;
   }
-  
-  private async uploadImage(imagePath: string) {
-    console.log(`   📸 이미지 업로드 시도: ${imagePath}`);
+
+  /**
+   * 네이버 에디터에 이미지를 업로드합니다.
+   * @param page 호출부에서 전달하는 Playwright Page 객체
+   * @param imagePath 로컬 이미지 경로
+   */
+  private async uploadImage(page: Page, imagePath: string) {
+    // 경로가 비어있거나 존재하지 않으면 바로 리턴하여 뻘줌한 상황 방지
+    if (!imagePath || !fs.existsSync(imagePath)) {
+      console.log("   ℹ️ 업로드할 이미지 파일이 없어 스킵합니다.");
+      return;
+    }
+
+    console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
 
     try {
-      const fileChooserPromise = this.page.waitForEvent("filechooser");
+      // 1. 파일 선택 이벤트 리스너 등록
+      const fileChooserPromise = page.waitForEvent("filechooser");
 
-      const photoButton = this.page.locator(
+      // 2. 사진 버튼 클릭 (에디터 툴바)
+      const photoButton = page.locator(
         'button.se-image-toolbar-button, button[data-log="image"]',
       );
       await photoButton.click();
 
+      // 3. 파일 선택 및 주입
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
 
       console.log("   ⏳ 이미지 업로드 및 에디터 삽입 대기 중...");
-      
-      await this.page.waitForTimeout(4000);
 
-      await this.page.keyboard.press("ArrowDown");
-      await this.page.keyboard.press("Enter");
+      // 4. 네이버 서버 업로드 및 렌더링 대기
+      await page.waitForTimeout(4500);
+
+      // 5. 이미지 아래로 포커스 이동 (다음 텍스트 입력을 위해)
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
 
       console.log("   ✅ 이미지 삽입 완료");
     } catch (error) {
