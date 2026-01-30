@@ -556,12 +556,14 @@ export class NaverEditor {
             return currentCount > (prevCount as number); // 타입 단언 추가 시 더 안전
           },
           beforeImageCount, // 2번째 인자: 전달할 값
-          { timeout: 10000 }, // 3번째 인자: 옵션 (시간 설정 등)
+          { timeout: 5000 }, // 3번째 인자: 옵션 (시간 설정 등)
         );
 
         console.log("   ✅ 이미지 렌더링 확인");
       } catch (e) {
-        console.warn("   ⚠️ 이미지 렌더링 타임아웃");
+        console.warn(
+          "   ⚠️ 5초 이내에 이미지가 확인되지 않아 다음으로 진행합니다.",
+        );
       }
 
       // 추가 안정화 대기
