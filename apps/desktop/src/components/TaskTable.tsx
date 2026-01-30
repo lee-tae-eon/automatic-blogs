@@ -7,6 +7,7 @@ interface TaskTableProps {
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
+  { label: "정보공유형", value: "informative" },
   { label: "공감형", value: "empathetic" },
   { label: "스토리텔링형", value: "storytelling" },
   { label: "친근형", value: "friendly" },

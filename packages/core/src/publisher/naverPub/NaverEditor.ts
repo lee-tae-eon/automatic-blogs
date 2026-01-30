@@ -179,14 +179,29 @@ export class NaverEditor {
             .replace(/^#+\s*/, "")
             .trim();
 
-          // 전체 마크다운을 한 번에 입력
-          const fullMarkdown = `> ## ${cleanText}`;
-          await this.page.keyboard.type(fullMarkdown, { delay: 20 });
+          // ✅ HTML 형식으로 클립보드에 복사
+          const htmlContent = `<blockquote><h2>${cleanText}</h2></blockquote>`;
 
+          await this.page.evaluate((html) => {
+            const type = "text/html";
+            const blob = new Blob([html], { type });
+            const data = [new ClipboardItem({ [type]: blob })];
+            return navigator.clipboard.write(data);
+          }, htmlContent);
+
+          // 붙여넣기
+          const isMac = process.platform === "darwin";
+          const modifier = isMac ? "Meta" : "Control";
+          await this.page.keyboard.press(`${modifier}+V`);
+          await this.page.waitForTimeout(800);
+
+          // 아래로 이동 (다음 입력 준비)
+          await this.page.keyboard.press("ArrowDown");
           await this.page.keyboard.press("Enter");
           await this.page.keyboard.press("Enter");
           await this.page.waitForTimeout(300);
 
+          // 이미지 업로드
           const searchQuery = block.text
             .replace(/[0-9]년|[0-9]월|[0-9]일/g, "")
             .replace(/[^\w\s가-힣]/g, "")
@@ -204,17 +219,39 @@ export class NaverEditor {
 
           if (imagePath) {
             await this.uploadImage(this.page, imagePath);
+
+            // ✅ 이미지 아래로 확실히 이동
+            await this.page.waitForTimeout(1000);
+            await this.page.keyboard.press("Escape");
+            await this.page.waitForTimeout(300);
+            await this.page.keyboard.press("ArrowDown");
+            await this.page.keyboard.press("ArrowDown");
+            await this.page.keyboard.press("Enter");
+            await this.page.keyboard.press("Enter");
           } else {
             console.log("   ℹ️ 적절한 이미지가 없어 업로드를 생략합니다.");
           }
 
           await this.page.waitForTimeout(200);
         } else if (block.type === "blockquote-paragraph") {
-          await this.page.keyboard.type(">", { delay: 100 });
-          await this.page.keyboard.press("Space");
-          await this.page.waitForTimeout(300);
+          console.log(`   [인용구 문단] ${block.text.substring(0, 30)}...`);
 
-          await this.page.keyboard.type(block.text, { delay: 30 });
+          // ✅ HTML 형식으로 붙여넣기
+          const htmlContent = `<blockquote><p>${block.text}</p></blockquote>`;
+
+          await this.page.evaluate((html) => {
+            const type = "text/html";
+            const blob = new Blob([html], { type });
+            const data = [new ClipboardItem({ [type]: blob })];
+            return navigator.clipboard.write(data);
+          }, htmlContent);
+
+          const isMac = process.platform === "darwin";
+          const modifier = isMac ? "Meta" : "Control";
+          await this.page.keyboard.press(`${modifier}+V`);
+          await this.page.waitForTimeout(500);
+
+          await this.page.keyboard.press("ArrowDown");
           await this.page.keyboard.press("Enter");
           await this.page.keyboard.press("Enter");
           await this.page.waitForTimeout(200);
@@ -222,9 +259,27 @@ export class NaverEditor {
           console.log(
             `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
           );
-          await this.page.keyboard.type(`${block.prefix}${block.text}`, {
-            delay: 15,
-          });
+
+          // H1, H2, H3 등 태그 결정
+          let tag = "h2";
+          if (block.prefix === "■ ") tag = "h1";
+          else if (block.prefix === "▶ ") tag = "h2";
+          else tag = "h3";
+
+          const htmlContent = `<${tag}>${block.text}</${tag}>`;
+
+          await this.page.evaluate((html) => {
+            const type = "text/html";
+            const blob = new Blob([html], { type });
+            const data = [new ClipboardItem({ [type]: blob })];
+            return navigator.clipboard.write(data);
+          }, htmlContent);
+
+          const isMac = process.platform === "darwin";
+          const modifier = isMac ? "Meta" : "Control";
+          await this.page.keyboard.press(`${modifier}+V`);
+          await this.page.waitForTimeout(300);
+
           await this.page.keyboard.press("Enter");
           await this.page.waitForTimeout(50);
         } else if (block.type === "list") {
@@ -462,7 +517,6 @@ export class NaverEditor {
    * @param imagePath 로컬 이미지 경로
    */
   private async uploadImage(page: Page, imagePath: string) {
-    // 경로가 비어있거나 존재하지 않으면 바로 리턴하여 뻘줌한 상황 방지
     if (!imagePath || !fs.existsSync(imagePath)) {
       console.log("   ℹ️ 업로드할 이미지 파일이 없어 스킵합니다.");
       return;
@@ -471,29 +525,41 @@ export class NaverEditor {
     console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
 
     try {
-      // 1. 파일 선택 이벤트 리스너 등록
+      // 포커스 먼저 해제
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
       const fileChooserPromise = page.waitForEvent("filechooser");
 
-      // 2. 사진 버튼 클릭 (에디터 툴바)
       const photoButton = page.locator(
         'button.se-image-toolbar-button, button[data-log="image"]',
       );
-      await photoButton.click();
+      await photoButton.first().click();
+      await page.waitForTimeout(300);
 
-      // 3. 파일 선택 및 주입
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
 
       console.log("   ⏳ 이미지 업로드 및 에디터 삽입 대기 중...");
 
-      // 4. 네이버 서버 업로드 및 렌더링 대기
-      await page.waitForTimeout(4500);
-
-      // 5. 이미지 아래로 포커스 이동 (다음 텍스트 입력을 위해)
-      await page.keyboard.press("ArrowDown");
-      await page.keyboard.press("Enter");
+      // 업로드 완료 대기
+      await page.waitForTimeout(5000);
 
       console.log("   ✅ 이미지 삽입 완료");
+
+      // ✅ 이미지 포커스 완전히 해제하고 아래로 이동
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+
+      // 아래로 확실히 이동
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(100);
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(100);
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Enter");
     } catch (error) {
       console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
     }
