@@ -3,7 +3,7 @@ import { Page } from "playwright";
 import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
-import { PexelsService } from "../../services/pexelImageService";
+import { PexelsService } from "../../services/pexelImageService"; // 경로가 맞는지 확인하세요
 
 export class NaverEditor {
   private pexelsService = new PexelsService();
@@ -161,6 +161,27 @@ export class NaverEditor {
       for (let i = 0; i < textBlocks.length; i++) {
         const block = textBlocks[i];
 
+        // 🛑 [핵심 수정] 타이핑 전에 AI 가이드 문구 원천 제거
+        // 괄호, 대괄호 안의 Image suggestion 등을 모두 지웁니다.
+        const garbageRegex =
+          /(\(Image suggestion.*?\)|\[이미지.*?\]|\[사진.*?\]|이미지 삽입|삽입 위치)/gi;
+
+        const originalText = block.text;
+        block.text = block.text.replace(garbageRegex, "").trim();
+
+        // 텍스트를 지웠는데 빈 블록이 되었고, 구분선/공백라인/테이블이 아니라면 스킵
+        if (
+          !block.text &&
+          block.type !== "separator" &&
+          block.type !== "empty-line" &&
+          !block.type.includes("table")
+        ) {
+          console.log(
+            `   ⏭️ [Skip] 가이드 문구 제거됨: "${originalText.substring(0, 20)}..."`,
+          );
+          continue;
+        }
+
         if (block.type === "separator") {
           console.log(`   [구분선]`);
           await this.page.keyboard.type(block.text, { delay: 10 });
@@ -177,7 +198,7 @@ export class NaverEditor {
             .replace(/^#+\s*/, "")
             .trim();
 
-          // ✅ HTML 형식으로 클립보드에 복사
+          // HTML 형식으로 클립보드에 복사
           const htmlContent = `<blockquote><h2>${cleanText}</h2></blockquote>`;
 
           await this.page.evaluate((html) => {
@@ -218,7 +239,7 @@ export class NaverEditor {
           if (imagePath) {
             await this.uploadImage(this.page, imagePath);
 
-            // ✅ 이미지 아래로 확실히 이동
+            // 이미지 삽입 후 포커스 이동
             await this.page.waitForTimeout(1000);
             await this.page.keyboard.press("Escape");
             await this.page.waitForTimeout(300);
@@ -234,7 +255,6 @@ export class NaverEditor {
         } else if (block.type === "blockquote-paragraph") {
           console.log(`   [인용구 문단] ${block.text.substring(0, 30)}...`);
 
-          // ✅ HTML 형식으로 붙여넣기
           const htmlContent = `<blockquote><p>${block.text}</p></blockquote>`;
 
           await this.page.evaluate((html) => {
@@ -258,7 +278,6 @@ export class NaverEditor {
             `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
           );
 
-          // H1, H2, H3 등 태그 결정
           let tag = "h2";
           if (block.prefix === "■ ") tag = "h1";
           else if (block.prefix === "▶ ") tag = "h2";
@@ -509,14 +528,8 @@ export class NaverEditor {
     return blocks;
   }
 
-  /**
-   * 네이버 에디터에 이미지를 업로드합니다.
-   * @param page 호출부에서 전달하는 Playwright Page 객체
-   * @param imagePath 로컬 이미지 경로
-   */
   private async uploadImage(page: Page, imagePath: string | null) {
-    // 1. 이미지 업로드 전, 본문에 섞여 들어간 가이드 텍스트부터 먼저 청소함
-    // (이미지 파일이 없더라도 가이드 텍스트는 지워야 하므로 가장 먼저 실행함)
+    // 1. 보험용 청소 (enterContent에서 놓쳤을 경우 대비)
     await page.evaluate(() => {
       const editor = document.querySelector('[data-a11y-title="본문"]');
       if (!editor) return;
@@ -531,33 +544,28 @@ export class NaverEditor {
 
       while ((node = walker.nextNode())) {
         const text = node.textContent || "";
-        // ✅ 구문 오류 수정 및 검색 키워드 확장: (Image suggestion:, [이미지], [사진] 등
         if (
           /\[이미지|\(Image suggestion|이미지 삽입|삽입 위치|\[사진/i.test(text)
         ) {
           nodesToRemove.push(node);
         }
       }
-      // 텍스트 노드가 포함된 부모 요소(보통 p태그)를 통째로 지워야 빈 줄이 안 남음
       nodesToRemove.forEach(
         (n) => n.parentElement?.remove() || n.parentNode?.removeChild(n),
       );
     });
 
-    // 2. 이제 이미지가 실제로 존재하는지 확인하고 없으면 여기서 종료함
     if (!imagePath || !fs.existsSync(imagePath)) {
-      console.log("   ℹ️ 이미지 파일이 없어 텍스트만 청소하고 스킵함.");
+      console.log("   ℹ️ 이미지 파일이 없어 스킵함.");
       return;
     }
 
     console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
 
     try {
-      // 안정적인 클릭을 위해 포커스 초기화
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
 
-      // 3. 업로드 전 이미지 개수 확인
       const beforeImageCount = await page.evaluate(() => {
         const editor = document.querySelector('[data-a11y-title="본문"]');
         return editor?.querySelectorAll("img").length || 0;
@@ -565,20 +573,17 @@ export class NaverEditor {
 
       const fileChooserPromise = page.waitForEvent("filechooser");
 
-      // 4. 사진 버튼 클릭
       const photoButton = page.locator(
         'button.se-image-toolbar-button, button[data-log="image"]',
       );
       await photoButton.first().click();
       await page.waitForTimeout(500);
 
-      // 5. 파일 선택 및 주입
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
 
       console.log("   ⏳ 이미지 업로드 및 렌더링 대기 중...");
 
-      // 6. ✅ 새 이미지가 추가될 때까지 대기 (최대 5초)
       try {
         await page.waitForFunction(
           (prevCount) => {
@@ -586,15 +591,14 @@ export class NaverEditor {
             const currentCount = editor?.querySelectorAll("img").length || 0;
             return currentCount > (prevCount as number);
           },
-          beforeImageCount, // 2번째 인자: 전달할 값
-          { timeout: 5000 }, // 3번째 인자: 옵션
+          beforeImageCount,
+          { timeout: 5000 },
         );
         console.log("   ✅ 이미지 렌더링 확인");
       } catch (e) {
         console.warn("   ⚠️ 5초 이내에 이미지 렌더링 확인 불가 (계속 진행)");
       }
 
-      // 7. 추가 안정화 및 포커스 정리 (기존에 썼던 안정화 로직 유지)
       await page.waitForTimeout(1000);
 
       await page.keyboard.press("Escape");
@@ -602,113 +606,16 @@ export class NaverEditor {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(500);
 
-      // 이미지 아래로 커서 이동
       await page.keyboard.press("ArrowDown");
       await page.waitForTimeout(200);
       await page.keyboard.press("ArrowDown");
       await page.waitForTimeout(200);
-      // await page.keyboard.press("Enter");
+      await page.keyboard.press("Enter");
+      await page.keyboard.press("Enter");
+
       console.log("   ✅ 이미지 삽입 및 포커스 이동 완료");
     } catch (error) {
       console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
     }
   }
-  // private async uploadImage(page: Page, imagePath: string) {
-  //   if (!imagePath || !fs.existsSync(imagePath)) {
-  //     console.log("   ℹ️ 업로드할 이미지 파일이 없어 스킵합니다.");
-  //     return;
-  //   }
-
-  //   console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
-
-  //   try {
-  //     await page.keyboard.press("Escape");
-  //     await page.waitForTimeout(500);
-
-  //     // 현재 이미지 개수 확인
-  //     const beforeImageCount = await page.evaluate(() => {
-  //       const editor = document.querySelector('[data-a11y-title="본문"]');
-  //       return editor?.querySelectorAll("img").length || 0;
-  //     });
-
-  //     const fileChooserPromise = page.waitForEvent("filechooser");
-
-  //     const photoButton = page.locator(
-  //       'button.se-image-toolbar-button, button[data-log="image"]',
-  //     );
-  //     await photoButton.first().click();
-  //     await page.waitForTimeout(500);
-
-  //     const fileChooser = await fileChooserPromise;
-  //     await fileChooser.setFiles(imagePath);
-
-  //     console.log("   ⏳ 이미지 업로드 대기 중...");
-
-  //     // ✅ 새 이미지가 추가될 때까지 대기 (최대 10초)
-  //     try {
-  //       await page.waitForFunction(
-  //         (prevCount) => {
-  //           const editor = document.querySelector('[data-a11y-title="본문"]');
-  //           const currentCount = editor?.querySelectorAll("img").length || 0;
-  //           return currentCount > (prevCount as number); // 타입 단언 추가 시 더 안전
-  //         },
-  //         beforeImageCount, // 2번째 인자: 전달할 값
-  //         { timeout: 5000 }, // 3번째 인자: 옵션 (시간 설정 등)
-  //       );
-
-  //       console.log("   ✅ 이미지 렌더링 확인");
-  //     } catch (e) {
-  //       console.warn(
-  //         "   ⚠️ 5초 이내에 이미지가 확인되지 않아 다음으로 진행합니다.",
-  //       );
-  //     }
-
-  //     // 추가 안정화 대기
-  //     await page.waitForTimeout(1000);
-
-  //     // Placeholder 텍스트 제거
-  //     await page.evaluate(() => {
-  //       const editor = document.querySelector('[data-a11y-title="본문"]');
-  //       if (!editor) return;
-
-  //       const walker = document.createTreeWalker(
-  //         editor,
-  //         NodeFilter.SHOW_TEXT,
-  //         null,
-  //       );
-
-  //       const nodesToRemove: Node[] = [];
-  //       let node;
-  //       while ((node = walker.nextNode())) {
-  //         const text = node.textContent || "";
-  //         if (
-  //           text.includes("[이미지") ||
-  //           text.includes("삽입 위치") ||
-  //           text.includes("이미지 삽입")
-  //         ) {
-  //           nodesToRemove.push(node);
-  //         }
-  //       }
-
-  //       nodesToRemove.forEach((n) => n.parentNode?.removeChild(n));
-  //     });
-
-  //     console.log("   ✅ 이미지 삽입 완료");
-
-  //     // 포커스 해제 및 이동
-  //     await page.keyboard.press("Escape");
-  //     await page.waitForTimeout(500);
-  //     await page.keyboard.press("Escape");
-  //     await page.waitForTimeout(500);
-
-  //     await page.keyboard.press("ArrowDown");
-  //     await page.waitForTimeout(200);
-  //     await page.keyboard.press("ArrowDown");
-  //     await page.waitForTimeout(200);
-  //     await page.keyboard.press("Enter");
-  //     await page.keyboard.press("Enter");
-  //   } catch (error) {
-  //     console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
-  //   }
-  // }
 }

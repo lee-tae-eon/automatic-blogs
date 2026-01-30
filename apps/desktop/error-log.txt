@@ -118,3 +118,10 @@ Call log:
 ❌ 에러 메시지: keyboard.type: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/eongon/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 1. 31. 오전 8:34:00]
+📍 대상 포스트: 요리대회 우승 스타 셰프 사망 소식, 복잡한 마음, 괜찮아요 🕊️
+❌ 에러 메시지: keyboard.type: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
