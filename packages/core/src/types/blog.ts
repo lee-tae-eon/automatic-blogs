@@ -40,8 +40,6 @@ export interface QualityMetrics {
 
 export interface BlogPostInput {
   topic: string;
-  tone: string;
-  overrideTone?: string;
   persona: Persona;
   keywords?: string[];
 }
@@ -77,7 +75,7 @@ export interface BatchTask {
   persona: Persona;
   tone: string;
   category: string;
-  keywords?: string; // Optional로 설정
+  keywords?: string[]; // Optional로 설정
   platform?: BlogPlatform;
   status: "대기" | "진행" | "완료" | "실패";
 }

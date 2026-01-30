@@ -1,6 +1,7 @@
 import { BaseAiClient } from "../ai";
-import { BlogPostInput, AiGeneratedPost, Persona } from "../types/blog";
+import { BlogPostInput, AiGeneratedPost } from "../types/blog";
 import { safeGenerate } from "../util/safeGenerate";
+import { generateBlogPrompt } from "./generatePrompt";
 
 /**
  * 메인 블로그 포스트 생성 함수
@@ -9,18 +10,22 @@ export const generatePostSingleCall = async (
   client: BaseAiClient,
   input: BlogPostInput,
 ): Promise<AiGeneratedPost> => {
-  let prompt;
-  switch (input.persona) {
-    case "empathetic":
-      prompt = generateEmpatheticPrompt(input);
-      break;
-    case "experiential":
-    case "storytelling":
-    case "friendly":
-    default:
-      prompt = generateExperientialPrompt(input);
-      break;
-  }
+  // let prompt;
+  // switch (input.persona) {
+  //   case "empathetic":
+  //     prompt = generateEmpatheticPrompt(input);
+  //     break;
+  //   case "experiential":
+  //   case "storytelling":
+  //   case "friendly":
+  //   default:
+  //     prompt = generateExperientialPrompt(input);
+  //     break;
+  // }
+
+  const prompt = generateBlogPrompt(input);
+
+  console.log(prompt);
 
   const response = await safeGenerate(async () => {
     return await client.generateJson<AiGeneratedPost>(prompt);

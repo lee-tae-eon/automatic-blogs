@@ -1,11 +1,11 @@
 // ============================================
 // 통합 블로그 프롬프트 생성기
 
-import { getPersonaDetail } from "@/persona/persona.config";
-import { getPersonaExamples } from "@/persona/persona.example";
-import { getQualityMetrics, SEO_RULES } from "@/persona/quality-metrics";
-import { BlogPostInput } from "@/types/blog";
-import { autoInferMetadata } from "@/util/autoInference";
+import { getPersonaDetail } from "../persona/persona.config";
+import { getPersonaExamples } from "../persona/persona.example";
+import { getQualityMetrics, SEO_RULES } from "../persona/quality-metrics";
+import { BlogPostInput } from "../types/blog";
+import { autoInferMetadata } from "../util/autoInference";
 
 // ============================================
 export function generateBlogPrompt(input: BlogPostInput): string {

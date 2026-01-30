@@ -19,8 +19,9 @@ export async function generatePost({
       console.log(`🤖 AI 포스팅 생성 시도 중... (${attempt}/${MAX_RETRIES})`);
 
       const inputParams: BlogPostInput = {
-        ...task,
-        tone: task.tone,
+        topic: task.topic,
+        persona: task.persona,
+        ...(task.keywords && { keywords: task.keywords }),
       };
 
       const aiPost = await generatePostSingleCall(client, inputParams);

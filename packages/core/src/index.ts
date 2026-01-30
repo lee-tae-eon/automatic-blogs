@@ -8,4 +8,4 @@ export * from "./publisher/naverPub";
 export * from "./batch/excelProcessor";
 export * from "./util/findProjectRoot";
 export * from "./types/blog";
-export * from "./util/platform";
+export * from "./persona/persona.config";
