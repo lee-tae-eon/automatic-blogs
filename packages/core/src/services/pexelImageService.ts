@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export class PexelsService {
   private apiKey: string;
-
+  private pexelEndpoint = "https://api.pexels.com/v1/search";
   constructor() {
     this.apiKey = (process.env.PEXELS_API_KEY || "").trim();
     if (!this.apiKey) {
@@ -83,7 +83,7 @@ export class PexelsService {
       console.log(`🔍 Pexels 검색: "${keyword}"`);
 
       // 2. Pexels API 호출
-      const response = await axios.get("https://api.pexels.com/v1/search", {
+      const response = await axios.get(this.pexelEndpoint, {
         params: {
           query: keyword,
           per_page: 1,

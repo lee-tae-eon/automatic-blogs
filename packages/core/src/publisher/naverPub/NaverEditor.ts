@@ -3,11 +3,9 @@ import { Page } from "playwright";
 import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
-import { UnsplashService } from "../../services/unsplashService";
 import { PexelsService } from "../../services/pexelImageService";
 
 export class NaverEditor {
-  private unsplashService = new UnsplashService();
   private pexelsService = new PexelsService();
   private tempDir: string;
 
