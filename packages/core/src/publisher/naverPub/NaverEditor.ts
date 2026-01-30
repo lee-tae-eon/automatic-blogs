@@ -525,9 +525,14 @@ export class NaverEditor {
     console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
 
     try {
-      // 포커스 먼저 해제
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(500);
+
+      // 현재 이미지 개수 확인
+      const beforeImageCount = await page.evaluate(() => {
+        const editor = document.querySelector('[data-a11y-title="본문"]');
+        return editor?.querySelectorAll("img").length || 0;
+      });
 
       const fileChooserPromise = page.waitForEvent("filechooser");
 
@@ -535,29 +540,72 @@ export class NaverEditor {
         'button.se-image-toolbar-button, button[data-log="image"]',
       );
       await photoButton.first().click();
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(500);
 
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
 
-      console.log("   ⏳ 이미지 업로드 및 에디터 삽입 대기 중...");
+      console.log("   ⏳ 이미지 업로드 대기 중...");
 
-      // 업로드 완료 대기
-      await page.waitForTimeout(5000);
+      // ✅ 새 이미지가 추가될 때까지 대기 (최대 10초)
+      try {
+        await page.waitForFunction(
+          (prevCount) => {
+            const editor = document.querySelector('[data-a11y-title="본문"]');
+            const currentCount = editor?.querySelectorAll("img").length || 0;
+            return currentCount > (prevCount as number); // 타입 단언 추가 시 더 안전
+          },
+          beforeImageCount, // 2번째 인자: 전달할 값
+          { timeout: 10000 }, // 3번째 인자: 옵션 (시간 설정 등)
+        );
+
+        console.log("   ✅ 이미지 렌더링 확인");
+      } catch (e) {
+        console.warn("   ⚠️ 이미지 렌더링 타임아웃");
+      }
+
+      // 추가 안정화 대기
+      await page.waitForTimeout(1000);
+
+      // Placeholder 텍스트 제거
+      await page.evaluate(() => {
+        const editor = document.querySelector('[data-a11y-title="본문"]');
+        if (!editor) return;
+
+        const walker = document.createTreeWalker(
+          editor,
+          NodeFilter.SHOW_TEXT,
+          null,
+        );
+
+        const nodesToRemove: Node[] = [];
+        let node;
+        while ((node = walker.nextNode())) {
+          const text = node.textContent || "";
+          if (
+            text.includes("[이미지") ||
+            text.includes("삽입 위치") ||
+            text.includes("이미지 삽입")
+          ) {
+            nodesToRemove.push(node);
+          }
+        }
+
+        nodesToRemove.forEach((n) => n.parentNode?.removeChild(n));
+      });
 
       console.log("   ✅ 이미지 삽입 완료");
 
-      // ✅ 이미지 포커스 완전히 해제하고 아래로 이동
+      // 포커스 해제 및 이동
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(500);
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(500);
 
-      // 아래로 확실히 이동
       await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(200);
       await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(200);
       await page.keyboard.press("Enter");
       await page.keyboard.press("Enter");
     } catch (error) {
