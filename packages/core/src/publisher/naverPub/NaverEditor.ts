@@ -609,9 +609,7 @@ export class NaverEditor {
       await page.waitForTimeout(200);
       await page.keyboard.press("ArrowDown");
       await page.waitForTimeout(200);
-      await page.keyboard.press("Enter");
-      await page.keyboard.press("Enter");
-
+      // await page.keyboard.press("Enter");
       console.log("   ✅ 이미지 삽입 및 포커스 이동 완료");
     } catch (error) {
       console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
