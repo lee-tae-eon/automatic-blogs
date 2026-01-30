@@ -174,30 +174,25 @@ export class NaverEditor {
         } else if (block.type === "blockquote-heading") {
           console.log(`   [인용구 제목] ${block.text.substring(0, 30)}...`);
 
-          await this.page.keyboard.type(">", { delay: 100 });
-          await this.page.keyboard.press("Space");
-          await this.page.waitForTimeout(500);
-
-          await this.page.keyboard.type("##", { delay: 100 });
-          await this.page.keyboard.press("Space");
-          await this.page.waitForTimeout(300);
-
           const cleanText = block.text
             .replace(/^>\s*/, "")
             .replace(/^#+\s*/, "")
             .trim();
-          await this.page.keyboard.type(cleanText, { delay: 30 });
+
+          // 전체 마크다운을 한 번에 입력
+          const fullMarkdown = `> ## ${cleanText}`;
+          await this.page.keyboard.type(fullMarkdown, { delay: 20 });
 
           await this.page.keyboard.press("Enter");
           await this.page.keyboard.press("Enter");
           await this.page.waitForTimeout(300);
 
           const searchQuery = block.text
-            .replace(/[0-9]년|[0-9]월|[0-9]일/g, "") // 날짜 제거
-            .replace(/[^\w\s가-힣]/g, "") // 특수문자 제거
+            .replace(/[0-9]년|[0-9]월|[0-9]일/g, "")
+            .replace(/[^\w\s가-힣]/g, "")
             .split(" ")
-            .filter((word) => word.length > 1) // 한 글자 조사 등 제외
-            .slice(0, 2) // 앞의 핵심 단어 2개만 선택
+            .filter((word) => word.length > 1)
+            .slice(0, 2)
             .join(" ");
 
           console.log(`🔍 이미지 검색 키워드: ${searchQuery}`);
