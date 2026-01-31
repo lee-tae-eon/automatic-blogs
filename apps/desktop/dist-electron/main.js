@@ -191,10 +191,14 @@ function registerIpcHandlers() {
     /**
      * 작업 상태 업데이트 요청 핸들러
      */
-    electron_1.ipcMain.handle("update-task", async (event, { filePath, index, status, persona }) => {
+    electron_1.ipcMain.handle("update-task", async (event, { filePath, index, status, persona, tone }) => {
         try {
             const { ExcelProcessor } = require("@blog-automation/core");
-            ExcelProcessor.updateTaskInExcel(filePath, index, { status, persona });
+            ExcelProcessor.updateTaskInExcel(filePath, index, {
+                status,
+                persona,
+                tone,
+            });
             return { success: true };
         }
         catch (error) {

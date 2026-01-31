@@ -1,6 +1,7 @@
 // ============================================
 // 통합 블로그 프롬프트 생성기
 
+import { TONE_CONFIG } from "@/tone/tone_config";
 import { getPersonaDetail } from "../persona/persona.config";
 import { getPersonaExamples } from "../persona/persona.example";
 import { getQualityMetrics, SEO_RULES } from "../persona/quality-metrics";
@@ -11,6 +12,10 @@ import { autoInferMetadata } from "../util/autoInference";
 export function generateBlogPrompt(input: BlogPostInput): string {
   // 단일 페르소나 처리 (하이브리드는 추후 확장)
   const persona = input.persona;
+
+  // tone
+  const tone = input.tone;
+  const toneConfig = TONE_CONFIG[tone];
 
   // ==========================================
   // 자동 추론 시스템 적용
@@ -35,6 +40,12 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 
 ## 핵심 원칙
 ${personaDetail.principle}
+
+## 🗣️ 톤앤매너 (Tone & Manner) - 중요!
+**현재 당신의 말투는 "${tone}" 톤입니다.**
+- **설명**: ${toneConfig.description}
+- **어미 처리**: ${toneConfig.ending}
+- 페르소나의 역할은 유지하되, 분위기는 위 톤에 맞춰 작성하세요.
 
 ## 문체 및 스타일
 ${personaDetail.style}
