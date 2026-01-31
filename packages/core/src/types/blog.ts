@@ -1,5 +1,28 @@
 import { BaseAiClient } from "../ai";
 
+// ============================================
+// 톤
+// ============================================
+export type Tone =
+  | "professional"
+  | "witty"
+  | "candid"
+  | "energetic"
+  | "serious";
+
+export const TONE_INSTRUCTIONS: Record<Tone, string> = {
+  professional:
+    "신뢰감을 주는 격식 있는 표현을 사용하며, 객관적인 단어를 선택함",
+  witty: "적절한 비유와 가벼운 농담을 섞어 읽는 재미를 주되 선을 넘지 않음",
+  candid: "꾸밈없이 솔직하고 담백한 문체를 사용하며 본인의 사견을 적극 반영함",
+  energetic: "느낌표와 활기찬 감탄사를 사용하여 독자의 의욕을 고취함",
+  serious: "간결하고 힘 있는 문장을 사용하여 사안의 중요성을 강조함",
+};
+
+// ============================================
+// 페르소나
+// ============================================
+
 export type Persona =
   | "informative"
   | "empathetic"
