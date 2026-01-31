@@ -16,6 +16,14 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   // tone
   const tone = input.tone;
   const toneConfig = TONE_CONFIG[tone];
+
+  // ================= DEBUG =================
+  console.log("\n--- [Debug] TONE_CONFIG ---");
+  console.log(`- 입력된 tone: ${tone}`);
+  console.log("- 해당 tone의 설정:", toneConfig);
+  console.log("---------------------------\n");
+  // =========================================
+
   const toneInstruction = getToneInstruction(tone);
 
   // ==========================================
@@ -92,7 +100,7 @@ ${examples.goodSentences
   .join("\n")}
 
 ## 톤 예시 (이 톤으로 작성)
-${toneConfig.examples ? toneConfig.examples.map((ex, i) => `${i + 1}. "${ex}"`).join("\n") : ""}
+${toneConfig?.examples ? toneConfig.examples.map((ex, i) => `${i + 1}. "${ex}"`).join("\n") : ""}
 
 # ❌ 나쁜 문장 예시 (절대 사용 금지)
 ${examples.badSentences.map((s, i) => `${i + 1}. "${s}"`).join("\n")}

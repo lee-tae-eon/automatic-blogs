@@ -665,7 +665,7 @@ export class NaverEditor {
     await this.page.keyboard.press(`${modifier}+V`);
     await this.page.waitForTimeout(500); // 안정적인 붙여넣기 대기
   }
-
+  // 팝업 클린
   public async clearPopups() {
     const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
     try {
@@ -676,7 +676,7 @@ export class NaverEditor {
     } catch (e) {}
     await this.page.keyboard.press("Escape");
   }
-
+  // 타이틀
   public async enterTitle(title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -695,7 +695,7 @@ export class NaverEditor {
       }
     }
   }
-
+  // 컨텐츠 삽입
   public async enterContent(htmlContent: string) {
     try {
       await this.page.keyboard.press("Escape");
@@ -740,6 +740,7 @@ export class NaverEditor {
               .split(" ")
               .slice(0, 2)
               .join(" ");
+
             const imagePath = await this.pexelsService.downloadImage(
               searchQuery,
               this.tempDir,
@@ -777,8 +778,14 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
-          case "paragraph":
+          // ✅ [복구 및 수정] 리스트 케이스 분리
           case "list":
+            await this.pasteHtml(block.html);
+            await this.page.keyboard.press("Enter");
+            break;
+
+          case "paragraph":
+
           default:
             // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지
             await this.pasteHtml(`<p>${block.html}</p>`);
@@ -791,7 +798,7 @@ export class NaverEditor {
       console.error("❌ 본문 입력 중 오류:", error);
     }
   }
-
+  // html 을 text block 으로 변환
   private htmlToTextBlocks(html: string) {
     const blocks: any[] = [];
     const $ = cheerio.load(html);
@@ -851,7 +858,7 @@ export class NaverEditor {
       });
     return blocks;
   }
-
+  // 이미지 업로드
   private async uploadImage(page: Page, imagePath: string | null) {
     if (!imagePath || !fs.existsSync(imagePath)) return;
     try {

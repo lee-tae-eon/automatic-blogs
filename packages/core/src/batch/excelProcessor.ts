@@ -56,6 +56,37 @@ export class ExcelProcessor {
     };
   }
 
+  static readTasks(filePath: string): BatchTask[] {
+    try {
+      const workbook = XLSX.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+
+      const { headerRowIndex } = this.findHeaderInfo(worksheet);
+      if (headerRowIndex === -1) throw new Error("헤더를 찾을 수 없습니다.");
+
+      // 찾은 헤더 위치부터 데이터 읽기
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
+        range: headerRowIndex,
+      });
+
+      return rawData.map((row: any) => {
+        return {
+          topic: row["주제"] || row["Topic"],
+          persona: row["Persona"], // 앱에서 설정하도록 기본값 부여
+          tone: row["Tone"],
+          category: row["카테고리"] || row["Category"],
+          platform: row["플랫폼"] || row["Platform"],
+          keywords: row["키워드"] || row["Keywords"],
+          status: row["상태"] || row["Status"] || "대기",
+        };
+      });
+    } catch (error) {
+      console.error("Excel Parsing Error:", error);
+      throw Error("Excel Parsing Error");
+    }
+  }
+
   /**
    * 특정 작업의 상태, 페르소나, 톤을 업데이트합니다.
    */
