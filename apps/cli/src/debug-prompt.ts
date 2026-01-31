@@ -1,15 +1,10 @@
-import {
-  generateBlogPrompt,
-  BlogPostInput,
-  PERSONA_CONFIG,
-  TONE_CONFIG,
-} from "@blog-automation/core";
+import { generateBlogPrompt, BlogPostInput } from "@blog-automation/core";
 
 // --- 디버깅할 입력값을 여기에서 수정하세요 ---
 const sampleInput: BlogPostInput = {
   topic: "오늘의 날씨와 패션",
-  persona: PERSONA_CONFIG.informative, // 테스트하고 싶은 페르소나
-  tone: TONE_CONFIG.professional, // 테스트하고 싶은 톤
+  persona: "informative", // 테스트하고 싶은 페르소나
+  tone: "professional", // 테스트하고 싶은 톤
   category: "일상",
 };
 // -----------------------------------------
