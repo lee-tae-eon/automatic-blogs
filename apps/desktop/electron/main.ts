@@ -183,10 +183,14 @@ function registerIpcHandlers() {
    */
   ipcMain.handle(
     "update-task",
-    async (event, { filePath, index, status, persona }) => {
+    async (event, { filePath, index, status, persona, tone }) => {
       try {
         const { ExcelProcessor } = require("@blog-automation/core");
-        ExcelProcessor.updateTaskInExcel(filePath, index, { status, persona });
+        ExcelProcessor.updateTaskInExcel(filePath, index, {
+          status,
+          persona,
+          tone,
+        });
         return { success: true };
       } catch (error: any) {
         console.error("❌ 상태 업데이트 오류:", error);

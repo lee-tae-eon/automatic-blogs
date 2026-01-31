@@ -1,4 +1,4 @@
-import { BatchTask, Persona } from "../types/blog";
+import { BatchTask, Persona, Tone } from "../types/blog";
 import * as XLSX from "xlsx";
 
 export class ExcelProcessor {
@@ -63,7 +63,11 @@ export class ExcelProcessor {
   static updateTaskInExcel(
     filePath: string,
     taskIndex: number,
-    { status, persona }: { status: BatchTask["status"]; persona: Persona },
+    {
+      status,
+      persona,
+      tone,
+    }: { status: BatchTask["status"]; persona: Persona; tone: Tone },
   ) {
     try {
       const workbook = XLSX.readFile(filePath);
@@ -112,7 +116,7 @@ export class ExcelProcessor {
       console.log(
         `✅ 엑셀 업데이트 완료: ${
           taskIndex + headerRowIndex + 2
-        }행 Status -> ${status}, Persona -> ${persona}`,
+        }행 Status -> ${status}, Persona -> ${persona}, Tone -> ${tone}`,
       );
     } catch (error) {
       console.error("Excel Update Error:", error);

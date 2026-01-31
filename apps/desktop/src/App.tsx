@@ -30,6 +30,7 @@ export const App: React.FC = () => {
       <TaskTable
         tasks={tasks}
         onPersonaChange={actions.handlePersonaChange}
+        onToneChnage={actions.handleToneChange}
       />
     </div>
   );

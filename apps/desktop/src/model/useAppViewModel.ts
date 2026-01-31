@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { BatchTask, Persona } from "@blog-automation/core/types/blog";
+import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
 
 export const useAppViewModel = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
@@ -49,7 +49,7 @@ export const useAppViewModel = () => {
 
   const updateTaskInExcel = async (
     index: number,
-    updates: { status?: BatchTask["status"]; persona?: Persona },
+    updates: { status?: BatchTask["status"]; persona?: Persona; tone?: Tone },
   ) => {
     if (!currentFilePath) return;
 
@@ -61,6 +61,7 @@ export const useAppViewModel = () => {
       index,
       status: updates.status || task.status,
       persona: updates.persona || task.persona,
+      tone: updates.tone || task.tone,
     });
   };
 
@@ -73,6 +74,19 @@ export const useAppViewModel = () => {
         if (index === taskIndex) {
           const updatedTask = { ...task, persona: newPersona };
           updateTaskInExcel(taskIndex, { persona: newPersona });
+          return updatedTask;
+        }
+        return task;
+      }),
+    );
+  };
+
+  const handleToneChange = async (taskIndex: number, newTone: Tone) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task, index) => {
+        if (index === taskIndex) {
+          const updatedTask = { ...task, tone: newTone };
+          updateTaskInExcel(taskIndex, { tone: newTone });
           return updatedTask;
         }
         return task;
@@ -199,6 +213,7 @@ export const useAppViewModel = () => {
       handleStop,
       handlePublishAll,
       handlePersonaChange,
+      handleToneChange,
     },
   };
 };

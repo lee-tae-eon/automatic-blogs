@@ -1,9 +1,10 @@
 import React from "react";
-import { BatchTask, Persona } from "@blog-automation/core/types/blog";
+import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
 
 interface TaskTableProps {
   tasks: BatchTask[];
   onPersonaChange: (taskIndex: number, newPersona: Persona) => void;
+  onToneChnage: (taskIndex: number, newTone: Tone) => void;
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
@@ -14,9 +15,18 @@ const personaOptions: { label: string; value: Persona }[] = [
   { label: "체험형", value: "experiential" },
 ];
 
+const toneOptions: { label: string; value: Tone }[] = [
+  { label: "전문적인", value: "professional" },
+  { label: "재치있는", value: "witty" },
+  { label: "솔직담백한", value: "candid" },
+  { label: "활기찬", value: "energetic" },
+  { label: "냉철한", value: "serious" },
+];
+
 export const TaskTable: React.FC<TaskTableProps> = ({
   tasks,
   onPersonaChange,
+  onToneChnage,
 }) => {
   return (
     <table>
@@ -24,6 +34,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
         <tr>
           <th>주제</th>
           <th>페르소나</th>
+          <th>톤</th>
           <th>카테고리</th>
           <th>키워드</th>
           <th>플랫폼</th>
@@ -43,6 +54,18 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                   }
                 >
                   {personaOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <select
+                  value={task.tone}
+                  onChange={(e) => onToneChnage(idx, e.target.value as Tone)}
+                >
+                  {toneOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
