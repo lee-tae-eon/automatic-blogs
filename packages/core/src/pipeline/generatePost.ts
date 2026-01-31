@@ -21,6 +21,8 @@ export async function generatePost({
       const inputParams: BlogPostInput = {
         topic: task.topic,
         persona: task.persona,
+        category: task.category,
+        tone: task.tone,
         ...(task.keywords && { keywords: task.keywords }),
       };
 

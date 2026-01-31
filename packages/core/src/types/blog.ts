@@ -64,6 +64,8 @@ export interface QualityMetrics {
 export interface BlogPostInput {
   topic: string;
   persona: Persona;
+  tone: Tone;
+  category: string;
   keywords?: string[];
 }
 
@@ -96,7 +98,7 @@ export type BlogPlatform = "naver" | "tistory";
 export interface BatchTask {
   topic: string;
   persona: Persona;
-  tone: string;
+  tone: Tone;
   category: string;
   keywords?: string[]; // Optional로 설정
   platform?: BlogPlatform;
