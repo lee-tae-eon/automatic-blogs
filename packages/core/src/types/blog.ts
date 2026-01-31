@@ -1,11 +1,11 @@
 import { BaseAiClient } from "../ai";
 
 export type Persona =
+  | "informative"
   | "empathetic"
   | "storytelling"
   | "friendly"
-  | "experiential"
-  | "informative";
+  | "experiential";
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의

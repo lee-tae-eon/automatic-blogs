@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { BatchTask, Persona } from "@blog-automation/core/types/blog";
 
 export const useAppViewModel = () => {
@@ -97,7 +97,12 @@ export const useAppViewModel = () => {
     try {
       const result = await window.ipcRenderer.invoke("parse-excel", filePath);
       if (result.success) {
-        setTasks(result.data);
+        setTasks(
+          result.data.map((task: BatchTask) => ({
+            ...task,
+            persona: task.persona ? task.persona : "정보형",
+          })),
+        );
       } else {
         alert(result.error || "파일 분석에 실패했습니다.");
       }
