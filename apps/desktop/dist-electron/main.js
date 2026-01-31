@@ -53,8 +53,8 @@ let mainWindow = null;
  */
 const createWindow = () => {
     mainWindow = new electron_1.BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1400,
+        height: 1000,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

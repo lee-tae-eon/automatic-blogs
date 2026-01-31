@@ -1,7 +1,7 @@
 // ============================================
 // 통합 블로그 프롬프트 생성기
 
-import { getToneInstruction, TONE_CONFIG } from "@/tone/tone_config";
+import { getToneInstruction, TONE_CONFIG } from "../tone/tone_config";
 import { getPersonaDetail } from "../persona/persona.config";
 import { getPersonaExamples } from "../persona/persona.example";
 import { getQualityMetrics, SEO_RULES } from "../persona/quality-metrics";
