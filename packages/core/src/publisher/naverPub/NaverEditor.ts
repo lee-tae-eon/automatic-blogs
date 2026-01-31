@@ -1,9 +1,630 @@
+// /// <reference lib="dom" />
+// import { Page } from "playwright";
+// import * as cheerio from "cheerio";
+// import fs from "fs";
+// import path from "path";
+// import { PexelsService } from "../../services/pexelImageService"; // 경로가 맞는지 확인하세요
+
+// export class NaverEditor {
+//   private pexelsService = new PexelsService();
+//   private tempDir: string;
+
+//   constructor(
+//     private page: Page,
+//     projectRoot: string,
+//   ) {
+//     this.tempDir = path.join(projectRoot, "temp_images");
+//     if (!fs.existsSync(this.tempDir)) {
+//       fs.mkdirSync(this.tempDir, { recursive: true });
+//     }
+//   }
+
+//   public async clearPopups() {
+//     console.log("🧹 팝업 청소 시작...");
+//     const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
+
+//     try {
+//       const cancelBtn = await this.page.waitForSelector(CANCEL_SELECTOR, {
+//         timeout: 3000,
+//       });
+//       if (cancelBtn) {
+//         await cancelBtn.click();
+//         console.log("✅ 임시저장 불러오기 취소 완료");
+//       }
+//     } catch (e) {
+//       console.log("ℹ️ 활성화된 임시저장 팝업 없음");
+//     }
+
+//     await this.page.keyboard.press("Escape");
+//   }
+
+//   public async enterTitle(title: string, maxRetries = 3) {
+//     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+//       console.log(`\n📝 제목 입력 시도 ${attempt}/${maxRetries}...`);
+
+//       try {
+//         const titleSelector = ".se-title-text";
+//         const elementCount = await this.page.locator(titleSelector).count();
+
+//         if (elementCount === 0) {
+//           throw new Error(`${titleSelector} 요소를 찾을 수 없음`);
+//         }
+
+//         console.log(`   ✅ 제목 요소 발견`);
+
+//         await this.page.locator(titleSelector).first().scrollIntoViewIfNeeded();
+//         await this.page.waitForTimeout(500);
+//         await this.page.locator(titleSelector).first().click({ force: true });
+//         await this.page.waitForTimeout(1000);
+
+//         console.log("   키보드 입력 시도");
+
+//         const isMac = process.platform === "darwin";
+//         await this.page.keyboard.press(isMac ? "Meta+A" : "Control+A");
+//         await this.page.waitForTimeout(300);
+//         await this.page.keyboard.press("Backspace");
+//         await this.page.waitForTimeout(300);
+//         await this.page.keyboard.type(title, { delay: 30 });
+//         await this.page.waitForTimeout(1000);
+
+//         const actualText = (
+//           await this.page.locator(titleSelector).first().innerText()
+//         ).trim();
+
+//         console.log(`      예상: "${title}"`);
+//         console.log(`      실제: "${actualText}"`);
+
+//         const normalize = (str: string) => {
+//           return str.trim();
+//         };
+
+//         const normalizedTitle = normalize(title);
+//         const normalizedActual = normalize(actualText);
+
+//         if (normalizedActual === normalizedTitle) {
+//           console.log(`   ✅ 제목 입력 성공!`);
+//           await this.page.keyboard.press("Escape");
+//           await this.page.waitForTimeout(500);
+//           return;
+//         } else if (
+//           normalizedActual.replace(/[^\w\s가-힣]/g, "") ===
+//           normalizedTitle.replace(/[^\w\s가-힣]/g, "")
+//         ) {
+//           console.log(`   ⚠️ 이모지 불일치 무시 (텍스트 일치)`);
+//           await this.page.keyboard.press("Escape");
+//           await this.page.waitForTimeout(500);
+//           return;
+//         } else {
+//           throw new Error("제목 검증 실패");
+//         }
+//       } catch (error) {
+//         console.log(
+//           `   ❌ 시도 ${attempt} 실패:`,
+//           error instanceof Error ? error.message : error,
+//         );
+
+//         if (attempt < maxRetries) {
+//           console.log(`   🔄 3초 후 재시도...`);
+//           await this.page.waitForTimeout(3000);
+//         }
+//       }
+//     }
+
+//     throw new Error(`제목 입력 ${maxRetries}회 모두 실패`);
+//   }
+
+//   public async enterContent(htmlContent: string) {
+//     console.log("\n📄 본문 입력 중...");
+
+//     try {
+//       await this.page.keyboard.press("Escape");
+//       await this.page.waitForTimeout(500);
+
+//       const bodySelectors = [
+//         '[data-a11y-title="본문"] .se-text-paragraph',
+//         '[data-a11y-title="본문"] .se-module-text',
+//         ".se-component.se-text .se-text-paragraph",
+//       ];
+
+//       let clicked = false;
+//       for (const selector of bodySelectors) {
+//         try {
+//           const element = await this.page.waitForSelector(selector, {
+//             state: "visible",
+//             timeout: 3000,
+//           });
+
+//           if (element) {
+//             await element.click({ force: true });
+//             await this.page.waitForTimeout(500);
+//             clicked = true;
+//             console.log(`   ✅ 본문 영역 클릭 성공`);
+//             break;
+//           }
+//         } catch (e) {
+//           continue;
+//         }
+//       }
+
+//       if (!clicked) {
+//         throw new Error("본문 영역을 찾을 수 없음");
+//       }
+
+//       await this.page.keyboard.press("ArrowDown");
+//       await this.page.waitForTimeout(300);
+
+//       console.log("   HTML 파싱 중...");
+//       const textBlocks = this.htmlToTextBlocks(htmlContent);
+
+//       console.log(`   총 ${textBlocks.length}개 블록 입력 시작...\n`);
+
+//       for (let i = 0; i < textBlocks.length; i++) {
+//         const block = textBlocks[i];
+
+//         // 🛑 [핵심 수정] 타이핑 전에 AI 가이드 문구 원천 제거
+//         // 괄호, 대괄호 안의 Image suggestion 등을 모두 지웁니다.
+//         const garbageRegex =
+//           /(\(Image suggestion.*?\)|\[이미지.*?\]|\[사진.*?\]|이미지 삽입|삽입 위치)/gi;
+
+//         const originalText = block.text;
+//         block.text = block.text.replace(garbageRegex, "").trim();
+
+//         // 텍스트를 지웠는데 빈 블록이 되었고, 구분선/공백라인/테이블이 아니라면 스킵
+//         if (
+//           !block.text &&
+//           block.type !== "separator" &&
+//           block.type !== "empty-line" &&
+//           !block.type.includes("table")
+//         ) {
+//           console.log(
+//             `   ⏭️ [Skip] 가이드 문구 제거됨: "${originalText.substring(0, 20)}..."`,
+//           );
+//           continue;
+//         }
+
+//         if (block.type === "separator") {
+//           console.log(`   [구분선]`);
+//           await this.page.keyboard.type(block.text, { delay: 10 });
+//           await this.page.keyboard.press("Enter");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         } else if (block.type === "empty-line") {
+//           await this.page.keyboard.press("Enter");
+//         } else if (block.type === "blockquote-heading") {
+//           console.log(`   [인용구 제목] ${block.text.substring(0, 30)}...`);
+
+//           const cleanText = block.text
+//             .replace(/^>\s*/, "")
+//             .replace(/^#+\s*/, "")
+//             .trim();
+
+//           // HTML 형식으로 클립보드에 복사
+//           const htmlContent = `<blockquote><h2>${cleanText}</h2></blockquote>`;
+
+//           await this.page.evaluate((html) => {
+//             const type = "text/html";
+//             const blob = new Blob([html], { type });
+//             const data = [new ClipboardItem({ [type]: blob })];
+//             return navigator.clipboard.write(data);
+//           }, htmlContent);
+
+//           // 붙여넣기
+//           const isMac = process.platform === "darwin";
+//           const modifier = isMac ? "Meta" : "Control";
+//           await this.page.keyboard.press(`${modifier}+V`);
+//           await this.page.waitForTimeout(800);
+
+//           // 아래로 이동 (다음 입력 준비)
+//           await this.page.keyboard.press("ArrowDown");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(300);
+
+//           // 이미지 업로드
+//           const searchQuery = block.text
+//             .replace(/[0-9]년|[0-9]월|[0-9]일/g, "")
+//             .replace(/[^\w\s가-힣]/g, "")
+//             .split(" ")
+//             .filter((word) => word.length > 1)
+//             .slice(0, 2)
+//             .join(" ");
+
+//           console.log(`🔍 이미지 검색 키워드: ${searchQuery}`);
+
+//           const imagePath = await this.pexelsService.downloadImage(
+//             searchQuery,
+//             this.tempDir,
+//           );
+
+//           if (imagePath) {
+//             await this.uploadImage(this.page, imagePath);
+
+//             // 이미지 삽입 후 포커스 이동
+//             await this.page.waitForTimeout(1000);
+//             await this.page.keyboard.press("Escape");
+//             await this.page.waitForTimeout(300);
+//             await this.page.keyboard.press("ArrowDown");
+//             await this.page.keyboard.press("ArrowDown");
+//             await this.page.keyboard.press("Enter");
+//             await this.page.keyboard.press("Enter");
+//           } else {
+//             console.log("   ℹ️ 적절한 이미지가 없어 업로드를 생략합니다.");
+//           }
+
+//           await this.page.waitForTimeout(200);
+//         } else if (block.type === "blockquote-paragraph") {
+//           console.log(`   [인용구 문단] ${block.text.substring(0, 30)}...`);
+
+//           const htmlContent = `<blockquote><p>${block.text}</p></blockquote>`;
+
+//           await this.page.evaluate((html) => {
+//             const type = "text/html";
+//             const blob = new Blob([html], { type });
+//             const data = [new ClipboardItem({ [type]: blob })];
+//             return navigator.clipboard.write(data);
+//           }, htmlContent);
+
+//           const isMac = process.platform === "darwin";
+//           const modifier = isMac ? "Meta" : "Control";
+//           await this.page.keyboard.press(`${modifier}+V`);
+//           await this.page.waitForTimeout(500);
+
+//           await this.page.keyboard.press("ArrowDown");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(200);
+//         } else if (block.type === "heading") {
+//           console.log(
+//             `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
+//           );
+
+//           let tag = "h2";
+//           if (block.prefix === "■ ") tag = "h1";
+//           else if (block.prefix === "▶ ") tag = "h2";
+//           else tag = "h3";
+
+//           const htmlContent = `<${tag}>${block.text}</${tag}>`;
+
+//           await this.page.evaluate((html) => {
+//             const type = "text/html";
+//             const blob = new Blob([html], { type });
+//             const data = [new ClipboardItem({ [type]: blob })];
+//             return navigator.clipboard.write(data);
+//           }, htmlContent);
+
+//           const isMac = process.platform === "darwin";
+//           const modifier = isMac ? "Meta" : "Control";
+//           await this.page.keyboard.press(`${modifier}+V`);
+//           await this.page.waitForTimeout(300);
+
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         } else if (block.type === "list") {
+//           console.log(`   [리스트] ${block.text.substring(0, 30)}...`);
+//           await this.page.keyboard.type(`${block.prefix || ""}${block.text}`, {
+//             delay: 15,
+//           });
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         } else if (block.type === "table") {
+//           console.log(`   [테이블] 클립보드 붙여넣기 시도...`);
+
+//           await this.page.evaluate((html) => {
+//             const type = "text/html";
+//             const blob = new Blob([html], { type });
+//             const data = [new ClipboardItem({ [type]: blob })];
+//             return navigator.clipboard.write(data);
+//           }, block.text);
+
+//           const isMac = process.platform === "darwin";
+//           const modifier = isMac ? "Meta" : "Control";
+//           await this.page.keyboard.press(`${modifier}+V`);
+
+//           await this.page.waitForTimeout(1000);
+
+//           await this.page.keyboard.press("ArrowDown");
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         } else if (block.type === "paragraph") {
+//           await this.page.keyboard.type(block.text, { delay: 15 });
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         } else {
+//           await this.page.keyboard.type(block.text, { delay: 15 });
+//           await this.page.keyboard.press("Enter");
+//           await this.page.waitForTimeout(50);
+//         }
+//       }
+
+//       console.log("\n   ✅ 타이핑 완료");
+//       await this.page.waitForTimeout(2000);
+
+//       const verification = await this.page.evaluate(() => {
+//         const titleEl = document.querySelector(".se-title-text") as HTMLElement;
+//         const bodyModule = document.querySelector(
+//           '[data-a11y-title="본문"]',
+//         ) as HTMLElement;
+
+//         return {
+//           titleText: titleEl?.textContent?.trim() || "",
+//           titleLength: titleEl?.textContent?.trim().length || 0,
+//           bodyLength: bodyModule?.textContent?.trim().length || 0,
+//         };
+//       });
+
+//       console.log(`\n   === 최종 확인 ===`);
+//       console.log(
+//         `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
+//       );
+//       console.log(`   본문 길이: ${verification.bodyLength}자`);
+
+//       if (verification.bodyLength < 100) {
+//         console.warn(
+//           `   ⚠️ 주의: 본문이 평소보다 짧게 입력되었습니다. (확인 필요)`,
+//         );
+//       } else {
+//         console.log("   ✅ 본문 입력 확인 완료");
+//       }
+
+//       console.log("✅ 본문 입력 및 검증 완료");
+
+//       await this.page.keyboard.press("Escape");
+//       await this.page.waitForTimeout(1000);
+//     } catch (error) {
+//       console.error("❌ 본문 입력 프로세스 중 오류 발생:", error);
+//       if (error instanceof Error && !error.message.includes("너무 짧음")) {
+//         throw error;
+//       }
+//     }
+//   }
+
+//   private htmlToTextBlocks(html: string) {
+//     const blocks: Array<{
+//       type:
+//         | "heading"
+//         | "paragraph"
+//         | "list"
+//         | "table"
+//         | "table-row"
+//         | "separator"
+//         | "blockquote-heading"
+//         | "blockquote-paragraph"
+//         | "text"
+//         | "empty-line";
+//       text: string;
+//       prefix?: string;
+//     }> = [];
+
+//     const $ = cheerio.load(html);
+
+//     $("body")
+//       .children()
+//       .each((_, element) => {
+//         const $el = $(element);
+//         const tagName = element.tagName?.toLowerCase();
+
+//         if (tagName === "hr") {
+//           blocks.push({
+//             type: "separator",
+//             text: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+//           });
+//           blocks.push({ type: "empty-line", text: "" });
+//           return;
+//         }
+
+//         if (tagName === "blockquote") {
+//           $el.children().each((_, child) => {
+//             const $child = $(child);
+//             const childTag = child.tagName?.toLowerCase();
+
+//             if (childTag && childTag.match(/^h[1-6]$/)) {
+//               const text = $child.text().trim();
+//               if (text) {
+//                 let prefix = "";
+//                 if (childTag === "h1") prefix = "■ ";
+//                 else if (childTag === "h2") prefix = "▶ ";
+//                 else prefix = "• ";
+
+//                 blocks.push({ type: "blockquote-heading", text, prefix });
+//                 blocks.push({ type: "empty-line", text: "" });
+//                 blocks.push({ type: "empty-line", text: "" });
+//                 blocks.push({ type: "empty-line", text: "" });
+//               }
+//               return;
+//             }
+
+//             if (childTag === "ul" || childTag === "ol") {
+//               $child.find("li").each((idx, li) => {
+//                 const text = $(li).text().trim();
+//                 if (text) {
+//                   const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
+//                   blocks.push({ type: "list", text, prefix });
+//                 }
+//               });
+//               blocks.push({ type: "empty-line", text: "" });
+//               return;
+//             }
+
+//             if (childTag === "table") {
+//               $child.find("tr").each((idx, tr) => {
+//                 const cells: string[] = [];
+//                 $(tr)
+//                   .find("th, td")
+//                   .each((_, cell) => {
+//                     cells.push($(cell).text().trim());
+//                   });
+
+//                 if (cells.length > 0) {
+//                   const rowText = cells.join(" │ ");
+//                   blocks.push({ type: "table-row", text: rowText });
+//                 }
+//               });
+//               blocks.push({ type: "empty-line", text: "" });
+//               return;
+//             }
+
+//             const text = $child.text().trim();
+//             if (text) {
+//               blocks.push({ type: "blockquote-paragraph", text });
+//               blocks.push({ type: "empty-line", text: "" });
+//             }
+//           });
+//           return;
+//         }
+
+//         if (tagName && tagName.match(/^h[1-6]$/)) {
+//           const text = $el.text().trim();
+//           if (text) {
+//             let prefix = "";
+//             if (tagName === "h1") prefix = "■ ";
+//             else if (tagName === "h2") prefix = "▶ ";
+//             else prefix = "• ";
+
+//             blocks.push({ type: "heading", text, prefix });
+//             blocks.push({ type: "empty-line", text: "" });
+//           }
+//           return;
+//         }
+
+//         if (tagName === "ul" || tagName === "ol") {
+//           $el.find("li").each((idx, li) => {
+//             const text = $(li).text().trim();
+//             if (text) {
+//               const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
+//               blocks.push({ type: "list", text, prefix });
+//             }
+//           });
+//           blocks.push({ type: "empty-line", text: "" });
+//           return;
+//         }
+
+//         if (tagName === "table") {
+//           $el
+//             .find("*")
+//             .removeAttr("class")
+//             .removeAttr("style")
+//             .removeAttr("id");
+//           $el.removeAttr("class").removeAttr("style").removeAttr("id");
+
+//           $el.attr("border", "1");
+//           $el.attr("style", "border-collapse: collapse; width: 100%;");
+//           $el
+//             .find("th, td")
+//             .attr("style", "border: 1px solid #ccc; padding: 10px;");
+
+//           const tableHtml = $.html($el);
+//           blocks.push({ type: "table", text: tableHtml });
+//           blocks.push({ type: "empty-line", text: "" });
+//           return;
+//         }
+
+//         const text = $el.text().trim();
+//         if (text) {
+//           blocks.push({ type: "paragraph", text });
+//           blocks.push({ type: "empty-line", text: "" });
+//         }
+//       });
+
+//     return blocks;
+//   }
+
+//   private async uploadImage(page: Page, imagePath: string | null) {
+//     // 1. 보험용 청소 (enterContent에서 놓쳤을 경우 대비)
+//     await page.evaluate(() => {
+//       const editor = document.querySelector('[data-a11y-title="본문"]');
+//       if (!editor) return;
+
+//       const walker = document.createTreeWalker(
+//         editor,
+//         NodeFilter.SHOW_TEXT,
+//         null,
+//       );
+//       const nodesToRemove: Node[] = [];
+//       let node;
+
+//       while ((node = walker.nextNode())) {
+//         const text = node.textContent || "";
+//         if (
+//           /\[이미지|\(Image suggestion|이미지 삽입|삽입 위치|\[사진/i.test(text)
+//         ) {
+//           nodesToRemove.push(node);
+//         }
+//       }
+//       nodesToRemove.forEach(
+//         (n) => n.parentElement?.remove() || n.parentNode?.removeChild(n),
+//       );
+//     });
+
+//     if (!imagePath || !fs.existsSync(imagePath)) {
+//       console.log("   ℹ️ 이미지 파일이 없어 스킵함.");
+//       return;
+//     }
+
+//     console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
+
+//     try {
+//       await page.keyboard.press("Escape");
+//       await page.waitForTimeout(500);
+
+//       const beforeImageCount = await page.evaluate(() => {
+//         const editor = document.querySelector('[data-a11y-title="본문"]');
+//         return editor?.querySelectorAll("img").length || 0;
+//       });
+
+//       const fileChooserPromise = page.waitForEvent("filechooser");
+
+//       const photoButton = page.locator(
+//         'button.se-image-toolbar-button, button[data-log="image"]',
+//       );
+//       await photoButton.first().click();
+//       await page.waitForTimeout(500);
+
+//       const fileChooser = await fileChooserPromise;
+//       await fileChooser.setFiles(imagePath);
+
+//       console.log("   ⏳ 이미지 업로드 및 렌더링 대기 중...");
+
+//       try {
+//         await page.waitForFunction(
+//           (prevCount) => {
+//             const editor = document.querySelector('[data-a11y-title="본문"]');
+//             const currentCount = editor?.querySelectorAll("img").length || 0;
+//             return currentCount > (prevCount as number);
+//           },
+//           beforeImageCount,
+//           { timeout: 5000 },
+//         );
+//         console.log("   ✅ 이미지 렌더링 확인");
+//       } catch (e) {
+//         console.warn("   ⚠️ 5초 이내에 이미지 렌더링 확인 불가 (계속 진행)");
+//       }
+
+//       await page.waitForTimeout(1000);
+
+//       await page.keyboard.press("Escape");
+//       await page.waitForTimeout(500);
+//       await page.keyboard.press("Escape");
+//       await page.waitForTimeout(500);
+
+//       await page.keyboard.press("ArrowDown");
+//       await page.waitForTimeout(200);
+//       await page.keyboard.press("ArrowDown");
+//       await page.waitForTimeout(200);
+//       await page.keyboard.press("Enter");
+//       await page.keyboard.press("Enter");
+
+//       console.log("   ✅ 이미지 삽입 및 포커스 이동 완료");
+//     } catch (error) {
+//       console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
+//     }
+//   }
+// }
 /// <reference lib="dom" />
 import { Page } from "playwright";
 import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
-import { PexelsService } from "../../services/pexelImageService"; // 경로가 맞는지 확인하세요
+import { PexelsService } from "../../services/pexelImageService";
 
 export class NaverEditor {
   private pexelsService = new PexelsService();
@@ -19,382 +640,160 @@ export class NaverEditor {
     }
   }
 
-  public async clearPopups() {
-    console.log("🧹 팝업 청소 시작...");
-    const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
+  /**
+   * 텍스트와 HTML에서 가비지 문구를 제거하는 유틸리티
+   */
+  private cleanContent(content: string): string {
+    const garbageRegex =
+      /(\(Image suggestion.*?\)|\[이미지.*?\]|\[사진.*?\]|이미지 삽입|삽입 위치|image suggestion:.*?\n?)/gi;
+    return content.replace(garbageRegex, "").trim();
+  }
 
+  /**
+   * 클립보드를 통해 HTML을 에디터에 붙여넣는 공통 함수
+   */
+  private async pasteHtml(html: string) {
+    await this.page.evaluate((htmlContent) => {
+      const type = "text/html";
+      const blob = new Blob([htmlContent], { type });
+      const data = [new ClipboardItem({ [type]: blob })];
+      return navigator.clipboard.write(data);
+    }, html);
+
+    const isMac = process.platform === "darwin";
+    const modifier = isMac ? "Meta" : "Control";
+    await this.page.keyboard.press(`${modifier}+V`);
+    await this.page.waitForTimeout(500); // 안정적인 붙여넣기 대기
+  }
+
+  public async clearPopups() {
+    const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
     try {
       const cancelBtn = await this.page.waitForSelector(CANCEL_SELECTOR, {
         timeout: 3000,
       });
-      if (cancelBtn) {
-        await cancelBtn.click();
-        console.log("✅ 임시저장 불러오기 취소 완료");
-      }
-    } catch (e) {
-      console.log("ℹ️ 활성화된 임시저장 팝업 없음");
-    }
-
+      if (cancelBtn) await cancelBtn.click();
+    } catch (e) {}
     await this.page.keyboard.press("Escape");
   }
 
   public async enterTitle(title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      console.log(`\n📝 제목 입력 시도 ${attempt}/${maxRetries}...`);
-
       try {
         const titleSelector = ".se-title-text";
-        const elementCount = await this.page.locator(titleSelector).count();
-
-        if (elementCount === 0) {
-          throw new Error(`${titleSelector} 요소를 찾을 수 없음`);
-        }
-
-        console.log(`   ✅ 제목 요소 발견`);
-
-        await this.page.locator(titleSelector).first().scrollIntoViewIfNeeded();
-        await this.page.waitForTimeout(500);
         await this.page.locator(titleSelector).first().click({ force: true });
-        await this.page.waitForTimeout(1000);
-
-        console.log("   키보드 입력 시도");
+        await this.page.waitForTimeout(500);
 
         const isMac = process.platform === "darwin";
         await this.page.keyboard.press(isMac ? "Meta+A" : "Control+A");
-        await this.page.waitForTimeout(300);
         await this.page.keyboard.press("Backspace");
-        await this.page.waitForTimeout(300);
         await this.page.keyboard.type(title, { delay: 30 });
-        await this.page.waitForTimeout(1000);
-
-        const actualText = (
-          await this.page.locator(titleSelector).first().innerText()
-        ).trim();
-
-        console.log(`      예상: "${title}"`);
-        console.log(`      실제: "${actualText}"`);
-
-        const normalize = (str: string) => {
-          return str.trim();
-        };
-
-        const normalizedTitle = normalize(title);
-        const normalizedActual = normalize(actualText);
-
-        if (normalizedActual === normalizedTitle) {
-          console.log(`   ✅ 제목 입력 성공!`);
-          await this.page.keyboard.press("Escape");
-          await this.page.waitForTimeout(500);
-          return;
-        } else if (
-          normalizedActual.replace(/[^\w\s가-힣]/g, "") ===
-          normalizedTitle.replace(/[^\w\s가-힣]/g, "")
-        ) {
-          console.log(`   ⚠️ 이모지 불일치 무시 (텍스트 일치)`);
-          await this.page.keyboard.press("Escape");
-          await this.page.waitForTimeout(500);
-          return;
-        } else {
-          throw new Error("제목 검증 실패");
-        }
+        return;
       } catch (error) {
-        console.log(
-          `   ❌ 시도 ${attempt} 실패:`,
-          error instanceof Error ? error.message : error,
-        );
-
-        if (attempt < maxRetries) {
-          console.log(`   🔄 3초 후 재시도...`);
-          await this.page.waitForTimeout(3000);
-        }
+        if (attempt === maxRetries) throw error;
+        await this.page.waitForTimeout(2000);
       }
     }
-
-    throw new Error(`제목 입력 ${maxRetries}회 모두 실패`);
   }
 
   public async enterContent(htmlContent: string) {
-    console.log("\n📄 본문 입력 중...");
-
     try {
       await this.page.keyboard.press("Escape");
-      await this.page.waitForTimeout(500);
-
-      const bodySelectors = [
-        '[data-a11y-title="본문"] .se-text-paragraph',
-        '[data-a11y-title="본문"] .se-module-text',
-        ".se-component.se-text .se-text-paragraph",
-      ];
-
-      let clicked = false;
-      for (const selector of bodySelectors) {
-        try {
-          const element = await this.page.waitForSelector(selector, {
-            state: "visible",
-            timeout: 3000,
-          });
-
-          if (element) {
-            await element.click({ force: true });
-            await this.page.waitForTimeout(500);
-            clicked = true;
-            console.log(`   ✅ 본문 영역 클릭 성공`);
-            break;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-
-      if (!clicked) {
-        throw new Error("본문 영역을 찾을 수 없음");
-      }
-
+      const bodySelector = '[data-a11y-title="본문"] .se-text-paragraph';
+      await this.page.waitForSelector(bodySelector, { timeout: 5000 });
+      await this.page.click(bodySelector, { force: true });
       await this.page.keyboard.press("ArrowDown");
-      await this.page.waitForTimeout(300);
 
-      console.log("   HTML 파싱 중...");
       const textBlocks = this.htmlToTextBlocks(htmlContent);
 
-      console.log(`   총 ${textBlocks.length}개 블록 입력 시작...\n`);
+      for (const block of textBlocks) {
+        // 타이핑 전 가비지 제거
+        block.html = this.cleanContent(block.html);
+        block.text = this.cleanContent(block.text);
 
-      for (let i = 0; i < textBlocks.length; i++) {
-        const block = textBlocks[i];
-
-        // 🛑 [핵심 수정] 타이핑 전에 AI 가이드 문구 원천 제거
-        // 괄호, 대괄호 안의 Image suggestion 등을 모두 지웁니다.
-        const garbageRegex =
-          /(\(Image suggestion.*?\)|\[이미지.*?\]|\[사진.*?\]|이미지 삽입|삽입 위치)/gi;
-
-        const originalText = block.text;
-        block.text = block.text.replace(garbageRegex, "").trim();
-
-        // 텍스트를 지웠는데 빈 블록이 되었고, 구분선/공백라인/테이블이 아니라면 스킵
         if (
-          !block.text &&
+          !block.html &&
           block.type !== "separator" &&
-          block.type !== "empty-line" &&
-          !block.type.includes("table")
-        ) {
-          console.log(
-            `   ⏭️ [Skip] 가이드 문구 제거됨: "${originalText.substring(0, 20)}..."`,
-          );
+          block.type !== "empty-line"
+        )
           continue;
-        }
 
-        if (block.type === "separator") {
-          console.log(`   [구분선]`);
-          await this.page.keyboard.type(block.text, { delay: 10 });
-          await this.page.keyboard.press("Enter");
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
-        } else if (block.type === "empty-line") {
-          await this.page.keyboard.press("Enter");
-        } else if (block.type === "blockquote-heading") {
-          console.log(`   [인용구 제목] ${block.text.substring(0, 30)}...`);
+        switch (block.type) {
+          case "separator":
+            await this.page.keyboard.type("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            await this.page.keyboard.press("Enter");
+            break;
 
-          const cleanText = block.text
-            .replace(/^>\s*/, "")
-            .replace(/^#+\s*/, "")
-            .trim();
+          case "empty-line":
+            await this.page.keyboard.press("Enter");
+            break;
 
-          // HTML 형식으로 클립보드에 복사
-          const htmlContent = `<blockquote><h2>${cleanText}</h2></blockquote>`;
-
-          await this.page.evaluate((html) => {
-            const type = "text/html";
-            const blob = new Blob([html], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            return navigator.clipboard.write(data);
-          }, htmlContent);
-
-          // 붙여넣기
-          const isMac = process.platform === "darwin";
-          const modifier = isMac ? "Meta" : "Control";
-          await this.page.keyboard.press(`${modifier}+V`);
-          await this.page.waitForTimeout(800);
-
-          // 아래로 이동 (다음 입력 준비)
-          await this.page.keyboard.press("ArrowDown");
-          await this.page.keyboard.press("Enter");
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(300);
-
-          // 이미지 업로드
-          const searchQuery = block.text
-            .replace(/[0-9]년|[0-9]월|[0-9]일/g, "")
-            .replace(/[^\w\s가-힣]/g, "")
-            .split(" ")
-            .filter((word) => word.length > 1)
-            .slice(0, 2)
-            .join(" ");
-
-          console.log(`🔍 이미지 검색 키워드: ${searchQuery}`);
-
-          const imagePath = await this.pexelsService.downloadImage(
-            searchQuery,
-            this.tempDir,
-          );
-
-          if (imagePath) {
-            await this.uploadImage(this.page, imagePath);
-
-            // 이미지 삽입 후 포커스 이동
-            await this.page.waitForTimeout(1000);
-            await this.page.keyboard.press("Escape");
-            await this.page.waitForTimeout(300);
-            await this.page.keyboard.press("ArrowDown");
+          case "blockquote-heading":
+            const bqHeadHtml = `<blockquote><h2>${block.text}</h2></blockquote>`;
+            await this.pasteHtml(bqHeadHtml);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
+
+            // 이미지 업로드 로직
+            const searchQuery = block.text
+              .replace(/[^\w\s가-힣]/g, "")
+              .split(" ")
+              .slice(0, 2)
+              .join(" ");
+            const imagePath = await this.pexelsService.downloadImage(
+              searchQuery,
+              this.tempDir,
+            );
+            if (imagePath) {
+              await this.uploadImage(this.page, imagePath);
+              await this.page.waitForTimeout(1000);
+              await this.page.keyboard.press("ArrowDown");
+              await this.page.keyboard.press("Enter");
+            }
+            break;
+
+          case "blockquote-paragraph":
+            await this.pasteHtml(
+              `<blockquote><p>${block.html}</p></blockquote>`,
+            );
+            await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
-          } else {
-            console.log("   ℹ️ 적절한 이미지가 없어 업로드를 생략합니다.");
-          }
+            break;
 
-          await this.page.waitForTimeout(200);
-        } else if (block.type === "blockquote-paragraph") {
-          console.log(`   [인용구 문단] ${block.text.substring(0, 30)}...`);
+          case "heading":
+            const tag =
+              block.prefix === "■ "
+                ? "h1"
+                : block.prefix === "▶ "
+                  ? "h2"
+                  : "h3";
+            await this.pasteHtml(`<${tag}>${block.text}</${tag}>`);
+            await this.page.keyboard.press("Enter");
+            break;
 
-          const htmlContent = `<blockquote><p>${block.text}</p></blockquote>`;
+          case "table":
+            await this.pasteHtml(block.html);
+            await this.page.keyboard.press("ArrowDown");
+            await this.page.keyboard.press("Enter");
+            break;
 
-          await this.page.evaluate((html) => {
-            const type = "text/html";
-            const blob = new Blob([html], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            return navigator.clipboard.write(data);
-          }, htmlContent);
-
-          const isMac = process.platform === "darwin";
-          const modifier = isMac ? "Meta" : "Control";
-          await this.page.keyboard.press(`${modifier}+V`);
-          await this.page.waitForTimeout(500);
-
-          await this.page.keyboard.press("ArrowDown");
-          await this.page.keyboard.press("Enter");
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(200);
-        } else if (block.type === "heading") {
-          console.log(
-            `   [제목] ${block.prefix}${block.text.substring(0, 30)}...`,
-          );
-
-          let tag = "h2";
-          if (block.prefix === "■ ") tag = "h1";
-          else if (block.prefix === "▶ ") tag = "h2";
-          else tag = "h3";
-
-          const htmlContent = `<${tag}>${block.text}</${tag}>`;
-
-          await this.page.evaluate((html) => {
-            const type = "text/html";
-            const blob = new Blob([html], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            return navigator.clipboard.write(data);
-          }, htmlContent);
-
-          const isMac = process.platform === "darwin";
-          const modifier = isMac ? "Meta" : "Control";
-          await this.page.keyboard.press(`${modifier}+V`);
-          await this.page.waitForTimeout(300);
-
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
-        } else if (block.type === "list") {
-          console.log(`   [리스트] ${block.text.substring(0, 30)}...`);
-          await this.page.keyboard.type(`${block.prefix || ""}${block.text}`, {
-            delay: 15,
-          });
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
-        } else if (block.type === "table") {
-          console.log(`   [테이블] 클립보드 붙여넣기 시도...`);
-
-          await this.page.evaluate((html) => {
-            const type = "text/html";
-            const blob = new Blob([html], { type });
-            const data = [new ClipboardItem({ [type]: blob })];
-            return navigator.clipboard.write(data);
-          }, block.text);
-
-          const isMac = process.platform === "darwin";
-          const modifier = isMac ? "Meta" : "Control";
-          await this.page.keyboard.press(`${modifier}+V`);
-
-          await this.page.waitForTimeout(1000);
-
-          await this.page.keyboard.press("ArrowDown");
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
-        } else if (block.type === "paragraph") {
-          await this.page.keyboard.type(block.text, { delay: 15 });
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
-        } else {
-          await this.page.keyboard.type(block.text, { delay: 15 });
-          await this.page.keyboard.press("Enter");
-          await this.page.waitForTimeout(50);
+          case "paragraph":
+          case "list":
+          default:
+            // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지
+            await this.pasteHtml(`<p>${block.html}</p>`);
+            await this.page.keyboard.press("Enter");
+            break;
         }
+        await this.page.waitForTimeout(200);
       }
-
-      console.log("\n   ✅ 타이핑 완료");
-      await this.page.waitForTimeout(2000);
-
-      const verification = await this.page.evaluate(() => {
-        const titleEl = document.querySelector(".se-title-text") as HTMLElement;
-        const bodyModule = document.querySelector(
-          '[data-a11y-title="본문"]',
-        ) as HTMLElement;
-
-        return {
-          titleText: titleEl?.textContent?.trim() || "",
-          titleLength: titleEl?.textContent?.trim().length || 0,
-          bodyLength: bodyModule?.textContent?.trim().length || 0,
-        };
-      });
-
-      console.log(`\n   === 최종 확인 ===`);
-      console.log(
-        `   제목: "${verification.titleText}" (${verification.titleLength}자)`,
-      );
-      console.log(`   본문 길이: ${verification.bodyLength}자`);
-
-      if (verification.bodyLength < 100) {
-        console.warn(
-          `   ⚠️ 주의: 본문이 평소보다 짧게 입력되었습니다. (확인 필요)`,
-        );
-      } else {
-        console.log("   ✅ 본문 입력 확인 완료");
-      }
-
-      console.log("✅ 본문 입력 및 검증 완료");
-
-      await this.page.keyboard.press("Escape");
-      await this.page.waitForTimeout(1000);
     } catch (error) {
-      console.error("❌ 본문 입력 프로세스 중 오류 발생:", error);
-      if (error instanceof Error && !error.message.includes("너무 짧음")) {
-        throw error;
-      }
+      console.error("❌ 본문 입력 중 오류:", error);
     }
   }
 
   private htmlToTextBlocks(html: string) {
-    const blocks: Array<{
-      type:
-        | "heading"
-        | "paragraph"
-        | "list"
-        | "table"
-        | "table-row"
-        | "separator"
-        | "blockquote-heading"
-        | "blockquote-paragraph"
-        | "text"
-        | "empty-line";
-      text: string;
-      prefix?: string;
-    }> = [];
-
+    const blocks: any[] = [];
     const $ = cheerio.load(html);
 
     $("body")
@@ -402,220 +801,75 @@ export class NaverEditor {
       .each((_, element) => {
         const $el = $(element);
         const tagName = element.tagName?.toLowerCase();
+        const rawHtml = $el.html() || "";
 
         if (tagName === "hr") {
-          blocks.push({
-            type: "separator",
-            text: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-          });
-          blocks.push({ type: "empty-line", text: "" });
-          return;
-        }
-
-        if (tagName === "blockquote") {
+          blocks.push({ type: "separator", text: "" });
+        } else if (tagName === "blockquote") {
           $el.children().each((_, child) => {
             const $child = $(child);
-            const childTag = child.tagName?.toLowerCase();
-
-            if (childTag && childTag.match(/^h[1-6]$/)) {
-              const text = $child.text().trim();
-              if (text) {
-                let prefix = "";
-                if (childTag === "h1") prefix = "■ ";
-                else if (childTag === "h2") prefix = "▶ ";
-                else prefix = "• ";
-
-                blocks.push({ type: "blockquote-heading", text, prefix });
-                blocks.push({ type: "empty-line", text: "" });
-                blocks.push({ type: "empty-line", text: "" });
-                blocks.push({ type: "empty-line", text: "" });
-              }
-              return;
-            }
-
-            if (childTag === "ul" || childTag === "ol") {
-              $child.find("li").each((idx, li) => {
-                const text = $(li).text().trim();
-                if (text) {
-                  const prefix = childTag === "ol" ? `  ${idx + 1}. ` : "  • ";
-                  blocks.push({ type: "list", text, prefix });
-                }
+            const cTag = child.tagName?.toLowerCase();
+            if (cTag?.match(/^h[1-6]$/)) {
+              blocks.push({
+                type: "blockquote-heading",
+                text: $child.text().trim(),
+                html: $child.html(),
               });
-              blocks.push({ type: "empty-line", text: "" });
-              return;
-            }
-
-            if (childTag === "table") {
-              $child.find("tr").each((idx, tr) => {
-                const cells: string[] = [];
-                $(tr)
-                  .find("th, td")
-                  .each((_, cell) => {
-                    cells.push($(cell).text().trim());
-                  });
-
-                if (cells.length > 0) {
-                  const rowText = cells.join(" │ ");
-                  blocks.push({ type: "table-row", text: rowText });
-                }
+            } else {
+              blocks.push({
+                type: "blockquote-paragraph",
+                text: $child.text().trim(),
+                html: $child.html(),
               });
-              blocks.push({ type: "empty-line", text: "" });
-              return;
-            }
-
-            const text = $child.text().trim();
-            if (text) {
-              blocks.push({ type: "blockquote-paragraph", text });
-              blocks.push({ type: "empty-line", text: "" });
             }
           });
-          return;
-        }
-
-        if (tagName && tagName.match(/^h[1-6]$/)) {
-          const text = $el.text().trim();
-          if (text) {
-            let prefix = "";
-            if (tagName === "h1") prefix = "■ ";
-            else if (tagName === "h2") prefix = "▶ ";
-            else prefix = "• ";
-
-            blocks.push({ type: "heading", text, prefix });
-            blocks.push({ type: "empty-line", text: "" });
-          }
-          return;
-        }
-
-        if (tagName === "ul" || tagName === "ol") {
-          $el.find("li").each((idx, li) => {
-            const text = $(li).text().trim();
-            if (text) {
-              const prefix = tagName === "ol" ? `${idx + 1}. ` : "• ";
-              blocks.push({ type: "list", text, prefix });
-            }
+        } else if (tagName?.match(/^h[1-6]$/)) {
+          let prefix = tagName === "h1" ? "■ " : tagName === "h2" ? "▶ " : "• ";
+          blocks.push({
+            type: "heading",
+            text: $el.text().trim(),
+            prefix,
+            html: rawHtml,
           });
-          blocks.push({ type: "empty-line", text: "" });
-          return;
-        }
-
-        if (tagName === "table") {
-          $el
-            .find("*")
-            .removeAttr("class")
-            .removeAttr("style")
-            .removeAttr("id");
-          $el.removeAttr("class").removeAttr("style").removeAttr("id");
-
-          $el.attr("border", "1");
-          $el.attr("style", "border-collapse: collapse; width: 100%;");
-          $el
-            .find("th, td")
-            .attr("style", "border: 1px solid #ccc; padding: 10px;");
-
-          const tableHtml = $.html($el);
-          blocks.push({ type: "table", text: tableHtml });
-          blocks.push({ type: "empty-line", text: "" });
-          return;
-        }
-
-        const text = $el.text().trim();
-        if (text) {
-          blocks.push({ type: "paragraph", text });
-          blocks.push({ type: "empty-line", text: "" });
+        } else if (tagName === "ul" || tagName === "ol") {
+          $el.find("li").each((_, li) => {
+            blocks.push({
+              type: "list",
+              text: $(li).text().trim(),
+              html: $(li).html(),
+            });
+          });
+        } else if (tagName === "table") {
+          blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
+        } else {
+          blocks.push({
+            type: "paragraph",
+            text: $el.text().trim(),
+            html: rawHtml,
+          });
         }
       });
-
     return blocks;
   }
 
   private async uploadImage(page: Page, imagePath: string | null) {
-    // 1. 보험용 청소 (enterContent에서 놓쳤을 경우 대비)
-    await page.evaluate(() => {
-      const editor = document.querySelector('[data-a11y-title="본문"]');
-      if (!editor) return;
-
-      const walker = document.createTreeWalker(
-        editor,
-        NodeFilter.SHOW_TEXT,
-        null,
-      );
-      const nodesToRemove: Node[] = [];
-      let node;
-
-      while ((node = walker.nextNode())) {
-        const text = node.textContent || "";
-        if (
-          /\[이미지|\(Image suggestion|이미지 삽입|삽입 위치|\[사진/i.test(text)
-        ) {
-          nodesToRemove.push(node);
-        }
-      }
-      nodesToRemove.forEach(
-        (n) => n.parentElement?.remove() || n.parentNode?.removeChild(n),
-      );
-    });
-
-    if (!imagePath || !fs.existsSync(imagePath)) {
-      console.log("   ℹ️ 이미지 파일이 없어 스킵함.");
-      return;
-    }
-
-    console.log(`   📸 이미지 업로드 시도: ${path.basename(imagePath)}`);
-
+    if (!imagePath || !fs.existsSync(imagePath)) return;
     try {
       await page.keyboard.press("Escape");
-      await page.waitForTimeout(500);
-
-      const beforeImageCount = await page.evaluate(() => {
-        const editor = document.querySelector('[data-a11y-title="본문"]');
-        return editor?.querySelectorAll("img").length || 0;
-      });
-
-      const fileChooserPromise = page.waitForEvent("filechooser");
-
-      const photoButton = page.locator(
-        'button.se-image-toolbar-button, button[data-log="image"]',
+      const beforeCount = await page.evaluate(
+        () => document.querySelectorAll("img").length,
       );
-      await photoButton.first().click();
-      await page.waitForTimeout(500);
-
+      const fileChooserPromise = page.waitForEvent("filechooser");
+      await page.locator('button[data-log="image"]').first().click();
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(imagePath);
-
-      console.log("   ⏳ 이미지 업로드 및 렌더링 대기 중...");
-
-      try {
-        await page.waitForFunction(
-          (prevCount) => {
-            const editor = document.querySelector('[data-a11y-title="본문"]');
-            const currentCount = editor?.querySelectorAll("img").length || 0;
-            return currentCount > (prevCount as number);
-          },
-          beforeImageCount,
-          { timeout: 5000 },
-        );
-        console.log("   ✅ 이미지 렌더링 확인");
-      } catch (e) {
-        console.warn("   ⚠️ 5초 이내에 이미지 렌더링 확인 불가 (계속 진행)");
-      }
-
-      await page.waitForTimeout(1000);
-
-      await page.keyboard.press("Escape");
-      await page.waitForTimeout(500);
-      await page.keyboard.press("Escape");
-      await page.waitForTimeout(500);
-
-      await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(200);
-      await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(200);
-      await page.keyboard.press("Enter");
-      await page.keyboard.press("Enter");
-
-      console.log("   ✅ 이미지 삽입 및 포커스 이동 완료");
-    } catch (error) {
-      console.error("   ❌ 이미지 업로드 중 오류 발생:", error);
+      await page.waitForFunction(
+        (prev) => document.querySelectorAll("img").length > prev,
+        beforeCount,
+        { timeout: 7000 },
+      );
+    } catch (e) {
+      console.warn("⚠️ 이미지 업로드 타임아웃");
     }
   }
 }

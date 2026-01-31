@@ -5,29 +5,27 @@ import crypto from "crypto";
 
 export class PexelsService {
   private apiKey: string;
-  private pexelEndpoint = "https://api.pexels.com/v1/search";
+  private readonly API_URL = "https://api.pexels.com/v1/search";
+
   constructor() {
+    // ✅ Electron 실행 시 .env 로딩 실패를 대비해 공백 제거 및 확인 로직 강화
     this.apiKey = (process.env.PEXELS_API_KEY || "").trim();
+
     if (!this.apiKey) {
-      console.warn("⚠️ PEXELS_API_KEY가 설정되지 않았습니다.");
+      console.error(
+        "❌ [PexelsService] API Key가 없습니다. .env 파일이나 환경변수를 확인하세요.",
+      );
     }
   }
 
-  /**
-   * 키워드를 파일명으로 안전하게 변환
-   * 예: "삼성전자 주가" → "samsung-junga"
-   */
   private sanitizeKeyword(keyword: string): string {
     return keyword
       .toLowerCase()
-      .replace(/\s+/g, "-") // 공백을 하이픈으로
-      .replace(/[^\w가-힣-]/g, "") // 특수문자 제거
-      .substring(0, 50); // 최대 50자
+      .replace(/\s+/g, "-")
+      .replace(/[^\w가-힣-]/g, "")
+      .substring(0, 50);
   }
 
-  /**
-   * 키워드의 해시값 생성 (중복 방지용)
-   */
   private getKeywordHash(keyword: string): string {
     return crypto
       .createHash("md5")
@@ -36,14 +34,9 @@ export class PexelsService {
       .substring(0, 8);
   }
 
-  /**
-   * 캐시된 이미지가 있는지 확인
-   */
   private findCachedImage(keyword: string, saveDir: string): string | null {
     const sanitized = this.sanitizeKeyword(keyword);
     const hash = this.getKeywordHash(keyword);
-
-    // 가능한 파일명 패턴들
     const patterns = [
       `pexels_${sanitized}_${hash}.jpg`,
       `pexels_${sanitized}_${hash}.jpeg`,
@@ -52,151 +45,69 @@ export class PexelsService {
 
     for (const pattern of patterns) {
       const filePath = path.join(saveDir, pattern);
-      if (fs.existsSync(filePath)) {
-        console.log(`✅ 캐시된 이미지 사용: ${pattern}`);
-        return filePath;
-      }
+      if (fs.existsSync(filePath)) return filePath;
     }
-
     return null;
   }
 
-  /**
-   * Pexels에서 이미지 다운로드 (캐싱 적용)
-   */
   async downloadImage(
     keyword: string,
     saveDir: string,
   ): Promise<string | null> {
+    // ✅ 검색어가 너무 짧거나 의미 없는 수식어면 시도하지 않음
+    if (
+      !keyword ||
+      keyword.length < 2 ||
+      /결론|따라서|하지만|이런|저런/i.test(keyword)
+    ) {
+      console.log(`   ⏭️ 검색어 부적절로 이미지 스킵: [${keyword}]`);
+      return null;
+    }
+
+    if (!this.apiKey) return null;
+
     try {
-      // 0. 저장 디렉토리 확인
-      if (!fs.existsSync(saveDir)) {
-        fs.mkdirSync(saveDir, { recursive: true });
-      }
+      if (!fs.existsSync(saveDir)) fs.mkdirSync(saveDir, { recursive: true });
 
-      // 1. 캐시 확인
       const cachedPath = this.findCachedImage(keyword, saveDir);
-      if (cachedPath) {
-        return cachedPath;
-      }
+      if (cachedPath) return cachedPath;
 
-      console.log(`🔍 Pexels 검색: "${keyword}"`);
+      console.log(`🔍 Pexels API 호출: [${keyword}]`);
 
-      // 2. Pexels API 호출
-      const response = await axios.get(this.pexelEndpoint, {
-        params: {
-          query: keyword,
-          per_page: 1,
-          orientation: "landscape",
-        },
-        headers: {
-          Authorization: this.apiKey,
-        },
+      const response = await axios.get(this.API_URL, {
+        params: { query: keyword, per_page: 1, orientation: "landscape" },
+        headers: { Authorization: this.apiKey },
+        timeout: 5000,
       });
 
-      if (!response.data.photos || response.data.photos.length === 0) {
-        console.warn(`⚠️ Pexels: "${keyword}"에 대한 이미지가 없습니다.`);
+      if (!response.data.photos?.length) {
+        console.warn(`⚠️ Pexels: [${keyword}] 결과 없음`);
         return null;
       }
 
-      // 3. 이미지 URL 추출
-      const photo = response.data.photos[0];
-      const imageUrl = photo.src.large;
-
-      // 4. 파일명 생성 (키워드 기반)
-      const sanitized = this.sanitizeKeyword(keyword);
-      const hash = this.getKeywordHash(keyword);
-      const filePath = path.join(saveDir, `pexels_${sanitized}_${hash}.jpg`);
-
-      // 5. 이미지 다운로드 및 저장
-      console.log(`📥 다운로드 중: ${path.basename(filePath)}`);
+      const imageUrl = response.data.photos[0].src.large;
+      const filePath = path.join(
+        saveDir,
+        `pexels_${this.sanitizeKeyword(keyword)}_${this.getKeywordHash(keyword)}.jpg`,
+      );
 
       const writer = fs.createWriteStream(filePath);
       const imageResponse = await axios.get(imageUrl, {
         responseType: "stream",
       });
-
       imageResponse.data.pipe(writer);
 
       return new Promise((resolve, reject) => {
-        writer.on("finish", () => {
-          console.log(`✅ 저장 완료: ${path.basename(filePath)}`);
-          resolve(filePath);
-        });
+        writer.on("finish", () => resolve(filePath));
         writer.on("error", (err) => {
-          console.error(`❌ 저장 실패: ${err.message}`);
+          writer.close();
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
           reject(err);
         });
       });
-    } catch (e) {
-      console.error("❌ Pexels 이미지 처리 실패:", e);
+    } catch (e: any) {
+      console.error("❌ Pexels 처리 실패:", e.response?.data || e.message);
       return null;
     }
-  }
-
-  /**
-   * 캐시 통계 조회
-   */
-  getCacheStats(saveDir: string): {
-    totalImages: number;
-    totalSize: number;
-    files: string[];
-  } {
-    if (!fs.existsSync(saveDir)) {
-      return { totalImages: 0, totalSize: 0, files: [] };
-    }
-
-    const files = fs
-      .readdirSync(saveDir)
-      .filter(
-        (f) =>
-          f.startsWith("pexels_") &&
-          (f.endsWith(".jpg") || f.endsWith(".jpeg") || f.endsWith(".png")),
-      );
-
-    const totalSize = files.reduce((sum, file) => {
-      const filePath = path.join(saveDir, file);
-      const stats = fs.statSync(filePath);
-      return sum + stats.size;
-    }, 0);
-
-    return {
-      totalImages: files.length,
-      totalSize,
-      files,
-    };
-  }
-
-  /**
-   * 오래된 캐시 정리 (선택적)
-   */
-  cleanOldCache(saveDir: string, daysOld: number = 30): number {
-    if (!fs.existsSync(saveDir)) {
-      return 0;
-    }
-
-    const now = Date.now();
-    const maxAge = daysOld * 24 * 60 * 60 * 1000;
-    let deletedCount = 0;
-
-    const files = fs
-      .readdirSync(saveDir)
-      .filter((f) => f.startsWith("pexels_"));
-
-    for (const file of files) {
-      const filePath = path.join(saveDir, file);
-      const stats = fs.statSync(filePath);
-      const age = now - stats.mtimeMs;
-
-      if (age > maxAge) {
-        fs.unlinkSync(filePath);
-        deletedCount++;
-        console.log(
-          `🗑️ 삭제: ${file} (${Math.floor(age / (24 * 60 * 60 * 1000))}일 전)`,
-        );
-      }
-    }
-
-    return deletedCount;
   }
 }
