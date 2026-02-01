@@ -12,6 +12,7 @@
     "core:watch": "pnpm --filter @blog-automation/core exec tsc --watch --preserveWatchOutput",
     "dev": "concurrently -n \"CORE,APP\" -c \"cyan,magenta\" \"npm run core:watch\" \"pnpm desktop:start\"",
     "cli:build": "pnpm --filter @blog-automation/cli build",
+    "cli:start": "pnpm --filter @blog-automation/cli dev",
     "core:build": "pnpm --filter @blog-automation/core build",
     "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start"
   },

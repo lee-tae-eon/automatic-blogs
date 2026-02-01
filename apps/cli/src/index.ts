@@ -23,7 +23,7 @@ async function main() {
 
   // 1. 최신 규격에 맞춘 테스트 입력 데이터
   const input: BatchTask = {
-    topic: "2026년 인천 영종도 맛집 가이드", // 살고 계신 지역 기반 예시
+    topic: "청라 ", // 살고 계신 지역 기반 예시
     persona: "informative", // 이제 문자열 매칭 대신 enum/type 사용
     tone: "witty", // 새로 추가한 톤앤매너
     keywords: ["영종도맛집", "인천여행", "내돈내산"],
@@ -41,13 +41,6 @@ async function main() {
     );
 
     const { platform, status, ...rest } = input;
-
-    const postInput = {
-      client: aiClient,
-      input: {
-        ...rest,
-      },
-    };
 
     const post = await generatePost({
       client: aiClient,
