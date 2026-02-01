@@ -73,8 +73,8 @@ export class ExcelProcessor {
       return rawData.map((row: any) => {
         return {
           topic: row["주제"] || row["Topic"],
-          persona: row["Persona"], // 앱에서 설정하도록 기본값 부여
-          tone: row["Tone"],
+          persona: row["Persona"] || "informative",
+          tone: row["Tone"] || "professional",
           category: row["카테고리"] || row["Category"],
           platform: row["플랫폼"] || row["Platform"],
           keywords: row["키워드"] || row["Keywords"],
