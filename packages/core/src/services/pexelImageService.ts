@@ -72,8 +72,6 @@ export class PexelsService {
       const cachedPath = this.findCachedImage(keyword, saveDir);
       if (cachedPath) return cachedPath;
 
-      console.log(`🔍 Pexels API 호출: [${keyword}]`);
-
       const response = await axios.get(this.API_URL, {
         params: { query: keyword, per_page: 1, orientation: "landscape" },
         headers: { Authorization: this.apiKey },
@@ -84,6 +82,10 @@ export class PexelsService {
         console.warn(`⚠️ Pexels: [${keyword}] 결과 없음`);
         return null;
       }
+
+      console.log(
+        `✅ Pexels Image Response: [${response.data.photos[0].src.large}]`,
+      );
 
       const imageUrl = response.data.photos[0].src.large;
       const filePath = path.join(

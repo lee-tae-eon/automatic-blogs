@@ -239,23 +239,89 @@ export class NaverEditor {
   }
   // 이미지 업로드
   private async uploadImage(page: Page, imagePath: string | null) {
-    if (!imagePath || !fs.existsSync(imagePath)) return;
+    if (!imagePath || !fs.existsSync(imagePath)) {
+      console.warn("⚠️ 이미지 파일이 존재하지 않습니다:", imagePath);
+      return;
+    }
+
     try {
-      await page.keyboard.press("Escape");
+      // ✅ 1단계: 이미지 업로드 직전에 팝업 및 모든 포커스 해제
+      await page.keyboard.press("Escape"); // 현재 포커스 해제
+      await this.clearPopups(); // ✅ 핵심 추가: 팝업 제거 함수 호출
+      await page.waitForTimeout(500); // 팝업이 사라지는 애니메이션 등을 고려한 짧은 대기
+
       const beforeCount = await page.evaluate(
         () => document.querySelectorAll("img").length,
       );
-      const fileChooserPromise = page.waitForEvent("filechooser");
-      await page.locator('button[data-log="image"]').first().click();
+
+      // ✅ 2단계: 에러 방지를 위한 Promise 핸들링 추가
+      const fileChooserPromise = page
+        .waitForEvent("filechooser", { timeout: 10000 })
+        .catch(() => null);
+
+      // ✅ 3단계: 버튼 클릭 성공률 높이기 (여러 셀렉터 시도)
+      const selectors = [
+        'button[data-log="image"]',
+        ".se-image-toolbar-button",
+        'button[aria-label="사진"]',
+      ];
+
+      let clicked = false;
+      for (const selector of selectors) {
+        const btn = page.locator(selector).first();
+        if (await btn.isVisible()) {
+          await btn.click({ force: true });
+          clicked = true;
+          break;
+        }
+      }
+
+      if (!clicked) {
+        // 기본 시도
+        await page
+          .locator('button[data-log="image"]')
+          .first()
+          .click({ force: true });
+      }
+
       const fileChooser = await fileChooserPromise;
+      if (!fileChooser) {
+        console.warn("⚠️ 파일 선택창이 열리지 않아 업로드를 건너뜁니다.");
+        return;
+      }
+
       await fileChooser.setFiles(imagePath);
+
+      // 이미지가 실제로 업로드되어 DOM에 추가될 때까지 대기
       await page.waitForFunction(
-        (prev) => document.querySelectorAll("img").length > prev,
+        (prevCount) => document.querySelectorAll("img").length > prevCount,
         beforeCount,
-        { timeout: 7000 },
+        { timeout: 10000 },
       );
-    } catch (e) {
-      console.warn("⚠️ 이미지 업로드 타임아웃");
+
+      console.log("✅ 이미지 업로드 성공:", imagePath);
+    } catch (error) {
+      console.error("❌ 이미지 업로드 실패:", error);
     }
   }
+  // private async uploadImage(page: Page, imagePath: string | null) {
+  //   if (!imagePath || !fs.existsSync(imagePath)) return;
+  //   try {
+  //     await page.keyboard.press("Escape");
+  //     const beforeCount = await page.evaluate(
+  //       () => document.querySelectorAll("img").length,
+  //     );
+  //     const fileChooserPromise = page.waitForEvent("filechooser");
+  //     await page.locator('button[data-log="image"]').first().click();
+  //     const fileChooser = await fileChooserPromise;
+  //     await fileChooser.setFiles(imagePath);
+  //     await page.waitForFunction(
+  //       (prev) => document.querySelectorAll("img").length > prev,
+  //       beforeCount,
+  //       { timeout: 7000 },
+  //     );
+  //   } catch (e) {
+  //     console.warn("⚠️ 이미지 업로드 타임아웃");
+  //   }
+  // }
 }
