@@ -213,12 +213,15 @@ ${keywordInstruction}
 - **금지**: 페르소나 금지 표현 + 톤 금지 표현 모두 회피
 
 ## ✅ 최종 체크리스트
-- [ ] 소제목은  ${metrics.headingCount - 1} ~ ${metrics.headingCount}개이며 \`\\n> ## 소제목\` 형식을 지켰는가?
+- [ ] 소제목은 4~5개이며 \`\\n> ## 소제목\` 형식을 지켰는가?
+- [ ] **모든 소제목** 아래에 최소 2개 이상의 충실한 문단이 있는가?
+- [ ] **마지막 소제목**도 빈 내용 없이 완성되었는가?
 - [ ] 금지 표현(${personaDetail.forbidden.slice(0, 2).join(", ")})을 사용하지 않았는가?
 - [ ] 톤 예시 문장 스타일을 따랐는가?
 - [ ] 문장은 ${metrics.sentenceMaxLength}자 이하인가?
 - [ ] ${metrics.tableRequired ? "비교 표를 포함했는가?" : ""}
 - [ ] 키워드가 자연스럽게 ${metrics.keywordDensity[0]}% 이상 포함되었는가?
+- [ ] "요약" 또는 "결론" 섹션에 실제 내용이 있는가? (제목만 있으면 안 됨)
 
 ## 📤 출력 형식 (순수 JSON만)
 \`\`\`json
