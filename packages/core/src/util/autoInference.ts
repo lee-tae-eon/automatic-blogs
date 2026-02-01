@@ -1,56 +1,9 @@
+import type { Persona } from "../types/blog";
+
 // ============================================
-// 주제 + 페르소나 기반 자동 추론 시스템
+// 간소화된 자동 추론 시스템
+// (키워드는 AI가 직접 추론하므로 제거)
 // ============================================
-
-import { Persona } from "@/types/blog";
-
-/**
- * 주제에서 키워드 자동 추출
- */
-export function inferKeywords(topic: string): string[] {
-  // 1. 특수문자 제거 및 정규화
-  const normalized = topic
-    .replace(/[^\w\s가-힣]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // 2. 불용어 제거 (조사, 접속사 등)
-  const stopWords = [
-    "을",
-    "를",
-    "이",
-    "가",
-    "은",
-    "는",
-    "의",
-    "에",
-    "와",
-    "과",
-    "도",
-    "으로",
-    "로",
-    "에서",
-    "부터",
-    "까지",
-    "위한",
-    "대한",
-    "있는",
-    "하는",
-    "되는",
-    "한",
-    "및",
-    "그리고",
-    "또는",
-  ];
-
-  const words = normalized.split(" ").filter((word) => {
-    return word.length >= 2 && !stopWords.includes(word);
-  });
-
-  // 3. 중요 키워드 우선순위 (앞 3~5개)
-  const uniqueWords = [...new Set(words)];
-  return uniqueWords.slice(0, Math.min(5, uniqueWords.length));
-}
 
 /**
  * 페르소나 + 주제 기반으로 타겟 독자 자동 추론
@@ -150,36 +103,4 @@ export function analyzeTopicIntent(topic: string): {
     isComparison: /vs|비교|차이|어떤|선택/.test(lower),
     isOpinion: /생각|의견|관점|견해/.test(lower),
   };
-}
-
-/**
- * 통합 자동 추론 함수
- */
-export function autoInferMetadata(topic: string, persona: Persona) {
-  return {
-    keywords: inferKeywords(topic),
-    targetAudience: inferTargetAudience(topic, persona),
-    contentGoal: inferContentGoal(persona),
-    topicIntent: analyzeTopicIntent(topic),
-  };
-}
-
-// ============================================
-// 사용 예시
-// ============================================
-export function exampleUsage() {
-  const examples = [
-    { topic: "30대 직장인을 위한 아침 루틴", persona: "empathetic" as Persona },
-    {
-      topic: "맥북 프로 M3 3개월 사용 후기",
-      persona: "experiential" as Persona,
-    },
-    { topic: "초보 개발자를 위한 Git 가이드", persona: "friendly" as Persona },
-  ];
-
-  examples.forEach(({ topic, persona }) => {
-    console.log(`\n주제: ${topic}`);
-    console.log(`페르소나: ${persona}`);
-    console.log(autoInferMetadata(topic, persona));
-  });
 }
