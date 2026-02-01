@@ -5,8 +5,10 @@ if (typeof global.File === "undefined") {
 }
 
 import {
+  BatchTask,
   GeminiClient,
   generatePost,
+  GeneratePostInput,
   NaverPublisher,
 } from "@blog-automation/core";
 
@@ -20,12 +22,14 @@ async function main() {
   console.log(`\n🛠️  [DEBUG MODE] 블로그 자동화 로직 검증 시작`);
 
   // 1. 최신 규격에 맞춘 테스트 입력 데이터
-  const input = {
+  const input: BatchTask = {
     topic: "2026년 인천 영종도 맛집 가이드", // 살고 계신 지역 기반 예시
-    persona: "informative" as const, // 이제 문자열 매칭 대신 enum/type 사용
-    tone: "witty" as const, // 새로 추가한 톤앤매너
+    persona: "informative", // 이제 문자열 매칭 대신 enum/type 사용
+    tone: "witty", // 새로 추가한 톤앤매너
     keywords: ["영종도맛집", "인천여행", "내돈내산"],
     category: "일상정보",
+    platform: "naver",
+    status: "대기",
   };
 
   const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODEL_FAST);
@@ -35,9 +39,19 @@ async function main() {
     console.log(
       `   🤖 AI 글 생성 중... (Persona: ${input.persona}, Tone: ${input.tone})`,
     );
+
+    const { platform, status, ...rest } = input;
+
+    const postInput = {
+      client: aiClient,
+      input: {
+        ...rest,
+      },
+    };
+
     const post = await generatePost({
       client: aiClient,
-      input: input,
+      task: input,
     });
 
     console.log(`   ✅ 글 생성 완료: ${post.title}`);
@@ -66,8 +80,6 @@ async function main() {
       htmlContent: post.content, // 이제 core 내부에서 HTML 변환까지 처리되도록 연결
       tags: post.focusKeywords,
       category: input.category,
-      persona: input.persona, // 엑셀 업데이트를 위해 전달
-      tone: input.tone,
     });
 
     console.log("\n✨ 디버깅 프로세스가 성공적으로 완료되었습니다!");
