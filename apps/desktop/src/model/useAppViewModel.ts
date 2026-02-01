@@ -111,11 +111,11 @@ export const useAppViewModel = () => {
     try {
       const result = await window.ipcRenderer.invoke("parse-excel", filePath);
       if (result.success) {
-        console.log(result.data);
         setTasks(
           result.data.map((task: BatchTask) => ({
             ...task,
             persona: task.persona || "정보형",
+            tone: task.tone || "전문적인",
           })),
         );
       } else {
