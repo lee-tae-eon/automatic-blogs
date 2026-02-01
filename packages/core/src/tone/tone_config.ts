@@ -102,6 +102,8 @@ export const getToneInstruction = (tone: Tone): string => {
 `.trim();
 };
 
+export const ALL_TONES = Object.keys(TONE_CONFIG) as Tone[];
+
 // import { Tone } from "@/types/blog";
 
 // // ============================================

@@ -10,3 +10,4 @@ export * from "./types/blog";
 export * from "./persona/persona.config";
 export * from "./pipeline/generatePrompt";
 export * from "./tone/tone_config";
+export * from "./ai/geminiClient";

@@ -208,3 +208,5 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 export const getPersonaDetail = (persona: Persona): PersonaDetail => {
   return PERSONA_CONFIG[persona] || PERSONA_CONFIG.informative;
 };
+
+export const ALL_PERSONAS = Object.keys(PERSONA_CONFIG) as Persona[];
