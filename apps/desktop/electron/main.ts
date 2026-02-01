@@ -108,6 +108,7 @@ function registerIpcHandlers() {
             apiKey,
             process.env.GEMINI_MODEL_NORMAL,
           );
+
           publication = await generatePost({
             client: geminiClient,
             task: task,

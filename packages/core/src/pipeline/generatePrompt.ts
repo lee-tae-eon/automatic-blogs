@@ -16,9 +16,7 @@ import {
 export function generateBlogPrompt(input: BlogPostInput): string {
   const persona = input.persona;
   const tone = input.tone;
-
   const toneConfig = TONE_CONFIG[tone];
-
   const toneInstruction = getToneInstruction(tone);
 
   // ==========================================
