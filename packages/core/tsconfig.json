@@ -7,6 +7,7 @@
     "rootDir": "./src", // 👈 명시적으로 src 지정
     "module": "CommonJS", // 👈 Base에서 오지만 명시하면 안전합니다.
     "baseUrl": ".",
+    "sourceMap": true,
     "paths": {
       "@/*": ["src/*"]
     }

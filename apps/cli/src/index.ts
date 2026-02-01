@@ -8,7 +8,6 @@ import {
   BatchTask,
   GeminiClient,
   generatePost,
-  GeneratePostInput,
   NaverPublisher,
 } from "@blog-automation/core";
 
@@ -25,7 +24,7 @@ async function main() {
   const input: BatchTask = {
     topic: "청라 ", // 살고 계신 지역 기반 예시
     persona: "informative", // 이제 문자열 매칭 대신 enum/type 사용
-    tone: "witty", // 새로 추가한 톤앤매너
+    tone: "professional", // 새로 추가한 톤앤매너
     keywords: ["영종도맛집", "인천여행", "내돈내산"],
     category: "일상정보",
     platform: "naver",
@@ -39,9 +38,6 @@ async function main() {
     console.log(
       `   🤖 AI 글 생성 중... (Persona: ${input.persona}, Tone: ${input.tone})`,
     );
-
-    const { platform, status, ...rest } = input;
-
     const post = await generatePost({
       client: aiClient,
       task: input,
