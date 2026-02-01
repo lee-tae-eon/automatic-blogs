@@ -304,24 +304,4 @@ export class NaverEditor {
       console.error("❌ 이미지 업로드 실패:", error);
     }
   }
-  // private async uploadImage(page: Page, imagePath: string | null) {
-  //   if (!imagePath || !fs.existsSync(imagePath)) return;
-  //   try {
-  //     await page.keyboard.press("Escape");
-  //     const beforeCount = await page.evaluate(
-  //       () => document.querySelectorAll("img").length,
-  //     );
-  //     const fileChooserPromise = page.waitForEvent("filechooser");
-  //     await page.locator('button[data-log="image"]').first().click();
-  //     const fileChooser = await fileChooserPromise;
-  //     await fileChooser.setFiles(imagePath);
-  //     await page.waitForFunction(
-  //       (prev) => document.querySelectorAll("img").length > prev,
-  //       beforeCount,
-  //       { timeout: 7000 },
-  //     );
-  //   } catch (e) {
-  //     console.warn("⚠️ 이미지 업로드 타임아웃");
-  //   }
-  // }
 }

@@ -44,7 +44,7 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 - **사용 방법**: 위 키워드를 반드시 포함하되, 자연스럽게 배치
 - **키워드 밀도**: ${metrics.keywordDensity[0]}% ~ ${metrics.keywordDensity[1]}%
 - **첫 문단**: 주요 키워드 1개 이상 포함
-- **소제목**: 5개 중 최소 3개에 키워드 포함`;
+- **소제목**: 4~5개 중 최소 3개에 키워드 포함`;
   } else {
     // ✅ AI가 키워드 추론
     keywordInstruction = `
@@ -59,7 +59,7 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 - **배치 위치**:
   * 제목에 1개 이상
   * 첫 문단에 2개 이상
-  * 소제목 5개 중 최소 3개에 포함
+  * 소제목 4~5개 중 최소 3개에 포함
   * 본문 전체에 고르게 분산`;
   }
 
@@ -142,12 +142,14 @@ ${examples.transitions
 # 🎨 레이아웃 및 포맷 규칙
 
 ## 소제목 구성
-- **개수**: 정확히 **${metrics.headingCount}개**
+- **개수**: **${metrics.headingCount - 1} ~ ${metrics.headingCount}개**
 - **형식**: 반드시 \`\\n> ## 소제목명\` 형식 사용
 - **규칙**:
   1. 소제목 앞에는 줄바꿈 **한 번(\\n)**만 삽입
   2. 소제목 기호(\`> ##\`)와 텍스트 사이 **한 칸 공백** 필수
-  3. 이모지는 ${
+  3. 제목만 있고 내용 없는 빈 섹션은 절대 금지
+  4. 마지막 소제목도 최소 2개 이상의 문단으로 완성
+  5. 이모지는 ${
     metrics.emojiUsage === "minimal"
       ? "최소화 (소제목당 0~1개)"
       : metrics.emojiUsage === "moderate"
@@ -211,7 +213,7 @@ ${keywordInstruction}
 - **금지**: 페르소나 금지 표현 + 톤 금지 표현 모두 회피
 
 ## ✅ 최종 체크리스트
-- [ ] 소제목은 정확히 ${metrics.headingCount}개이며 \`\\n> ## 소제목\` 형식을 지켰는가?
+- [ ] 소제목은  ${metrics.headingCount - 1} ~ ${metrics.headingCount}개이며 \`\\n> ## 소제목\` 형식을 지켰는가?
 - [ ] 금지 표현(${personaDetail.forbidden.slice(0, 2).join(", ")})을 사용하지 않았는가?
 - [ ] 톤 예시 문장 스타일을 따랐는가?
 - [ ] 문장은 ${metrics.sentenceMaxLength}자 이하인가?
