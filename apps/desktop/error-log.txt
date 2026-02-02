@@ -125,3 +125,36 @@ Call log:
 ❌ 에러 메시지: keyboard.type: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/eongon/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 2. 2. 오후 1:26:00]
+📍 대상 포스트: 6조원 밀가루 담합 심층 분석: 시장 교란과 소비자 피해 보고서
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 2. 2. 오후 1:28:25]
+📍 대상 포스트: 남편의 무정자증 고백, 혼란스러운 마음 함께 털어놔요! 💔
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 2. 2. 오후 1:30:50]
+📍 대상 포스트: 두쫀쿠 식중동, 2026년 최신 분석: 원인, 증상 및 예방 대책
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
