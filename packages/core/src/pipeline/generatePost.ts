@@ -1,7 +1,7 @@
 import { delay } from "../util/delay";
 import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
-import { TavilyService } from "@/services/tavilyService";
+import { TavilyService } from "../services/tavilyService";
 
 /**
  * @description ai client 로 부터 post 를 반환하는 함수

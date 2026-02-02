@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "composite": true, // 👈 true에서 false로 변경
+    "composite": true,
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src", // 👈 명시적으로 src 지정
+    "rootDir": "./src",
     "module": "CommonJS", // 👈 Base에서 오지만 명시하면 안전합니다.
     "baseUrl": ".",
     "sourceMap": true,
