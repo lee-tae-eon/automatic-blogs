@@ -20,6 +20,7 @@
     "@types/node": "^24.0.0",
     "axios": "^1.13.4",
     "concurrently": "^9.2.1",
+    "syncpack": "^13.0.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"

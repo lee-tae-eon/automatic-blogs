@@ -1,0 +1,21 @@
+{
+  "dependencyTypes": [
+    "dev",
+    "prod",
+    "overrides",
+    "peer"
+  ],
+  "sortAz": [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies"
+  ],
+  "sortFirst": [
+    "name",
+    "version",
+    "description",
+    "scripts"
+  ],
+  "versionGroups": [],
+  "semverGroups": []
+}
