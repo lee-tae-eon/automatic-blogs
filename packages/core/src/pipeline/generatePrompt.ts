@@ -64,6 +64,23 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   }
 
   // ==========================================
+  // ✅ [신규] 최신 뉴스 데이터 및 출처 지침
+  // ==========================================
+  let newsInstruction = "";
+  if (input.latestNews) {
+    newsInstruction = `
+# 📰 실시간 최신 뉴스 정보 (팩트 체크용)
+다음은 현재 시점의 실제 뉴스 데이터입니다. 당신의 내장 지식(과거 데이터)보다 **아래 정보를 최우선순위**로 두어 작성하세요. 2026년 현재 상황을 반영해야 합니다.
+
+${input.latestNews}
+
+## 🔗 출처 표기 규칙
+1. 위 뉴스 데이터에 포함된 **언론사명과 URL**을 본문 하단에 '참고 문헌' 형식으로 반드시 포함하세요.
+2. 절대 가짜 URL이나 존재하지 않는 언론사를 지어내지 마세요.
+3. 본문 중간에 "뉴스에 따르면", "보도에 의하면"과 같은 표현을 적절히 섞어 신뢰도를 높이세요.`;
+  }
+
+  // ==========================================
   // 1. 시스템 역할 정의
   // ==========================================
   const systemRole = `
@@ -233,6 +250,9 @@ ${keywordInstruction}
   "metaDescription": "SEO 설명 (${SEO_RULES.metaDescriptionLength[0]}~${SEO_RULES.metaDescriptionLength[1]}자)",
   "focusKeywords": ["키워드1", "키워드2", "키워드3"],
   "estimatedReadTime": 5
+  "references": [
+     {"name": "언론사명", "url": "실제 뉴스 URL"}
+  ],
 }
 \`\`\`
 
