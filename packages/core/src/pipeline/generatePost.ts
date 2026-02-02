@@ -1,6 +1,7 @@
 import { delay } from "../util/delay";
 import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
+import { TavilyService } from "@/services/tavilyService";
 
 /**
  * @description ai client 로 부터 post 를 반환하는 함수
@@ -23,8 +24,23 @@ export async function generatePost({
         persona: task.persona,
         category: task.category,
         tone: task.tone,
+
         ...(task.keywords && { keywords: task.keywords }),
       };
+
+      // 1. Tavily를 통한 실시간 뉴스 검색
+      console.log(
+        `\n🔍 [1/3] 최신 뉴스 데이터 수집 시작: ${inputParams.topic}`,
+      );
+      const tavily = new TavilyService();
+      const newsContext = await tavily.searchLatestNews(inputParams.topic);
+      inputParams.latestNews =
+        newsContext ||
+        "최신 뉴스 정보를 가져오지 못했습니다. 최대한 최신 정보를 제공해주세요";
+
+      console.log(
+        `🤖 [2/3] AI 포스팅 생성 중... (News Context: ${newsContext ? "연동됨" : "미연동"})`,
+      );
 
       const aiPost = await generatePostSingleCall(client, inputParams);
 

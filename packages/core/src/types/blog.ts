@@ -67,6 +67,7 @@ export interface BlogPostInput {
   tone: Tone;
   category: string;
   keywords?: string[];
+  latestNews?: string;
 }
 
 export interface AiGeneratedPost {
