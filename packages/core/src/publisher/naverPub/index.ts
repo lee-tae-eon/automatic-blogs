@@ -14,6 +14,7 @@ export interface NaverPostInput {
   password?: string;
   tags?: string[];
   category?: string;
+  references?: { name: string; url: string }[];
 }
 
 export class NaverPublisher {
@@ -25,6 +26,30 @@ export class NaverPublisher {
     this.userDataDir = path.join(this.projectRoot, ".auth/naver");
   }
 
+  // ✅ 2. 출처를 HTML로 변환하는 프라이빗 메서드
+  private appendReferences(
+    html: string,
+    references?: { name: string; url: string }[],
+  ): string {
+    if (!references || references.length === 0) return html;
+
+    const refHtml = `
+      <br><hr><br>
+      <blockquote>
+        <p><strong>🔗 참고 자료 및 최신 뉴스 출처</strong></p>
+        <ul style="list-style-type: disc;">
+          ${references
+            .map(
+              (ref) =>
+                `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></li>`,
+            )
+            .join("")}
+        </ul>
+      </blockquote>
+    `;
+    return html + refHtml;
+  }
+
   async postToBlog({
     blogId,
     title,
@@ -32,6 +57,7 @@ export class NaverPublisher {
     password,
     tags = [],
     category,
+    references,
   }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
@@ -45,6 +71,7 @@ export class NaverPublisher {
       });
 
       page = await context.newPage();
+
       page.on("dialog", async (dialog) => {
         const message = dialog.message();
         console.log(`🔔 다이얼로그 감지: ${message}`);
@@ -66,7 +93,9 @@ export class NaverPublisher {
           const authenticator = new NaverAuthenticator(page);
           await authenticator.login(blogId, password);
         } else {
-          console.log("👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).");
+          console.log(
+            "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
+          );
         }
         await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
         console.log("✅ 로그인 완료 감지");
@@ -76,23 +105,27 @@ export class NaverPublisher {
         });
       }
 
+      // ✅ 3. 본문 입력 전 출처 섹션 결합
       const editor = new NaverEditor(page, this.projectRoot);
       await editor.clearPopups();
-      
+
       console.log("⏳ 에디터 로딩 대기 중...");
       await page.waitForTimeout(2000);
 
       await editor.enterTitle(title);
       await page.waitForTimeout(1000);
 
-      await editor.enterContent(htmlContent);
+      // 2. ✅ 본문 입력 전: '본문 + 출처' 합치기
+      const finalHtml =
+        htmlContent + this.appendReferences(htmlContent, references);
+
+      await editor.enterContent(finalHtml);
       await page.waitForTimeout(1000);
 
       const publicationManager = new NaverPublicationManager(page);
       await publicationManager.publish(tags, category);
 
       console.log("✅ 작성 및 발행 완료!");
-
     } catch (error: any) {
       console.error("❌ 네이버 발행 오류:", error);
       if (page) {

@@ -157,9 +157,8 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
-          // ✅ [복구 및 수정] 리스트 케이스 분리
           case "list":
-            await this.pasteHtml(block.html);
+            await this.pasteHtml(`<ul><li>${block.html}</li></ul>`);
             await this.page.keyboard.press("Enter");
             break;
 

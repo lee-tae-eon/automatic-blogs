@@ -83,6 +83,7 @@ export interface AiGeneratedPost {
     context: string;
   }[];
   imageAltTexts?: string[];
+  references?: { name: string; url: string }[];
 }
 export interface Publication extends AiGeneratedPost {
   platform: BlogPlatform;
