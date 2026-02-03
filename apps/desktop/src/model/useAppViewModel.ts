@@ -146,23 +146,6 @@ export const useAppViewModel = () => {
     setIsProcessing(true);
     shouldStopRef.current = false;
 
-    const updateStatus = (index: number, status: BatchTask["status"]) => {
-      setTasks((prev) =>
-        prev.map((t, i) => {
-          if (i === index) {
-            const updatedTask = { ...t, status };
-            updateTaskInExcel(index, {
-              status,
-              persona: t.persona,
-              tone: t.tone,
-            });
-            return updatedTask;
-          }
-          return t;
-        }),
-      );
-    };
-
     for (const [i, task] of tasks.entries()) {
       if (shouldStopRef.current) {
         alert("작업이 사용자에 의해 중단되었습니다.");
@@ -171,17 +154,24 @@ export const useAppViewModel = () => {
 
       if (task.status === "완료") continue;
 
-      updateStatus(i, "진행");
+      // 1. 진행 상태 반영
+      setTasks((prev) =>
+        prev.map((t, idx) => (idx === i ? { ...t, status: "진행" } : t)),
+      );
+      await updateTaskInExcel(i, { status: "진행" });
 
       try {
         // 생성
         const genResult = await window.ipcRenderer.invoke(
           "generate-post",
-          tasks[i], // 최신 상태의 task를 전달
+          tasks[i], // 최신 상태의 task를 전달 (여기선 초기상태지만 문제는 없음)
         );
 
         if (shouldStopRef.current) {
-          updateStatus(i, "대기");
+          setTasks((prev) =>
+            prev.map((t, idx) => (idx === i ? { ...t, status: "대기" } : t)),
+          );
+          await updateTaskInExcel(i, { status: "대기" });
           break;
         }
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
@@ -193,10 +183,18 @@ export const useAppViewModel = () => {
         );
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
-        updateStatus(i, "완료");
+        // 2. 완료 상태 반영
+        setTasks((prev) =>
+          prev.map((t, idx) => (idx === i ? { ...t, status: "완료" } : t)),
+        );
+        await updateTaskInExcel(i, { status: "완료" });
       } catch (error) {
         console.error(error);
-        updateStatus(i, "실패");
+        // 3. 실패 상태 반영
+        setTasks((prev) =>
+          prev.map((t, idx) => (idx === i ? { ...t, status: "실패" } : t)),
+        );
+        await updateTaskInExcel(i, { status: "실패" });
       }
     }
 
