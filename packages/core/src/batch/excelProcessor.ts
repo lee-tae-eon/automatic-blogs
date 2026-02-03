@@ -92,7 +92,7 @@ export class ExcelProcessor {
    */
   static updateTaskInExcel(
     filePath: string,
-    taskIndex: number, // 엑셀의 데이터 행 기준 (0부터 시작)
+    taskIndex: number,
     {
       status,
       persona,
@@ -104,7 +104,6 @@ export class ExcelProcessor {
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
-      // ✅ 수정된 findHeaderInfo를 통해 모든 인덱스를 가져옴
       const { headerRowIndex, statusColIndex, personaColIndex, toneColIndex } =
         this.findHeaderInfo(worksheet);
 
@@ -112,48 +111,84 @@ export class ExcelProcessor {
         throw new Error("엑셀에서 헤더(Topic)를 찾을 수 없습니다.");
       }
 
-      // 컬럼 업데이트 헬퍼 함수
-      const updateCell = (colIndex: number, colName: string, value: string) => {
-        let targetColIndex = colIndex;
+      // 1. 마지막 컬럼 인덱스 찾기
+      const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+      let nextColIndex = range.e.c + 1;
 
-        // 만약 컬럼이 없으면(-1), 맨 끝에 새로 추가
-        if (targetColIndex === -1) {
-          const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
-          targetColIndex = range.e.c + 1;
+      // 2. 각 컬럼의 타겟 인덱스 결정 (없으면 할당)
+      let targetStatusCol = statusColIndex;
+      let targetPersonaCol = personaColIndex;
+      let targetToneCol = toneColIndex;
 
-          // 헤더 추가
-          XLSX.utils.sheet_add_aoa(worksheet, [[colName]], {
+      const updates: { col: number; header: string; value?: string }[] = [];
+
+      // Status 처리
+      if (status) {
+        if (targetStatusCol === -1) {
+          targetStatusCol = nextColIndex++;
+          // 헤더 추가 필요
+          XLSX.utils.sheet_add_aoa(worksheet, [["Status"]], {
             origin: XLSX.utils.encode_cell({
               r: headerRowIndex,
-              c: targetColIndex,
+              c: targetStatusCol,
             }),
           });
         }
+        updates.push({ col: targetStatusCol, header: "Status", value: status });
+      }
 
-        // 값 업데이트 (헤더 바로 다음 줄부터 데이터가 시작된다고 가정)
-        // taskIndex는 데이터 배열에서의 인덱스이므로, 엑셀 행 번호는 headerRowIndex + 1 + taskIndex
-        const targetRow = headerRowIndex + 1 + taskIndex;
-
-        XLSX.utils.sheet_add_aoa(worksheet, [[value]], {
-          origin: XLSX.utils.encode_cell({ r: targetRow, c: targetColIndex }),
+      // Persona 처리
+      if (persona) {
+        if (targetPersonaCol === -1) {
+          targetPersonaCol = nextColIndex++; // Status가 추가되었다면 그 다음 칸
+          XLSX.utils.sheet_add_aoa(worksheet, [["Persona"]], {
+            origin: XLSX.utils.encode_cell({
+              r: headerRowIndex,
+              c: targetPersonaCol,
+            }),
+          });
+        }
+        updates.push({
+          col: targetPersonaCol,
+          header: "Persona",
+          value: persona,
         });
-      };
+      }
 
-      // ✅ 각 항목 업데이트 실행
-      if (status) updateCell(statusColIndex, "Status", status);
-      if (persona) updateCell(personaColIndex, "Persona", persona);
-      if (tone) updateCell(toneColIndex, "Tone", tone);
+      // Tone 처리
+      if (tone) {
+        if (targetToneCol === -1) {
+          targetToneCol = nextColIndex++;
+          XLSX.utils.sheet_add_aoa(worksheet, [["Tone"]], {
+            origin: XLSX.utils.encode_cell({
+              r: headerRowIndex,
+              c: targetToneCol,
+            }),
+          });
+        }
+        updates.push({ col: targetToneCol, header: "Tone", value: tone });
+      }
+
+      // 3. 데이터 값 쓰기
+      // taskIndex는 0부터 시작, headerRowIndex 다음 줄부터 데이터
+      const targetRow = headerRowIndex + 1 + taskIndex;
+
+      updates.forEach(({ col, value }) => {
+        if (value) {
+          XLSX.utils.sheet_add_aoa(worksheet, [[value]], {
+            origin: XLSX.utils.encode_cell({ r: targetRow, c: col }),
+          });
+        }
+      });
 
       XLSX.writeFile(workbook, filePath);
       console.log(
-        `✅ 엑셀 업데이트 완료 [Row ${headerRowIndex + 1 + taskIndex + 1}]: ` +
-          `${status ? `Status=${status} ` : ""}` +
-          `${persona ? `Persona=${persona} ` : ""}` +
-          `${tone ? `Tone=${tone}` : ""}`,
+        `✅ 엑셀 저장 성공 [Row: ${targetRow + 1}]: ${updates
+          .map((u) => `${u.header}=${u.value}`)
+          .join(", ")}`,
       );
     } catch (error) {
       console.error("❌ 엑셀 업데이트 실패:", error);
-      // 파일이 열려 있어서 저장이 안 되는 경우가 많으므로 에러 메시지 구체화
       throw new Error(
         "엑셀 파일 업데이트 실패. 파일이 열려있는지 확인해주세요.",
       );

@@ -56,13 +56,22 @@ export const useAppViewModel = () => {
     const task = tasks[index];
     if (!task) return;
 
-    await window.ipcRenderer.invoke("update-task", {
+    const result = await window.ipcRenderer.invoke("update-task", {
       filePath: currentFilePath,
       index,
       status: updates.status || task.status,
       persona: updates.persona || task.persona,
       tone: updates.tone || task.tone,
     });
+
+    if (!result.success) {
+      console.error(`엑셀 저장 실패 (Row ${index + 1}):`, result.error);
+      // 에러가 발생해도 전체 프로세스를 멈출지 여부는 선택이지만,
+      // 저장이 안 되는 건 치명적이므로 사용자에게 알림.
+      // 연속으로 뜨는 것을 방지하기 위해 콘솔만 찍고, 상위에서 처리하도록 throw 할 수도 있음.
+      // 여기서는 일단 에러를 throw하여 handlePublishAll의 catch 블록으로 이동하게 함.
+      throw new Error(`엑셀 저장 실패: ${result.error}`);
+    }
   };
 
   const handlePersonaChange = async (
