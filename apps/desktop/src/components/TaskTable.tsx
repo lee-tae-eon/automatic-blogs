@@ -17,6 +17,7 @@ const personaOptions: { label: string; value: Persona }[] = [
 
 const toneOptions: { label: string; value: Tone }[] = [
   { label: "전문적인", value: "professional" },
+  { label: "비판적인", value: "incisive" },
   { label: "재치있는", value: "witty" },
   { label: "솔직담백한", value: "candid" },
   { label: "활기찬", value: "energetic" },
