@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
       "generate-post",
       "publish-post",
       "get-store-data",
-      "update-task-status",
+      "update-task",
     ];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, ...args);
