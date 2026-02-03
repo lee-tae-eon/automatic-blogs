@@ -8,15 +8,21 @@ import { PexelsService } from "../../services/pexelImageService";
 export class NaverEditor {
   private pexelsService = new PexelsService();
   private tempDir: string;
+  private topic: string;
+  private tags: string[];
 
   constructor(
     private page: Page,
     projectRoot: string,
+    topic: string,
+    tags: string[] = [],
   ) {
     this.tempDir = path.join(projectRoot, "temp_images");
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
+    this.topic = topic;
+    this.tags = tags;
   }
 
   /**
@@ -114,11 +120,10 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
 
             // 이미지 업로드 로직
-            const searchQuery = block.text
-              .replace(/[^\w\s가-힣]/g, "")
-              .split(" ")
-              .slice(0, 2)
-              .join(" ");
+            let searchQuery = `${this.topic} ${block.text}`;
+            if (this.tags && this.tags.length > 0) {
+              searchQuery += ` ${this.tags[0]}`;
+            }
 
             const imagePath = await this.pexelsService.downloadImage(
               searchQuery,

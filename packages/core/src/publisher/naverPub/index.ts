@@ -106,7 +106,7 @@ export class NaverPublisher {
       }
 
       // ✅ 3. 본문 입력 전 출처 섹션 결합
-      const editor = new NaverEditor(page, this.projectRoot);
+      const editor = new NaverEditor(page, this.projectRoot, title, tags);
       await editor.clearPopups();
 
       console.log("⏳ 에디터 로딩 대기 중...");
