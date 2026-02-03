@@ -151,7 +151,11 @@ export const useAppViewModel = () => {
         prev.map((t, i) => {
           if (i === index) {
             const updatedTask = { ...t, status };
-            updateTaskInExcel(index, { status });
+            updateTaskInExcel(index, {
+              status,
+              persona: t.persona,
+              tone: t.tone,
+            });
             return updatedTask;
           }
           return t;
