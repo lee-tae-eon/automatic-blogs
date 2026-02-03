@@ -187,7 +187,7 @@ ${examples.transitions
 ## 시각적 요소
 - **표(Table)**: ${metrics.tableRequired ? "**필수** (비교/분석 데이터)" : "선택 (필요시에만)"}
 - **강조**: 핵심 키워드는 **볼드 처리**
-- **이미지**: 약 ${metrics.imageCount}개 위치 제안
+- **이미지**: 약 ${metrics.imageCount - 3}개 위치 제안
 
 ## 예상 글자 수
 ${metrics.targetLength[0]}자 ~ ${metrics.targetLength[1]}자
