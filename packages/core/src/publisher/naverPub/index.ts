@@ -116,8 +116,7 @@ export class NaverPublisher {
       await page.waitForTimeout(1000);
 
       // 2. ✅ 본문 입력 전: '본문 + 출처' 합치기
-      const finalHtml =
-        htmlContent + this.appendReferences(htmlContent, references);
+      const finalHtml = this.appendReferences(htmlContent, references);
 
       await editor.enterContent(finalHtml);
       await page.waitForTimeout(1000);
