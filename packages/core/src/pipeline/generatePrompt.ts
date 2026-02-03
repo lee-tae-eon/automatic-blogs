@@ -27,6 +27,16 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   const contentGoal = inferContentGoal(persona);
   const topicIntent = analyzeTopicIntent(input.topic);
 
+  const scandalGuideline = topicIntent.isScandal
+    ? `
+## 🚨 긴급: 사회적 이슈 대응 지침
+1. **공감의 대상**: 가해자나 사건 당사자가 아닙니다. **'박탈감을 느낀 대중'** 또는 **'성실하게 살아가는 독자'**의 마음에 공감하세요.
+2. **금지된 접근**: "너도 세금 고민 있니?" 같은 사소한 개인사로 물타기 하지 마세요.
+3. **태도**: '솔직담백(Candid)' 톤을 유지하되, 잘못된 사안에 대해서는 날카롭고 단호한 비판을 견지하세요.
+4. **결론**: 단순히 위로로 끝내지 말고, 사회적 정의나 상식적인 선에서 사안을 마무리하세요.
+`
+    : "";
+
   const personaDetail = getPersonaDetail(persona);
   const examples = getPersonaExamples(persona);
   const metrics = getQualityMetrics(persona);
@@ -100,6 +110,9 @@ ${personaDetail.style}
 
 ## 톤&매너
 ${toneInstruction}
+
+## 비판적요소일때 가이드
+${scandalGuideline}
 
 ## 현재 날짜
 ${new Date().toLocaleDateString("ko-KR")} - 최신 정보를 반영하세요.

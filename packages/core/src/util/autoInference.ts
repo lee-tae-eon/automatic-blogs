@@ -94,9 +94,11 @@ export function analyzeTopicIntent(topic: string): {
   isHowTo: boolean;
   isComparison: boolean;
   isOpinion: boolean;
+  isScandal: boolean;
   needsCurrentInfo: boolean;
 } {
   const lower = topic.toLowerCase();
+
   const needsCurrentInfo =
     /오늘|최근|2026|현재|지금|이번|트렌드|뉴스|사건|속보/.test(topic);
 
@@ -105,6 +107,9 @@ export function analyzeTopicIntent(topic: string): {
     isHowTo: /방법|가이드|팁|꿀팁|하는법/.test(lower),
     isComparison: /vs|비교|차이|어떤|선택/.test(lower),
     isOpinion: /생각|의견|관점|견해/.test(lower),
+    isScandal: /논란|의혹|탈세|혐의|사건|사고|폭로|충격|비판|실체|진실/.test(
+      lower,
+    ),
     needsCurrentInfo,
   };
 }

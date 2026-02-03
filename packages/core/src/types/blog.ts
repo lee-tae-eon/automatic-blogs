@@ -8,6 +8,7 @@ export type Tone =
   | "witty"
   | "candid"
   | "energetic"
+  | "incisive"
   | "serious";
 
 export const TONE_INSTRUCTIONS: Record<Tone, string> = {
@@ -17,6 +18,7 @@ export const TONE_INSTRUCTIONS: Record<Tone, string> = {
   candid: "꾸밈없이 솔직하고 담백한 문체를 사용하며 본인의 사견을 적극 반영함",
   energetic: "느낌표와 활기찬 감탄사를 사용하여 독자의 의욕을 고취함",
   serious: "간결하고 힘 있는 문장을 사용하여 사안의 중요성을 강조함",
+  incisive: "",
 };
 
 // ============================================
