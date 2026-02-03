@@ -12,7 +12,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     sentenceMaxLength: 80, // 문장당 최대 80자
     emojiUsage: "minimal", // 이모지 최소화
     tableRequired: true, // 표 필수
-    imageCount: 3, // 이미지 3개 권장
+    imageCount: 2, // 이미지 3개 권장
     keywordDensity: [1.5, 2.5], // 키워드 밀도 1.5~2.5%
   },
 
@@ -34,7 +34,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     sentenceMaxLength: 70,
     emojiUsage: "minimal",
     tableRequired: false, // 스토리 흐름 방해 방지
-    imageCount: 4, // 시각적 몰입 강화
+    imageCount: 2, // 시각적 몰입 강화
     keywordDensity: [1.0, 2.0],
   },
 
@@ -56,7 +56,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     sentenceMaxLength: 70,
     emojiUsage: "moderate",
     tableRequired: true, // 장단점 비교표 필수
-    imageCount: 5, // 실제 사용 사진 많이
+    imageCount: 3, // 실제 사용 사진 많이
     keywordDensity: [1.5, 2.5],
   },
 };
@@ -65,6 +65,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
 // 공통 SEO 규칙
 // ============================================
 export const SEO_RULES = {
+  maxImages: 3,
   metaTitleLength: [30, 60], // 메타 제목 글자 수
   metaDescriptionLength: [120, 160], // 메타 설명 글자 수
   focusKeywordCount: [3, 5], // 주요 키워드 개수

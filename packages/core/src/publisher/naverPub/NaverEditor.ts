@@ -48,7 +48,7 @@ export class NaverEditor {
     const isMac = process.platform === "darwin";
     const modifier = isMac ? "Meta" : "Control";
     await this.page.keyboard.press(`${modifier}+V`);
-    await this.page.waitForTimeout(500); // 안정적인 붙여넣기 대기
+    await this.page.waitForTimeout(100); // 안정적인 붙여넣기 대기
   }
   // 팝업 클린
   public async clearPopups() {
@@ -131,7 +131,7 @@ export class NaverEditor {
             );
             if (imagePath) {
               await this.uploadImage(this.page, imagePath);
-              await this.page.waitForTimeout(1000);
+              await this.page.waitForTimeout(500);
               await this.page.keyboard.press("ArrowDown");
               await this.page.keyboard.press("Enter");
             }
@@ -175,7 +175,7 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
         }
-        await this.page.waitForTimeout(200);
+        await this.page.waitForTimeout(10);
       }
     } catch (error) {
       console.error("❌ 본문 입력 중 오류:", error);
@@ -252,7 +252,7 @@ export class NaverEditor {
       // ✅ 1단계: 이미지 업로드 직전에 팝업 및 모든 포커스 해제
       await page.keyboard.press("Escape"); // 현재 포커스 해제
       await this.clearPopups(); // ✅ 핵심 추가: 팝업 제거 함수 호출
-      await page.waitForTimeout(500); // 팝업이 사라지는 애니메이션 등을 고려한 짧은 대기
+      await page.waitForTimeout(200); // 팝업이 사라지는 애니메이션 등을 고려한 짧은 대기
 
       const beforeCount = await page.evaluate(
         () => document.querySelectorAll("img").length,

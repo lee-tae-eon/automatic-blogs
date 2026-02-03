@@ -10,7 +10,7 @@ export class NaverPublicationManager {
     try {
       await this.page.evaluate(() => window.scrollTo(0, 0));
       await this.page.keyboard.press("Escape");
-      await this.page.waitForTimeout(1500);
+      await this.page.waitForTimeout(500);
 
       const publishButtonSelectors = [
         "button.publish_btn__m2fHR",
@@ -64,7 +64,7 @@ export class NaverPublicationManager {
       }
 
       console.log("   발행 설정 레이어 호출 완료");
-      await this.page.waitForTimeout(2000);
+      await this.page.waitForTimeout(1000);
 
       const layerSelectors = [
         ".publish_layer_container",
@@ -127,7 +127,7 @@ export class NaverPublicationManager {
           } else {
             console.log("   커스텀 드롭다운 방식의 카테고리 선택");
             await selectElement.click();
-            await this.page.waitForTimeout(1000);
+            await this.page.waitForTimeout(300);
 
             console.log(`   드롭다운에서 '${category}' 항목을 찾는 중...`);
             const categoryItem = this.page
@@ -166,7 +166,7 @@ export class NaverPublicationManager {
               if (cleanTag.length > 0) {
                 await this.page.keyboard.type(cleanTag, { delay: 50 });
                 await this.page.keyboard.press("Enter");
-                await this.page.waitForTimeout(200);
+                await this.page.waitForTimeout(50);
               }
             }
             console.log("   ✅ 태그 입력 완료 (특수기호 제거됨)");
@@ -227,7 +227,7 @@ export class NaverPublicationManager {
         );
       }
 
-      await this.page.waitForTimeout(3000);
+      await this.page.waitForTimeout(1500);
 
       try {
         await this.page.waitForURL(/.*\/\d+/, { timeout: 10000 });
