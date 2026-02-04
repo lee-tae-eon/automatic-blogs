@@ -112,7 +112,7 @@ function registerIpcHandlers() {
 
           const geminiClient = new GeminiClient(
             apiKey,
-            process.env.GEMINI_MODEL_NORMAL,
+            process.env.VITE_GEMINI_MODEL_NORMAL,
           );
 
           publication = await generatePost({
