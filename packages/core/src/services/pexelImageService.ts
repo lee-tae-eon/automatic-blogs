@@ -45,7 +45,6 @@ export class PexelsService {
     for (const pattern of patterns) {
       const filePath = path.join(saveDir, pattern);
       if (fs.existsSync(filePath)) {
-        console.log(`   ✅ 캐시 사용: ${pattern}`);
         return filePath;
       }
     }
@@ -62,7 +61,6 @@ export class PexelsService {
       keyword.length < 2 ||
       /결론|따라서|하지만|이런|저런/i.test(keyword)
     ) {
-      console.log(`   ⏭️ 검색어 부적절로 이미지 스킵: [${keyword}]`);
       return null;
     }
 
@@ -81,7 +79,7 @@ export class PexelsService {
       const cachedPath = this.findCachedImage(keyword, saveDir);
       if (cachedPath) return cachedPath;
 
-      console.log(`   🔍 Pexels API 호출: [${keyword}]`);
+      console.log(`   🔍 Pexels 이미지 검색: [${keyword}]`);
 
       // API 호출
       const response = await axios.get(this.API_URL, {
@@ -96,7 +94,6 @@ export class PexelsService {
 
       // 결과 확인
       if (!response.data.photos?.length) {
-        console.warn(`   ⚠️ Pexels: [${keyword}] 결과 없음`);
         return null;
       }
 
@@ -105,8 +102,6 @@ export class PexelsService {
         saveDir,
         `pexels_${this.sanitizeKeyword(keyword)}_${this.getKeywordHash(keyword)}.jpg`,
       );
-
-      console.log(`   📥 이미지 다운로드 중...`);
 
       // ✅ 개선: Stream 다운로드를 Promise로 확실하게 처리
       await new Promise<void>((resolve, reject) => {
@@ -123,7 +118,6 @@ export class PexelsService {
             // ✅ 모든 이벤트 핸들러 등록
             writer.on("finish", () => {
               writer.close(); // ✅ 명시적으로 close
-              console.log(`   ✅ 다운로드 완료: ${path.basename(filePath)}`);
               resolve();
             });
 
@@ -170,7 +164,7 @@ export class PexelsService {
         return null;
       }
 
-      console.log(`   ✅ 완료: ${stats.size} bytes`);
+      console.log(`   ✅ 이미지 다운로드 완료: ${path.basename(filePath)} (${stats.size} bytes)`);
       return filePath;
     } catch (e: any) {
       console.error("   ❌ Pexels 처리 실패:", e.response?.data || e.message);

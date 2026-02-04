@@ -15,6 +15,7 @@ export interface NaverPostInput {
   tags?: string[];
   category?: string;
   references?: { name: string; url: string }[];
+  onProgress?: (message: string) => void;
 }
 
 export class NaverPublisher {
@@ -58,12 +59,14 @@ export class NaverPublisher {
     tags = [],
     category,
     references,
+    onProgress,
   }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
     let currentTaskName = title;
 
     try {
+      onProgress?.("브라우저 실행 중...");
       context = await chromium.launchPersistentContext(this.userDataDir, {
         headless: false,
         args: ["--disable-blink-features=AutomationControlled"],
@@ -79,7 +82,7 @@ export class NaverPublisher {
         console.log("   ✅ 다이얼로그 자동 승인");
       });
 
-      console.log("🌐 글쓰기 페이지로 이동 중...");
+      onProgress?.("네이버 블로그 접속 중...");
       await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
         waitUntil: "domcontentloaded",
         timeout: 30000,
@@ -88,17 +91,18 @@ export class NaverPublisher {
       await page.waitForTimeout(2000);
 
       if (page.url().includes("nid.naver.com")) {
-        console.log("🔐 로그인 필요 감지");
+        onProgress?.("네이버 로그인 진행 중...");
         if (password) {
           const authenticator = new NaverAuthenticator(page);
           await authenticator.login(blogId, password);
         } else {
+          onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
           console.log(
             "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
           );
         }
         await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-        console.log("✅ 로그인 완료 감지");
+        onProgress?.("로그인 완료");
         await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
           waitUntil: "domcontentloaded",
           timeout: 20000,
@@ -107,9 +111,10 @@ export class NaverPublisher {
 
       // ✅ 3. 본문 입력 전 출처 섹션 결합
       const editor = new NaverEditor(page, this.projectRoot, title, tags);
+      onProgress?.("임시 저장 팝업 제거 중...");
       await editor.clearPopups();
 
-      console.log("⏳ 에디터 로딩 대기 중...");
+      onProgress?.("에디터 초기화 및 제목 입력 중...");
       await page.waitForTimeout(2000);
 
       await editor.enterTitle(title);
@@ -118,12 +123,15 @@ export class NaverPublisher {
       // 2. ✅ 본문 입력 전: '본문 + 출처' 합치기
       const finalHtml = this.appendReferences(htmlContent, references);
 
+      onProgress?.("본문 내용 작성 중...");
       await editor.enterContent(finalHtml);
       await page.waitForTimeout(1000);
 
+      onProgress?.("태그 설정 및 최종 발행 중...");
       const publicationManager = new NaverPublicationManager(page);
       await publicationManager.publish(tags, category);
 
+      onProgress?.("블로그 발행 완료");
       console.log("✅ 작성 및 발행 완료!");
     } catch (error: any) {
       console.error("❌ 네이버 발행 오류:", error);

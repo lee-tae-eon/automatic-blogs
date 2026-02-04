@@ -4,9 +4,15 @@ import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
 export const useAppViewModel = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const shouldStopRef = useRef(false);
   const [isStoreLoaded, setIsStoreLoaded] = useState(false);
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs((prev) => [`[${timestamp}] ${message}`, ...prev.slice(0, 99)]);
+  };
 
   const [credentials, setCredentials] = useState({
     naverId: "",
@@ -41,7 +47,20 @@ export const useAppViewModel = () => {
     }
   }, [credentials, isStoreLoaded]);
 
-  // 3. 핸들러들
+  // 3. 프로세스 로그 리스너
+  useEffect(() => {
+    const handleProcessLog = (message: string) => {
+      addLog(message);
+    };
+
+    window.ipcRenderer.on("process-log", handleProcessLog);
+    return () => {
+      // removeListener가 contextBridge에 구현되어 있음
+      window.ipcRenderer.removeListener("process-log", handleProcessLog);
+    };
+  }, []);
+
+  // 4. 핸들러들
   const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials((prev) => ({ ...prev, [name]: value }));
@@ -116,10 +135,12 @@ export const useAppViewModel = () => {
     }
 
     setCurrentFilePath(filePath);
+    addLog(`파일 로드 시도: ${file.name}`);
 
     try {
       const result = await window.ipcRenderer.invoke("parse-excel", filePath);
       if (result.success) {
+        addLog(`파일 로드 성공: ${result.data.length}개의 항목`);
         setTasks(
           result.data.map((task: BatchTask) => ({
             ...task,
@@ -128,9 +149,11 @@ export const useAppViewModel = () => {
           })),
         );
       } else {
+        addLog(`파일 분석 실패: ${result.error}`);
         alert(result.error || "파일 분석에 실패했습니다.");
       }
     } catch (error) {
+      addLog(`파일 처리 중 오류 발생`);
       console.error("파일 처리 중 오류 발생:", error);
       alert("파일 처리 중 오류가 발생했습니다.");
     }
@@ -141,6 +164,8 @@ export const useAppViewModel = () => {
     if (confirm("업로드된 목록을 모두 삭제하시겠습니까?")) {
       setTasks([]);
       setCurrentFilePath(null);
+      setLogs([]);
+      addLog("목록이 초기화되었습니다.");
     }
   };
 
@@ -154,16 +179,23 @@ export const useAppViewModel = () => {
 
     setIsProcessing(true);
     shouldStopRef.current = false;
+    setLogs([]); // 초기화
+    addLog("전체 발행 프로세스를 시작합니다.");
 
     for (const [i, task] of tasks.entries()) {
       if (shouldStopRef.current) {
+        addLog("사용자에 의해 작업이 중단되었습니다.");
         alert("작업이 사용자에 의해 중단되었습니다.");
         break;
       }
 
-      if (task.status === "완료") continue;
+      if (task.status === "완료") {
+        addLog(`[${i + 1}] 이미 완료된 항목입니다: ${task.keyword}`);
+        continue;
+      }
 
       // 1. 진행 상태 반영
+      addLog(`[${i + 1}] 콘텐츠 생성 중: ${task.keyword}`);
       setTasks((prev) =>
         prev.map((t, idx) => (idx === i ? { ...t, status: "진행" } : t)),
       );
@@ -173,10 +205,11 @@ export const useAppViewModel = () => {
         // 생성
         const genResult = await window.ipcRenderer.invoke(
           "generate-post",
-          tasks[i], // 최신 상태의 task를 전달 (여기선 초기상태지만 문제는 없음)
+          tasks[i],
         );
 
         if (shouldStopRef.current) {
+          addLog(`[${i + 1}] 중단됨: ${task.keyword}`);
           setTasks((prev) =>
             prev.map((t, idx) => (idx === i ? { ...t, status: "대기" } : t)),
           );
@@ -185,6 +218,7 @@ export const useAppViewModel = () => {
         }
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
 
+        addLog(`[${i + 1}] 블로그 발행 중: ${task.keyword}`);
         // 발행
         const pubResult = await window.ipcRenderer.invoke(
           "publish-post",
@@ -192,12 +226,14 @@ export const useAppViewModel = () => {
         );
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
+        addLog(`[${i + 1}] 완료: ${task.keyword}`);
         // 2. 완료 상태 반영
         setTasks((prev) =>
           prev.map((t, idx) => (idx === i ? { ...t, status: "완료" } : t)),
         );
         await updateTaskInExcel(i, { status: "완료" });
-      } catch (error) {
+      } catch (error: any) {
+        addLog(`[${i + 1}] 에러 발생: ${error.message || error}`);
         console.error(error);
         // 3. 실패 상태 반영
         setTasks((prev) =>
@@ -208,15 +244,16 @@ export const useAppViewModel = () => {
     }
 
     if (shouldStopRef.current) {
-      alert("작업이 중단되었습니다.");
+      addLog("작업이 중단되었습니다.");
     } else {
+      addLog("모든 작업이 종료되었습니다.");
       alert("모든 작업이 종료되었습니다.");
     }
     setIsProcessing(false);
   };
 
   return {
-    state: { tasks, isProcessing, credentials },
+    state: { tasks, isProcessing, credentials, logs },
     actions: {
       handleCredentialChange,
       processFile,

@@ -25,7 +25,6 @@ export class DbService {
     if (!fs.existsSync(dbDir)) {
       try {
         fs.mkdirSync(dbDir, { recursive: true });
-        console.log(`📂 [DB] 데이터 폴더 생성 완료: ${dbDir}`);
       } catch (e) {
         console.error(`❌ [DB] 폴더 생성 실패: ${e}`);
         // 폴더 생성 실패 시 임시 폴더나 현재 경로로 fallback 할 수도 있음
@@ -34,7 +33,6 @@ export class DbService {
 
     // 2. DB 연결
     const dbPath = path.join(dbDir, "blog_automation.db");
-    console.log(`🔌 [DB] 연결 경로: ${dbPath}`);
 
     this.db = new Database(dbPath, {
       // verbose: console.log, // 쿼리 로그가 필요하면 주석 해제

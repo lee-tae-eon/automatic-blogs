@@ -36,7 +36,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
    * @param callback - 콜백 함수
    */
   on: (channel: string, callback: Function) => {
-    const validChannels = ["task-progress", "task-complete"];
+    const validChannels = ["task-progress", "task-complete", "process-log"];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (event, ...args) => callback(...args));
     }

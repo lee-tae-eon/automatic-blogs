@@ -97,6 +97,7 @@ export interface GeneratePostInput {
   client: BaseAiClient;
   task: BatchTask;
   projectRoot?: string;
+  onProgress?: (message: string) => void;
 }
 
 export type BlogPlatform = "naver" | "tistory";

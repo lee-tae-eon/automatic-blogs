@@ -22,6 +22,7 @@ export const App: React.FC = () => {
       <ActionButtons
         hasTasks={tasks.length > 0}
         isProcessing={isProcessing}
+        logs={state.logs}
         onClear={actions.handleClearAll}
         onStop={actions.handleStop}
         onPublish={actions.handlePublishAll}

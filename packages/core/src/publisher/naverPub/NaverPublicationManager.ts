@@ -28,7 +28,6 @@ export class NaverPublicationManager {
             timeout: 3000,
           });
           if (publishButton) {
-            console.log(`   ✅ 발행 버튼 발견: ${selector}`);
             break;
           }
         } catch (e) {
@@ -63,7 +62,6 @@ export class NaverPublicationManager {
         });
       }
 
-      console.log("   발행 설정 레이어 호출 완료");
       await this.page.waitForTimeout(1000);
 
       const layerSelectors = [
@@ -86,7 +84,6 @@ export class NaverPublicationManager {
           if (element) {
             layerSelector = selector;
             layerFound = true;
-            console.log(`   ✅ 발행 레이어 감지: ${selector}`);
             break;
           }
         } catch (e) {
@@ -100,7 +97,6 @@ export class NaverPublicationManager {
       }
 
       if (category) {
-        console.log(`   카테고리 선택 시도: ${category}`);
         try {
           const categoryTrigger = this.page.locator(
             [
@@ -121,15 +117,11 @@ export class NaverPublicationManager {
           );
 
           if (tagName === "SELECT") {
-            console.log("   네이티브 <select> 방식의 카테고리 선택");
             await selectElement.selectOption({ label: category });
-            console.log(`   ✅ 카테고리 변경 완료: ${category}`);
           } else {
-            console.log("   커스텀 드롭다운 방식의 카테고리 선택");
             await selectElement.click();
             await this.page.waitForTimeout(300);
 
-            console.log(`   드롭다운에서 '${category}' 항목을 찾는 중...`);
             const categoryItem = this.page
               .getByText(new RegExp(`^${category}(\\s*\\(\\d+\\))?$`))
               .first();
@@ -137,7 +129,6 @@ export class NaverPublicationManager {
             try {
               await categoryItem.waitFor({ state: "visible", timeout: 5000 });
               await categoryItem.click();
-              console.log(`   ✅ 카테고리 변경 완료: ${category}`);
             } catch (e) {
               console.warn(
                 `   ⚠️ 드롭다운에서 [${category}] 항목을 찾을 수 없거나 클릭에 실패했습니다.`, 
@@ -145,6 +136,7 @@ export class NaverPublicationManager {
               await this.page.keyboard.press("Escape").catch(() => {});
             }
           }
+          console.log(`   ✅ 카테고리 설정 완료: ${category}`);
         } catch (e) {
           const errorMessage = e instanceof Error ? e.message : String(e);
           console.warn(`   ⚠️ 카테고리 선택 실패: ${errorMessage}`);
@@ -152,7 +144,6 @@ export class NaverPublicationManager {
       }
 
       if (tags && tags.length > 0) {
-        console.log(`   태그 입력 시작...`);
         try {
           const tagInput = await this.page.waitForSelector(
             `${layerSelector} input[placeholder*=\"태그\"], .tag_input`,
@@ -169,14 +160,13 @@ export class NaverPublicationManager {
                 await this.page.waitForTimeout(50);
               }
             }
-            console.log("   ✅ 태그 입력 완료 (특수기호 제거됨)");
+            console.log(`   ✅ 태그 입력 완료 (${tags.length}개)`);
           }
         } catch (e) {
           console.warn(`   ⚠️ 태그 입력 실패:`, e);
         }
       }
 
-      console.log("   최종 발행 버튼 클릭 시도...");
       let published = false;
 
       try {
@@ -190,7 +180,6 @@ export class NaverPublicationManager {
         await finalBtn.scrollIntoViewIfNeeded();
         await this.page.waitForTimeout(500);
         await finalBtn.click({ force: true });
-        console.log("   ✅ 최종 발행 버튼 클릭 성공");
         published = true;
       } catch (e) {
         console.error("   ❌ 일반 클릭 실패, JS 주입으로 강제 클릭 시도...");
@@ -216,7 +205,6 @@ export class NaverPublicationManager {
         }, layerSelector);
 
         if (jsSuccess) {
-          console.log("   ✅ JS 주입을 통한 발행 버튼 클릭 성공");
           published = true;
         }
       }
