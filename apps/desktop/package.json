@@ -63,6 +63,7 @@
     "axios": "^1.13.4",
     "dotenv": "^16.4.5",
     "electron-store": "6.0.1",
+    "playwright": "^1.45.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   }
