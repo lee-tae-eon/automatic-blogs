@@ -8,7 +8,7 @@ export class PexelsService {
   private readonly API_URL = "https://api.pexels.com/v1/search";
 
   constructor() {
-    this.apiKey = (process.env.PEXELS_API_KEY || "").trim();
+    this.apiKey = (process.env.VITE_PEXELS_API_KEY || "").trim();
 
     if (!this.apiKey) {
       console.error(

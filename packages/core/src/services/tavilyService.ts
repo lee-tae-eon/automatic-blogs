@@ -5,7 +5,7 @@ export class TavilyService {
   private readonly baseUrl = "https://api.tavily.com/search";
 
   constructor() {
-    this.apiKey = (process.env.TAVILY_API_KEY || "").trim();
+    this.apiKey = (process.env.VITE_TAVILY_API_KEY || "").trim();
   }
 
   async searchLatestNews(query: string) {

@@ -10,14 +10,14 @@ export class GeminiClient implements BaseAiClient {
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
 
-  constructor(apiKey: string, modelName: string) {
+  constructor(apiKey: string, modelName: string = "gemini-2.5-flash") {
     // 가장 가성비 좋은 flash 모델 사용
     // 2. this 키워드를 사용하여 멤버 변수에 할당
     this.genAI = new GoogleGenerativeAI(apiKey);
 
     // 최신 모델인 gemini-1.5-flash-latest 사용
     this.model = this.genAI.getGenerativeModel({
-      model: modelName,
+      model: modelName || "gemini-2.5-flash",
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
