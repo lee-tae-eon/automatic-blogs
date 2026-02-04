@@ -1,14 +1,49 @@
 {
   "name": "@blog-automation/desktop",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI Blog Automation Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "electron:build": "rm -rf dist-electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build": "vite build && electron-builder"
+    "build": "rm -rf dist_electron && vite build && electron-builder"
+  },
+  "build": {
+    "appId": "com.blog.automation.aiden",
+    "productName": "BlogAutomation.aiden",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ]
+    },
+    "dmg": {
+      "title": "Blog Automation Install",
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ]
+    },
+    "extraResources": [
+      {
+        "from": "../../.env",
+        "to": ".env"
+      }
+    ],
+    "directories": {
+      "output": "dist_electron"
+    }
   },
   "keywords": [],
   "author": "",
@@ -17,7 +52,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.1.2",
-    "electron": "^40.0.0",
+    "electron": "40.0.0",
     "electron-builder": "^26.4.0",
     "sass": "^1.97.3",
     "vite": "^7.3.1",
@@ -25,6 +60,8 @@
   },
   "dependencies": {
     "@blog-automation/core": "workspace:*",
+    "axios": "^1.13.4",
+    "dotenv": "^16.4.5",
     "electron-store": "6.0.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"

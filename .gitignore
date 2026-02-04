@@ -146,3 +146,23 @@ apps/cli/output/*
 *.auth/
 user-data-dir/
 temp_images/
+dist_electron/
+dist-electron/
+
+# macOS
+.DS_Store
+
+# Electron builder
+dist_electron/
+dist-electron/
+
+# Vite/Build outputs in subdirectories
+**/dist/
+**/dist-electron/
+**/dist_electron/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

@@ -5,9 +5,15 @@ import dotenv from "dotenv";
 import Store from "electron-store";
 
 // 환경 변수 로드
-// Monorepo Root의 .env 파일을 찾아 로드합니다. (빌드된 dist-electron/main.js 기준 상위 경로)
-dotenv.config({ path: path.join(__dirname, "../../../.env") });
-dotenv.config(); // 혹시 apps/desktop/.env 에 있을 경우를 대비해 기본 경로도 시도
+if (app.isPackaged) {
+  // 빌드된 상태 (Production)
+  // 앱의 리소스 폴더나 실행 파일 위치를 기준으로 설정합니다.
+  dotenv.config({ path: path.join(process.resourcesPath, ".env") });
+} else {
+  // 개발 모드 (Development)
+  // 기존처럼 모노레포 루트의 .env를 참조합니다.
+  dotenv.config({ path: path.join(__dirname, "../../../.env") });
+}
 
 // 스토어 초기화
 const store = new Store();

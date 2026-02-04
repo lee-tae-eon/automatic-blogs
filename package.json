@@ -14,7 +14,9 @@
     "cli:build": "pnpm --filter @blog-automation/cli build",
     "cli:start": "pnpm --filter @blog-automation/cli dev",
     "core:build": "pnpm --filter @blog-automation/core build",
-    "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start"
+    "desktop:add": "pnpm --filter @blog-automation/desktop add",
+    "desktop:start": "pnpm --filter @blog-automation/desktop desktop:start",
+    "desktop:build": "pnpm --filter @blog-automation/desktop build"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
