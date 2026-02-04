@@ -96,6 +96,7 @@ export interface Publication extends AiGeneratedPost {
 export interface GeneratePostInput {
   client: BaseAiClient;
   task: BatchTask;
+  projectRoot?: string;
 }
 
 export type BlogPlatform = "naver" | "tistory";

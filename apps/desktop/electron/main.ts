@@ -11,8 +11,9 @@ import {
   ExcelProcessor,
   NaverPublisher,
   markdownToHtml,
+  GeminiClient,
 } from "@blog-automation/core";
-import { GeminiClient } from "@blog-automation/core/ai";
+// import { GeminiClient } from "@blog-automation/core/ai";
 
 // ==========================================
 // 1. 환경 변수 설정
@@ -136,7 +137,7 @@ function registerIpcHandlers() {
           publication = await generatePost({
             client: geminiClient,
             task: task,
-            // projectRoot: userDataPath, // 👈 DB 경로 주입 (Core에서 안 쓰면 무시됨)
+            projectRoot: userDataPath, // 👈 DB 경로 주입 (Core에서 안 쓰면 무시됨)
           });
 
           if (publication) break; // 성공 시 루프 탈출

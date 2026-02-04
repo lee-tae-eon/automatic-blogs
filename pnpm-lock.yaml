@@ -54,6 +54,9 @@ importers:
       axios:
         specifier: ^1.13.4
         version: 1.13.4
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.6.2
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
