@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "better-sqlite3": "^12.6.2",
     "cheerio": "^1.1.2",
     "openai": "^6.16.0",
     "remark-gfm": "^4.0.1",
@@ -28,5 +29,8 @@
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
   }
 }
