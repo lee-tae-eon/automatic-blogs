@@ -20,6 +20,7 @@ export const useAppViewModel = () => {
     naverPw: "",
     geminiKey: "",
     subGemini: "",
+    headless: false,
   });
 
   // 1. 초기 로드
@@ -30,7 +31,11 @@ export const useAppViewModel = () => {
         "user-credentials",
       );
       if (storedCreds) {
-        setCredentials((prev) => ({ ...prev, ...storedCreds }));
+        setCredentials((prev) => ({ 
+          ...prev, 
+          ...storedCreds,
+          headless: storedCreds.headless ?? false 
+        }));
       }
       setIsStoreLoaded(true);
     };
@@ -63,8 +68,11 @@ export const useAppViewModel = () => {
 
   // 4. 핸들러들
   const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCredentials((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setCredentials((prev) => ({ 
+      ...prev, 
+      [name]: type === "checkbox" ? checked : value 
+    }));
   };
 
   const updateTaskInExcel = async (
@@ -228,7 +236,10 @@ export const useAppViewModel = () => {
         // 발행
         const pubResult = await window.ipcRenderer.invoke(
           "publish-post",
-          genResult.data,
+          {
+            ...genResult.data,
+            headless: credentials.headless
+          }
         );
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 

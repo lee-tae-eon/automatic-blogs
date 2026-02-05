@@ -16,6 +16,7 @@ export interface NaverPostInput {
   category?: string;
   references?: { name: string; url: string }[];
   onProgress?: (message: string) => void;
+  headless?: boolean;
 }
 
 export class NaverPublisher {
@@ -72,6 +73,7 @@ export class NaverPublisher {
     category,
     references,
     onProgress,
+    headless = false,
   }: NaverPostInput) {
     let context: BrowserContext | null = null;
     let page: Page | null = null;
@@ -80,7 +82,7 @@ export class NaverPublisher {
     try {
       onProgress?.("브라우저 실행 중...");
       this.currentContext = await chromium.launchPersistentContext(this.userDataDir, {
-        headless: false,
+        headless: headless,
         args: ["--disable-blink-features=AutomationControlled"],
         permissions: ["clipboard-read", "clipboard-write"],
       });

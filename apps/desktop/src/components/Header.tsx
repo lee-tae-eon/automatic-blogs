@@ -6,6 +6,7 @@ interface HeaderProps {
     naverPw: string;
     geminiKey: string;
     subGemini: string;
+    headless: boolean;
   };
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -31,6 +32,15 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
             value={credentials.naverPw}
             onChange={onChange}
           />
+          <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', marginLeft: '8px', color: '#666', cursor: 'pointer' }}>
+            <input
+              name="headless"
+              type="checkbox"
+              checked={credentials.headless}
+              onChange={onChange}
+            />
+            브라우저 숨기기
+          </label>
         </div>
         <div className="platform-group">
           <span className="label">AI Keys</span>

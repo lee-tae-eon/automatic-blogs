@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 // Renderer 프로세스에서 사용할 API 노출
+const listeners = new Map();
 electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
     /**
      * File 객체에서 실제 시스템 경로를 추출합니다.
@@ -36,7 +37,12 @@ electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
     on: (channel, callback) => {
         const validChannels = ["task-progress", "task-complete", "process-log"];
         if (validChannels.includes(channel)) {
-            electron_1.ipcRenderer.on(channel, (event, ...args) => callback(...args));
+            const wrapper = (event, ...args) => callback(...args);
+            if (!listeners.has(channel)) {
+                listeners.set(channel, new Map());
+            }
+            listeners.get(channel).set(callback, wrapper);
+            electron_1.ipcRenderer.on(channel, wrapper);
         }
     },
     /**
@@ -45,7 +51,14 @@ electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
      * @param callback - 제거할 콜백 함수
      */
     removeListener: (channel, callback) => {
-        electron_1.ipcRenderer.removeListener(channel, callback);
+        const channelListeners = listeners.get(channel);
+        if (channelListeners) {
+            const wrapper = channelListeners.get(callback);
+            if (wrapper) {
+                electron_1.ipcRenderer.removeListener(channel, wrapper);
+                channelListeners.delete(callback);
+            }
+        }
     },
 });
 //# sourceMappingURL=preload.js.map
