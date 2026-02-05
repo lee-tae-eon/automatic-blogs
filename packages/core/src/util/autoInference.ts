@@ -97,6 +97,7 @@ export function analyzeTopicIntent(topic: string): {
   isComparison: boolean;
   isOpinion: boolean;
   isScandal: boolean;
+  isPlace: boolean;
   needsCurrentInfo: boolean;
 } {
   const lower = topic.toLowerCase();
@@ -112,6 +113,7 @@ export function analyzeTopicIntent(topic: string): {
     isScandal: /논란|의혹|탈세|혐의|사건|사고|폭로|충격|비판|실체|진실/.test(
       lower,
     ),
+    isPlace: /맛집|카페|명소|가볼만한곳|위치|가게|매장|식당/.test(lower),
     needsCurrentInfo,
   };
 }

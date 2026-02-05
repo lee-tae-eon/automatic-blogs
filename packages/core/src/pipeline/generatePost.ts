@@ -94,21 +94,31 @@ export async function generatePost({
 
       // 2. 뉴스 데이터 확보 (Cache-First 전략)
       let newsContext = "";
-      onProgress?.("뉴스 캐시 확인 중...");
+      onProgress?.("데이터 확보 중...");
       const cachedNews = db.getRecentNews(task.topic);
 
       if (cachedNews) {
-        onProgress?.("기존 뉴스 데이터 활용");
+        onProgress?.("기존 저장된 데이터 활용");
         newsContext = cachedNews.content;
-        inputParams.latestNews = `[저장된 뉴스 데이터 활용]\n${cachedNews.content}`;
+        inputParams.latestNews = `[기존 저장된 정보 활용]\n${cachedNews.content}`;
       } else {
-        onProgress?.(`실시간 뉴스 검색 중: ${task.topic}`);
+        const topicIntent = analyzeTopicIntent(task.topic);
+        let searchQuery = task.topic;
+        
+        // 장소 관련 주제인 경우 검색어 보강 (환각 방지)
+        if (topicIntent.isPlace) {
+          searchQuery = `${task.topic} 정확한 위치 상호명 메뉴 가격 정보`;
+          onProgress?.(`장소 데이터 정밀 검색 중: ${task.topic}`);
+        } else {
+          onProgress?.(`실시간 정보 검색 중: ${task.topic}`);
+        }
+
         const tavily = new TavilyService();
-        newsContext = await tavily.searchLatestNews(inputParams.topic);
+        newsContext = await tavily.searchLatestNews(searchQuery);
 
         inputParams.latestNews =
           newsContext ||
-          "최신 뉴스 정보를 가져오지 못했습니다. 최대한 최신 정보를 제공해주세요";
+          "최신 정보를 가져오지 못했습니다. 만약 고유 명사(가게 이름 등)가 불확실하다면 임의로 지어내지 마세요.";
 
         if (newsContext && newsContext.length > 50) {
           onProgress?.("검색 결과 캐시 저장 중...");
