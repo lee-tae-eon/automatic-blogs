@@ -8,7 +8,7 @@
     "electron:build": "rm -rf dist-electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build": "rm -rf dist_electron && electron:build && vite build && electron-builder"
+    "build": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder"
   },
   "build": {
     "appId": "com.blog.automation.aiden",
