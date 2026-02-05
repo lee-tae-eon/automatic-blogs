@@ -34,7 +34,7 @@ electron_1.contextBridge.exposeInMainWorld("ipcRenderer", {
      * @param callback - 콜백 함수
      */
     on: (channel, callback) => {
-        const validChannels = ["task-progress", "task-complete"];
+        const validChannels = ["task-progress", "task-complete", "process-log"];
         if (validChannels.includes(channel)) {
             electron_1.ipcRenderer.on(channel, (event, ...args) => callback(...args));
         }

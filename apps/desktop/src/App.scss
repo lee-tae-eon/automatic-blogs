@@ -100,13 +100,25 @@
 
   .process-log {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 0.9rem;
-    color: #495057;
-    font-family: monospace;
+    color: #4dabf7;
+    font-family: "Malgun Gothic", sans-serif;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     margin-right: 20px;
+
+    .log-icon {
+      font-size: 1rem;
+    }
+
+    .log-text {
+      color: #495057;
+    }
   }
 
   .button-group {

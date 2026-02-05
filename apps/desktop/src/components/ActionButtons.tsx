@@ -12,21 +12,27 @@ interface ActionButtonsProps {
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   hasTasks,
   isProcessing,
-  logs,
   onClear,
   onStop,
   onPublish,
 }) => {
   if (!hasTasks) return null;
 
-  const latestLog = logs[0];
-
   return (
-    <div className="actions">
-      <div className="process-log">
-        {latestLog && <span>{latestLog}</span>}
-      </div>
-      <div className="button-group">
+    <div 
+      className="actions" 
+      style={{ 
+        display: "flex", 
+        justifyContent: "flex-end", // 버튼을 우측으로 정렬
+        alignItems: "center",
+        backgroundColor: "#f8f9fa",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        border: "1px solid #e9ecef",
+        marginBottom: "20px"
+      }}
+    >
+      <div className="button-group" style={{ display: "flex", gap: "12px" }}>
         <button
           className="btn-secondary"
           onClick={onClear}

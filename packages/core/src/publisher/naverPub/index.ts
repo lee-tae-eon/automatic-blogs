@@ -21,10 +21,22 @@ export interface NaverPostInput {
 export class NaverPublisher {
   private userDataDir: string;
   private projectRoot: string;
+  private currentContext: BrowserContext | null = null;
 
   constructor() {
     this.projectRoot = findProjectRoot(__dirname);
     this.userDataDir = path.join(this.projectRoot, ".auth/naver");
+  }
+
+  /**
+   * 진행 중인 발행 프로세스를 즉시 중단합니다.
+   */
+  async stop() {
+    if (this.currentContext) {
+      console.log("🛑 NaverPublisher: 브라우저 종료 및 프로세스 중단 시도");
+      await this.currentContext.close();
+      this.currentContext = null;
+    }
   }
 
   // ✅ 2. 출처를 HTML로 변환하는 프라이빗 메서드
@@ -67,12 +79,13 @@ export class NaverPublisher {
 
     try {
       onProgress?.("브라우저 실행 중...");
-      context = await chromium.launchPersistentContext(this.userDataDir, {
+      this.currentContext = await chromium.launchPersistentContext(this.userDataDir, {
         headless: false,
         args: ["--disable-blink-features=AutomationControlled"],
         permissions: ["clipboard-read", "clipboard-write"],
       });
 
+      context = this.currentContext;
       page = await context.newPage();
 
       page.on("dialog", async (dialog) => {

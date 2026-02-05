@@ -5,10 +5,11 @@ import { useAppViewModel } from "./model/useAppViewModel";
 import { FileUploader } from "./components/FileUploader";
 import { ActionButtons } from "./components/ActionButtons";
 import { TaskTable } from "./components/TaskTable";
+import { LogConsole } from "./components/LogConsole";
 
 export const App: React.FC = () => {
   const { state, actions } = useAppViewModel();
-  const { tasks, isProcessing, credentials } = state;
+  const { tasks, isProcessing, credentials, logs } = state;
 
   return (
     <div className="container">
@@ -22,7 +23,7 @@ export const App: React.FC = () => {
       <ActionButtons
         hasTasks={tasks.length > 0}
         isProcessing={isProcessing}
-        logs={state.logs}
+        logs={logs}
         onClear={actions.handleClearAll}
         onStop={actions.handleStop}
         onPublish={actions.handlePublishAll}
@@ -33,6 +34,8 @@ export const App: React.FC = () => {
         onPersonaChange={actions.handlePersonaChange}
         onToneChnage={actions.handleToneChange}
       />
+
+      <LogConsole logs={logs} />
     </div>
   );
 };

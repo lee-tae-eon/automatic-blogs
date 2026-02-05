@@ -20,7 +20,7 @@ export async function generatePost({
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      onProgress?.(`AI 포스팅 생성 시작 (시도 ${attempt}/${MAX_RETRIES})`);
+      onProgress?.(`AI 콘텐츠 생성 시작 (${attempt}/${MAX_RETRIES})`);
 
       const inputParams: BlogPostInput = {
         topic: task.topic,
@@ -36,15 +36,15 @@ export async function generatePost({
 
       // 2. 뉴스 데이터 확보 (Cache-First 전략)
       let newsContext = "";
-      onProgress?.("로컬 캐시에서 뉴스 데이터 확인 중...");
+      onProgress?.("뉴스 캐시 확인 중...");
       const cachedNews = db.getRecentNews(task.topic);
 
       if (cachedNews) {
-        onProgress?.("로컬 캐시 뉴스 데이터 로드 완료");
+        onProgress?.("기존 뉴스 데이터 활용");
         newsContext = cachedNews.content;
         inputParams.latestNews = `[저장된 뉴스 데이터 활용]\n${cachedNews.content}`;
       } else {
-        onProgress?.(`실시간 뉴스 검색 시작: ${task.topic}`);
+        onProgress?.(`실시간 뉴스 검색 중: ${task.topic}`);
         const tavily = new TavilyService();
         newsContext = await tavily.searchLatestNews(inputParams.topic);
 
@@ -53,12 +53,12 @@ export async function generatePost({
           "최신 뉴스 정보를 가져오지 못했습니다. 최대한 최신 정보를 제공해주세요";
 
         if (newsContext && newsContext.length > 50) {
-          onProgress?.("검색된 뉴스 데이터 저장 중...");
+          onProgress?.("검색 결과 캐시 저장 중...");
           db.saveNews(task.topic, newsContext, []);
         }
       }
 
-      onProgress?.("AI 콘텐츠 생성 요청 중...");
+      onProgress?.("AI 포스팅 초안 생성 중...");
       const aiPost = await generatePostSingleCall(client, inputParams);
 
       const publication: Publication = {
@@ -68,9 +68,10 @@ export async function generatePost({
         createdAt: new Date().toISOString(),
       };
 
-      onProgress?.("AI 콘텐츠 생성 완료");
+      onProgress?.("포스팅 생성 완료");
       return publication;
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[GeneratePost] Error:`, error);
       lastError = error;
 
       // 429 에러(Quota Exceeded)인 경우 재시도하지 않고 즉시 상위로 던져서 모델 변경을 유도함

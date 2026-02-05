@@ -7,6 +7,7 @@ export const useAppViewModel = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const shouldStopRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [isStoreLoaded, setIsStoreLoaded] = useState(false);
 
   const addLog = (message: string) => {
@@ -171,6 +172,11 @@ export const useAppViewModel = () => {
 
   const handleStop = () => {
     shouldStopRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    window.ipcRenderer.send("abort-process");
+    addLog("중단 요청을 보냈습니다. 현재 작업이 마무리되는 대로 중단됩니다.");
   };
 
   const handlePublishAll = async () => {
@@ -179,13 +185,13 @@ export const useAppViewModel = () => {
 
     setIsProcessing(true);
     shouldStopRef.current = false;
+    abortControllerRef.current = new AbortController();
     setLogs([]); // 초기화
     addLog("전체 발행 프로세스를 시작합니다.");
 
     for (const [i, task] of tasks.entries()) {
-      if (shouldStopRef.current) {
+      if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
         addLog("사용자에 의해 작업이 중단되었습니다.");
-        alert("작업이 사용자에 의해 중단되었습니다.");
         break;
       }
 
@@ -208,7 +214,7 @@ export const useAppViewModel = () => {
           tasks[i],
         );
 
-        if (shouldStopRef.current) {
+        if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
           addLog(`[${i + 1}] 중단됨: ${task.keyword}`);
           setTasks((prev) =>
             prev.map((t, idx) => (idx === i ? { ...t, status: "대기" } : t)),
@@ -233,6 +239,12 @@ export const useAppViewModel = () => {
         );
         await updateTaskInExcel(i, { status: "완료" });
       } catch (error: any) {
+        // 중단으로 인한 에러인 경우 무시
+        if (error.name === "AbortError" || shouldStopRef.current) {
+          addLog(`[${i + 1}] 작업이 중단되었습니다.`);
+          break;
+        }
+
         addLog(`[${i + 1}] 에러 발생: ${error.message || error}`);
         console.error(error);
         // 3. 실패 상태 반영
@@ -250,6 +262,7 @@ export const useAppViewModel = () => {
       alert("모든 작업이 종료되었습니다.");
     }
     setIsProcessing(false);
+    abortControllerRef.current = null;
   };
 
   return {
