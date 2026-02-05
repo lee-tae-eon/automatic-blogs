@@ -5,11 +5,11 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "electron:build": "rimraf dist_electron && tsc -p tsconfig.electron.json",
+    "electron:build": "rimraf dist-electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build:mac": "rimraf dist_electron && pnpm electron:build && vite build && electron-builder --mac",
-    "build:win": "rimraf dist_electron && pnpm electron:build && vite build && electron-builder --win"
+    "build:mac": "rimraf dist-electron && pnpm electron:build && vite build && electron-builder --mac",
+    "build:win": "rimraf dist-electron && pnpm electron:build && vite build && electron-builder --win"
   },
   "build": {
     "appId": "com.blog.automation.aiden",
@@ -56,7 +56,7 @@
       }
     ],
     "directories": {
-      "output": "dist_electron"
+      "output": "dist-electron"
     }
   },
   "keywords": [],
@@ -68,6 +68,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "electron": "40.0.0",
     "electron-builder": "^26.4.0",
+    "rimraf": "^6.1.2",
     "sass": "^1.97.3",
     "vite": "^7.3.1",
     "wait-on": "^9.0.3"
