@@ -243,6 +243,7 @@ function registerIpcHandlers() {
           htmlContent,
           tags: post.tags || post.focusKeywords || [],
           category: post.category,
+          references: post.references,
           headless: post.headless, // UI에서 전달받은 headless 옵션 적용
           onProgress: (message) => {
             event.sender.send("process-log", message);

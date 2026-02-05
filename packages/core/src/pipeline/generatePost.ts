@@ -128,6 +128,7 @@ export async function generatePost({
 
       onProgress?.("AI 포스팅 초안 생성 중...");
       const aiPost = await generatePostSingleCall(client, inputParams);
+      console.log(`DEBUG [generatePost]: AI 응답 출처 개수: ${aiPost.references?.length || 0}`);
 
       // ✅ [Fallback] 주제 성격 분석 후, 진짜 뉴스가 필요한 경우에만 출처 강제 추출
       const topicIntent = analyzeTopicIntent(task.topic);
@@ -144,6 +145,7 @@ export async function generatePost({
             name: "관련 뉴스 (자동 추출)",
             url: url.replace(/[)\]]$/, ""),
           })).slice(0, 3);
+          console.log(`DEBUG [generatePost]: 강제 추출된 출처 개수: ${aiPost.references.length}`);
         }
       } else if (!topicIntent.needsCurrentInfo) {
         console.log("ℹ️ 일반 가이드/리뷰형 주제이므로 출처 기재를 강제하지 않습니다.");
@@ -156,6 +158,9 @@ export async function generatePost({
         category: task.category,
         createdAt: new Date().toISOString(),
       };
+      
+      console.log(`DEBUG [generatePost]: 최종 Publication 출처 개수: ${rawPublication.references?.length || 0}`);
+
 
       // 3. 🛡️ 안전 가이드라인 검수 및 강제 수정 (Sanitizer)
       onProgress?.("🛡️ 안전 가이드라인 검수 중...");
