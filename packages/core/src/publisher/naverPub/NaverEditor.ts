@@ -27,10 +27,11 @@ export class NaverEditor {
 
   /**
    * 텍스트와 HTML에서 가비지 문구를 제거하는 유틸리티
+   * (이미지 태그는 이제 처리하므로 삭제하지 않음)
    */
   private cleanContent(content: string): string {
     const garbageRegex =
-      /(\(Image suggestion.*?\)|\[이미지.*?\]|\[사진.*?\]|이미지 삽입|삽입 위치|image suggestion:.*?\n?)/gi;
+      /(\(Image suggestion.*?\)|image suggestion:.*?\n?)/gi;
     return content.replace(garbageRegex, "").trim();
   }
 
@@ -90,16 +91,21 @@ export class NaverEditor {
       await this.page.keyboard.press("ArrowDown");
 
       const textBlocks = this.htmlToTextBlocks(htmlContent);
+      let imageCount = 0;
+      const MAX_IMAGES = 3;
+      const usedKeywords = new Set<string>(); // 중복 키워드 방지
 
       for (const block of textBlocks) {
         // 타이핑 전 가비지 제거
-        block.html = this.cleanContent(block.html);
-        block.text = this.cleanContent(block.text);
+        if (block.html) block.html = this.cleanContent(block.html);
+        if (block.text) block.text = this.cleanContent(block.text);
 
         if (
           !block.html &&
+          !block.text && // text도 체크
           block.type !== "separator" &&
-          block.type !== "empty-line"
+          block.type !== "empty-line" &&
+          block.type !== "image" // image 타입 예외 허용
         )
           continue;
 
@@ -118,23 +124,7 @@ export class NaverEditor {
             await this.pasteHtml(bqHeadHtml);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
-
-            // 이미지 업로드 로직
-            let searchQuery = `${this.topic} ${block.text}`;
-            if (this.tags && this.tags.length > 0) {
-              searchQuery += ` ${this.tags[0]}`;
-            }
-
-            const imagePath = await this.pexelsService.downloadImage(
-              searchQuery,
-              this.tempDir,
-            );
-            if (imagePath) {
-              await this.uploadImage(this.page, imagePath);
-              await this.page.waitForTimeout(500);
-              await this.page.keyboard.press("ArrowDown");
-              await this.page.keyboard.press("Enter");
-            }
+            // ❌ 기존 이미지 삽입 로직 삭제됨 (사용자 요청: 중복/과다 이미지 방지)
             break;
 
           case "blockquote-paragraph":
@@ -167,8 +157,61 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
-          case "paragraph":
+          case "image":
+            // ✅ 이미지 개수 제한 및 키워드 처리
+            if (imageCount >= MAX_IMAGES) {
+              console.log(
+                `⚠️ 이미지 제한(${MAX_IMAGES}개) 도달로 건너뜀: ${block.keyword}`,
+              );
+              break;
+            }
 
+            // 키워드 정제: 2어절까지만 사용, 특수문자 제거
+            let rawKeyword = block.keyword || this.topic;
+            // 대괄호, 특수문자 제거 및 앞쪽 2단어 추출
+            let cleanKeyword = rawKeyword
+              .replace(/[\[\]]/g, "")
+              .replace(/이미지\s*:/, "")
+              .replace(/[^\w\s가-힣]/g, " ") // 특수문자는 공백으로 치환
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .join(" ");
+
+            if (!cleanKeyword || cleanKeyword.length < 2) {
+                // 키워드가 너무 짧거나 없으면 토픽과 결합
+                cleanKeyword = `${this.topic} ${cleanKeyword}`;
+            }
+
+            if (usedKeywords.has(cleanKeyword)) {
+              console.log(`⚠️ 중복된 이미지 키워드 건너뜀: ${cleanKeyword}`);
+              break;
+            }
+
+            console.log(`🖼️ 이미지 검색 시도 (${imageCount + 1}/${MAX_IMAGES}): "${cleanKeyword}"`);
+            
+            try {
+              const imagePath = await this.pexelsService.downloadImage(
+                cleanKeyword,
+                this.tempDir,
+              );
+
+              if (imagePath) {
+                await this.uploadImage(this.page, imagePath);
+                await this.page.waitForTimeout(500);
+                await this.page.keyboard.press("ArrowDown");
+                await this.page.keyboard.press("Enter");
+                imageCount++;
+                usedKeywords.add(cleanKeyword);
+              } else {
+                console.warn(`⚠️ 적절한 이미지를 찾지 못해 건너뜀: ${cleanKeyword}`);
+              }
+            } catch (e) {
+              console.error("❌ 이미지 처리 중 오류:", e);
+            }
+            break;
+
+          case "paragraph":
           default:
             // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지
             await this.pasteHtml(`<p>${block.html}</p>`);
@@ -192,32 +235,57 @@ export class NaverEditor {
         const $el = $(element);
         const tagName = element.tagName?.toLowerCase();
         const rawHtml = $el.html() || "";
+        const textContent = $el.text().trim();
+
+        // ✅ 이미지 태그 감지 로직 (블록 전체가 이미지 태그인 경우)
+        // 예: [이미지: 키워드] 또는 > [이미지: 키워드]
+        const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
+        const imageMatch = textContent.match(imageRegex);
+
+        if (imageMatch) {
+            blocks.push({
+                type: "image",
+                keyword: imageMatch[1].trim()
+            });
+            return; // 이미지 블록으로 처리하고 다음 루프로
+        }
 
         if (tagName === "hr") {
           blocks.push({ type: "separator", text: "" });
         } else if (tagName === "blockquote") {
+          // 인용구 내부에서도 이미지 태그가 있을 수 있음
           $el.children().each((_, child) => {
             const $child = $(child);
-            const cTag = child.tagName?.toLowerCase();
-            if (cTag?.match(/^h[1-6]$/)) {
-              blocks.push({
-                type: "blockquote-heading",
-                text: $child.text().trim(),
-                html: $child.html(),
-              });
+            const cText = $child.text().trim();
+            const cMatch = cText.match(imageRegex);
+            
+            if (cMatch) {
+                 blocks.push({
+                    type: "image",
+                    keyword: cMatch[1].trim()
+                });
             } else {
-              blocks.push({
-                type: "blockquote-paragraph",
-                text: $child.text().trim(),
-                html: $child.html(),
-              });
+                const cTag = child.tagName?.toLowerCase();
+                if (cTag?.match(/^h[1-6]$/)) {
+                  blocks.push({
+                    type: "blockquote-heading",
+                    text: cText,
+                    html: $child.html(),
+                  });
+                } else {
+                  blocks.push({
+                    type: "blockquote-paragraph",
+                    text: cText,
+                    html: $child.html(),
+                  });
+                }
             }
           });
         } else if (tagName?.match(/^h[1-6]$/)) {
           let prefix = tagName === "h1" ? "■ " : tagName === "h2" ? "▶ " : "• ";
           blocks.push({
             type: "heading",
-            text: $el.text().trim(),
+            text: textContent,
             prefix,
             html: rawHtml,
           });
@@ -234,7 +302,7 @@ export class NaverEditor {
         } else {
           blocks.push({
             type: "paragraph",
-            text: $el.text().trim(),
+            text: textContent,
             html: rawHtml,
           });
         }
