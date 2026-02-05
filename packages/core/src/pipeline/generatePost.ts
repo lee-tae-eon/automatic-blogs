@@ -3,6 +3,7 @@ import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
 import { TavilyService } from "../services/tavilyService";
 import { DbService } from "../services/dbService";
+import { analyzeTopicIntent } from "../util/autoInference";
 
 /**
  * 🛡️ [Safety] 콘텐츠 안전 검수 및 강제 수정 함수 (Sanitizer)
@@ -117,6 +118,26 @@ export async function generatePost({
 
       onProgress?.("AI 포스팅 초안 생성 중...");
       const aiPost = await generatePostSingleCall(client, inputParams);
+
+      // ✅ [Fallback] 주제 성격 분석 후, 진짜 뉴스가 필요한 경우에만 출처 강제 추출
+      const topicIntent = analyzeTopicIntent(task.topic);
+      if (
+        topicIntent.needsCurrentInfo &&
+        (!aiPost.references || aiPost.references.length === 0) &&
+        newsContext
+      ) {
+        console.warn("⚠️ 뉴스 기반 주제임에도 출처가 누락되어 강제 추출을 시도합니다.");
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const urls = newsContext.match(urlRegex);
+        if (urls) {
+          aiPost.references = [...new Set(urls)].map((url) => ({
+            name: "관련 뉴스 (자동 추출)",
+            url: url.replace(/[)\]]$/, ""),
+          })).slice(0, 3);
+        }
+      } else if (!topicIntent.needsCurrentInfo) {
+        console.log("ℹ️ 일반 가이드/리뷰형 주제이므로 출처 기재를 강제하지 않습니다.");
+      }
 
       // 임시 객체 생성
       const rawPublication: Publication = {

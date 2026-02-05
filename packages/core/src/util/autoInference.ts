@@ -102,7 +102,7 @@ export function analyzeTopicIntent(topic: string): {
   const lower = topic.toLowerCase();
 
   const needsCurrentInfo =
-    /오늘|최근|2026|현재|지금|이번|트렌드|뉴스|사건|속보/.test(topic);
+    /오늘|최근|2026|현재|지금|이번|트렌드|뉴스|사건|속보|발언|논란|상황|공개|발표/.test(topic);
 
   return {
     isReview: /후기|리뷰|사용|써본|개월|년/.test(lower),
