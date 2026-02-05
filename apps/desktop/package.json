@@ -59,8 +59,12 @@
         "to": ".env"
       }
     ],
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
     "directories": {
-      "output": "dist-electron"
+      "output": "release"
     }
   },
   "keywords": [],
