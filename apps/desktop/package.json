@@ -8,7 +8,8 @@
     "electron:build": "rm -rf dist-electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder"
+    "build:mac": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder --mac",
+    "build:win": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder --win"
   },
   "build": {
     "appId": "com.blog.automation.aiden",
@@ -36,6 +37,17 @@
           "type": "file"
         }
       ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.ico"
     },
     "extraResources": [
       {
