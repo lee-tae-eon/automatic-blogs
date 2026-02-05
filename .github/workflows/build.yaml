@@ -8,7 +8,7 @@ name: Build and Release
 on:
   # 'main' 브랜치에 코드가 푸시(push)되었을 때 자동 실행
   push:
-    branches: ["main"]
+    branches: ["release"]
   # GitHub 웹사이트 'Actions' 탭에서 버튼을 눌러 수동으로 실행 가능하게 함 (테스트용)
   workflow_dispatch:
 
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.13
 
       # (3) PNPM 패키지 매니저 설치
       # 우리 프로젝트는 pnpm을 쓰니까요.
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.13
 
       # (3) PNPM 설치
       - name: Install pnpm
