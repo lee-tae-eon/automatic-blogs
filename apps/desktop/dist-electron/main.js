@@ -93,12 +93,36 @@ const createWindow = () => {
 // 4. IPC 핸들러 등록
 // ==========================================
 let currentPublisher = null;
+let globalAbortController = null;
+/**
+ * 작업을 중단 가능하게 감싸는 래퍼 함수
+ */
+async function runWithAbort(operation, controller) {
+    return Promise.race([
+        operation(),
+        new Promise((_, reject) => {
+            // 이미 중단된 경우 즉시 에러
+            if (controller.signal.aborted) {
+                return reject(new Error("AbortError"));
+            }
+            // 중단 이벤트 리스너 등록
+            controller.signal.addEventListener("abort", () => {
+                reject(new Error("AbortError"));
+            });
+        }),
+    ]);
+}
 function registerIpcHandlers() {
     // ----------------------------------------
     // [Abort] 프로세스 중단
     // ----------------------------------------
     electron_1.ipcMain.on("abort-process", async () => {
-        console.log("🛑 중단 요청 수신");
+        console.log("🛑 중단 요청 수신: 작업 강제 종료 시도");
+        // 1. 대기 중인 Promise 강제 reject
+        if (globalAbortController) {
+            globalAbortController.abort();
+        }
+        // 2. Playwright 브라우저 물리적 종료
         if (currentPublisher) {
             await currentPublisher.stop();
             currentPublisher = null;
@@ -130,95 +154,113 @@ function registerIpcHandlers() {
     // [AI] 블로그 포스트 생성 (핵심 로직)
     // ----------------------------------------
     electron_1.ipcMain.handle("generate-post", async (event, task) => {
+        // 새로운 작업 시작 시 컨트롤러 초기화
+        globalAbortController = new AbortController();
         try {
-            const credentials = store.get("user-credentials");
-            const { geminiKey, subGemini } = credentials || {};
-            // ✅ 나중에 SQLite DB가 저장될 안전한 경로 확보
-            // (지금 SQLite가 없어도 경로는 미리 넘겨두는 것이 좋습니다)
-            const userDataPath = electron_1.app.getPath("userData");
-            // 1. 키 배열 생성 (우선순위: 스토어 저장값 -> .env 값)
-            const apiKeys = [geminiKey, subGemini, process.env.GEMINI_API_KEY].filter((k) => !!k && k.trim() !== "");
-            if (apiKeys.length === 0) {
-                throw new Error("사용 가능한 Gemini API Key가 없습니다. 설정 메뉴에서 키를 등록해주세요.");
-            }
-            let publication;
-            let lastError;
-            // 2. 키 순환 (Failover) 로직
-            for (const apiKey of apiKeys) {
-                try {
-                    console.log(`🔑 Key 사용 시도: ${apiKey.slice(0, 5)}...`);
-                    // 모델명 하드코딩 (안전장치)
-                    const modelName = process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-1.5-flash";
-                    const geminiClient = new core_1.GeminiClient(apiKey, modelName);
-                    publication = await (0, core_1.generatePost)({
-                        client: geminiClient,
-                        task: task,
-                        projectRoot: userDataPath,
-                        onProgress: (message) => {
-                            if (mainWindow && !mainWindow.isDestroyed()) {
-                                mainWindow.webContents.send("process-log", message);
-                            }
-                        },
-                    });
-                    if (publication)
-                        break; // 성공 시 루프 탈출
+            return await runWithAbort(async () => {
+                const credentials = store.get("user-credentials");
+                const { geminiKey, subGemini } = credentials || {};
+                const userDataPath = electron_1.app.getPath("userData");
+                // 1. 키 배열 생성
+                const apiKeys = [geminiKey, subGemini, process.env.GEMINI_API_KEY].filter((k) => !!k && k.trim() !== "");
+                if (apiKeys.length === 0) {
+                    throw new Error("사용 가능한 Gemini API Key가 없습니다.");
                 }
-                catch (error) {
-                    lastError = error;
-                    const errorMsg = error.message || "";
-                    // 429(Too Many Requests) 또는 Limit 관련 에러만 다음 키로 넘어감
-                    if (errorMsg.includes("429") || errorMsg.includes("limit")) {
-                        console.warn("⚠️ 할당량 초과! 다음 API 키로 전환합니다...");
-                        continue;
+                let publication;
+                let lastError;
+                // 2. 키 순환 로직
+                for (const apiKey of apiKeys) {
+                    try {
+                        // 중단 체크
+                        if (globalAbortController?.signal.aborted)
+                            throw new Error("AbortError");
+                        console.log(`🔑 Key 사용 시도: ${apiKey.slice(0, 5)}...`);
+                        const modelName = process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-1.5-flash";
+                        const geminiClient = new core_1.GeminiClient(apiKey, modelName);
+                        publication = await (0, core_1.generatePost)({
+                            client: geminiClient,
+                            task: task,
+                            projectRoot: userDataPath,
+                            onProgress: (message) => {
+                                if (mainWindow && !mainWindow.isDestroyed()) {
+                                    mainWindow.webContents.send("process-log", message);
+                                }
+                            },
+                        });
+                        if (publication)
+                            break;
                     }
-                    // 인증 에러 등은 즉시 실패 처리
-                    throw error;
+                    catch (error) {
+                        if (error.message === "AbortError")
+                            throw error; // 중단은 즉시 전파
+                        lastError = error;
+                        const errorMsg = error.message || "";
+                        if (errorMsg.includes("429") || errorMsg.includes("limit")) {
+                            console.warn("⚠️ 할당량 초과! 다음 API 키로 전환합니다...");
+                            continue;
+                        }
+                        throw error;
+                    }
                 }
-            }
-            if (!publication) {
-                throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
-            }
-            console.log(`✅ [${task.topic}] 생성 완료`);
-            return { success: true, data: publication };
+                if (!publication) {
+                    throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
+                }
+                console.log(`✅ [${task.topic}] 생성 완료`);
+                return { success: true, data: publication };
+            }, globalAbortController);
         }
         catch (error) {
+            if (error.message === "AbortError") {
+                console.log("⚠️ 생성 작업이 사용자에 의해 중단되었습니다.");
+                return { success: false, error: "AbortError" };
+            }
             console.error("❌ 포스트 생성 에러:", error);
             return { success: false, error: error.message };
+        }
+        finally {
+            globalAbortController = null;
         }
     });
     // ----------------------------------------
     // [Naver] 블로그 발행
     // ----------------------------------------
     electron_1.ipcMain.handle("publish-post", async (event, post) => {
+        globalAbortController = new AbortController();
         try {
-            const credentials = store.get("user-credentials");
-            const blogId = credentials?.naverId || process.env.NAVER_BLOG_ID;
-            const password = credentials?.naverPw || process.env.NAVER_PASSWORD;
-            if (!blogId || !password) {
-                throw new Error("네이버 계정 정보가 없습니다. 설정 메뉴를 확인해주세요.");
-            }
-            // 마크다운 -> HTML 변환 (Core 유틸리티 사용)
-            const htmlContent = await (0, core_1.markdownToHtml)(post.content);
-            currentPublisher = new core_1.NaverPublisher();
-            await currentPublisher.postToBlog({
-                blogId,
-                password,
-                title: post.title,
-                htmlContent,
-                tags: post.tags || post.focusKeywords || [],
-                category: post.category,
-                onProgress: (message) => {
-                    event.sender.send("process-log", message);
-                },
-            });
-            return { success: true };
+            return await runWithAbort(async () => {
+                const credentials = store.get("user-credentials");
+                const blogId = credentials?.naverId || process.env.NAVER_BLOG_ID;
+                const password = credentials?.naverPw || process.env.NAVER_PASSWORD;
+                if (!blogId || !password) {
+                    throw new Error("네이버 계정 정보가 없습니다.");
+                }
+                const htmlContent = await (0, core_1.markdownToHtml)(post.content);
+                currentPublisher = new core_1.NaverPublisher();
+                await currentPublisher.postToBlog({
+                    blogId,
+                    password,
+                    title: post.title,
+                    htmlContent,
+                    tags: post.tags || post.focusKeywords || [],
+                    category: post.category,
+                    onProgress: (message) => {
+                        event.sender.send("process-log", message);
+                    },
+                });
+                return { success: true };
+            }, globalAbortController);
         }
         catch (error) {
+            if (error.message === "AbortError") {
+                console.log("⚠️ 발행 작업이 사용자에 의해 중단되었습니다.");
+                return { success: false, error: "AbortError" };
+            }
             console.error("❌ 발행 실패:", error);
             return { success: false, error: error.message };
         }
         finally {
             currentPublisher = null;
+            globalAbortController = null;
         }
     });
     // ----------------------------------------

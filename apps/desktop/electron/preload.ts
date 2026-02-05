@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 // Renderer 프로세스에서 사용할 API 노출
+const listeners = new Map<string, Map<Function, (event: any, ...args: any[]) => void>>();
+
 contextBridge.exposeInMainWorld("ipcRenderer", {
   /**
    * File 객체에서 실제 시스템 경로를 추출합니다.
@@ -38,7 +40,14 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
   on: (channel: string, callback: Function) => {
     const validChannels = ["task-progress", "task-complete", "process-log"];
     if (validChannels.includes(channel)) {
-      ipcRenderer.on(channel, (event, ...args) => callback(...args));
+      const wrapper = (event: any, ...args: any[]) => callback(...args);
+      
+      if (!listeners.has(channel)) {
+        listeners.set(channel, new Map());
+      }
+      listeners.get(channel)!.set(callback, wrapper);
+      
+      ipcRenderer.on(channel, wrapper);
     }
   },
 
@@ -48,6 +57,13 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
    * @param callback - 제거할 콜백 함수
    */
   removeListener: (channel: string, callback: Function) => {
-    ipcRenderer.removeListener(channel, callback as any);
+    const channelListeners = listeners.get(channel);
+    if (channelListeners) {
+      const wrapper = channelListeners.get(callback);
+      if (wrapper) {
+        ipcRenderer.removeListener(channel, wrapper);
+        channelListeners.delete(callback);
+      }
+    }
   },
 });
