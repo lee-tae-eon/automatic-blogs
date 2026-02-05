@@ -24,8 +24,8 @@ export class NaverPublisher {
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
 
-  constructor() {
-    this.projectRoot = findProjectRoot(__dirname);
+  constructor(customProjectRoot?: string) {
+    this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
     this.userDataDir = path.join(this.projectRoot, ".auth/naver");
   }
 
