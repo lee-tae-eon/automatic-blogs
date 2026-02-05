@@ -233,7 +233,8 @@ function registerIpcHandlers() {
         }
 
         const htmlContent = await markdownToHtml(post.content);
-        currentPublisher = new NaverPublisher();
+        const userDataPath = app.getPath("userData");
+        currentPublisher = new NaverPublisher(userDataPath);
 
         await currentPublisher.postToBlog({
           blogId,
