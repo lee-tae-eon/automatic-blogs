@@ -160,6 +160,7 @@ dist-electron/
 **/dist/
 **/dist-electron/
 **/dist_electron/
+**/release/
 
 # Playwright
 test-results/
