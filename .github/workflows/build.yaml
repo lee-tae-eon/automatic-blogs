@@ -11,6 +11,16 @@ on:
     branches: ["release"]
   # GitHub 웹사이트 'Actions' 탭에서 버튼을 눌러 수동으로 실행 가능하게 함 (테스트용)
   workflow_dispatch:
+    inputs:
+      build_target:
+        description: "빌드할 대상을 선택하세요"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - mac
+          - windows
 
 # 2. 작업(Jobs): 실제로 실행될 작업들의 목록입니다.
 # build-windows와 build-mac은 병렬(동시)로 실행됩니다.
@@ -20,6 +30,8 @@ jobs:
   # 목적: Mac 개발 환경에서는 만들 수 없는 '윈도우용 SQLite'를 포함한 실행 파일을 만듭니다.
   # ----------------------------------------------------------------------------
   build-windows:
+    # 전체이거나 윈도우일때
+    if: ${{ github.event_name == 'push' || github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'windows' }}
     # 실행 환경: GitHub가 제공하는 최신 Windows 가상 컴퓨터를 임대합니다.
     runs-on: windows-latest
 
@@ -85,6 +97,8 @@ jobs:
   # 목적: 윈도우 빌드하는 김에 맥용도 같이 빌드해서 한 곳에서 관리합니다.
   # ----------------------------------------------------------------------------
   build-mac:
+    # "전체(all)" 이거나 "맥(mac)"을 선택했을 때만 실행
+    if: ${{ github.event_name == 'push' || github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'mac' }}
     # 실행 환경: 최신 macOS 가상 컴퓨터
     runs-on: macos-latest
 
