@@ -1,0 +1,137 @@
+# ==============================================================================
+# Workflow 이름: Build and Release
+# 설명: 코드가 푸시되면 Windows와 Mac 환경에서 각각 앱을 빌드하고 설치 파일을 생성합니다.
+# ==============================================================================
+name: Build and Release
+
+# 1. 트리거(Trigger): 이 워크플로우가 언제 실행될지 정의합니다.
+on:
+  # 'main' 브랜치에 코드가 푸시(push)되었을 때 자동 실행
+  push:
+    branches: ["main"]
+  # GitHub 웹사이트 'Actions' 탭에서 버튼을 눌러 수동으로 실행 가능하게 함 (테스트용)
+  workflow_dispatch:
+
+# 2. 작업(Jobs): 실제로 실행될 작업들의 목록입니다.
+# build-windows와 build-mac은 병렬(동시)로 실행됩니다.
+jobs:
+  # ----------------------------------------------------------------------------
+  # [작업 1] 윈도우용 빌드 (.exe 생성)
+  # 목적: Mac 개발 환경에서는 만들 수 없는 '윈도우용 SQLite'를 포함한 실행 파일을 만듭니다.
+  # ----------------------------------------------------------------------------
+  build-windows:
+    # 실행 환경: GitHub가 제공하는 최신 Windows 가상 컴퓨터를 임대합니다.
+    runs-on: windows-latest
+
+    steps:
+      # (1) 코드 가져오기
+      # 현재 리포지토리의 소스 코드를 가상 컴퓨터로 내려받습니다.
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # (2) Node.js 설정
+      # 빌드에 필요한 Node.js 20 버전을 설치합니다.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # (3) PNPM 패키지 매니저 설치
+      # 우리 프로젝트는 pnpm을 쓰니까요.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      # (4) .env 파일 복원 (중요! 🔐)
+      # GitHub Secrets에 저장해둔 API 키들을 꺼내서 가상 컴퓨터에 .env 파일로 만듭니다.
+      # (소스 코드에는 보안상 .env가 없으니까 이 과정이 필수입니다)
+      - name: Generate .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+        shell: bash
+
+      # (5) 의존성 설치 (가장 중요한 단계! 🔥)
+      # 여기서 'pnpm install'을 하면, better-sqlite3가 '윈도우용(C++ 바이너리)'으로 컴파일됩니다.
+      # 우리가 Mac에서 빌드할 때 겪었던 호환성 문제가 여기서 해결됩니다.
+      - name: Install Dependencies
+        run: pnpm install
+
+      # (6) Core 패키지 빌드
+      # 라이브러리 역할을 하는 core 패키지를 먼저 빌드합니다.
+      - name: Build Core Package
+        run: pnpm --filter @blog-automation/core build
+
+      # (7) Desktop 앱 빌드 및 패키징
+      # React 빌드 -> Electron 빌드 -> .exe 패키징이 순차적으로 일어납니다.
+      # electron-builder가 윈도우 환경임을 감지하고 .exe를 만들어줍니다.
+      - name: Build Desktop App
+        run: pnpm --filter @blog-automation/desktop build
+        env:
+          # GitHub API 호출 등을 위해 토큰을 주입합니다 (자동 생성됨)
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # (8) 결과물 업로드 (Artifact)
+      # 가상 컴퓨터는 작업이 끝나면 삭제되므로, 생성된 .exe 파일을
+      # GitHub 저장소의 'Artifacts' 공간으로 업로드해서 우리가 다운받을 수 있게 합니다.
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlogAutomation-Windows # 다운로드될 압축 파일 이름
+          path: apps/desktop/dist_electron/*.exe # 업로드할 파일 경로 (exe만)
+
+  # ----------------------------------------------------------------------------
+  # [작업 2] 맥용 빌드 (.dmg 생성)
+  # 목적: 윈도우 빌드하는 김에 맥용도 같이 빌드해서 한 곳에서 관리합니다.
+  # ----------------------------------------------------------------------------
+  build-mac:
+    # 실행 환경: 최신 macOS 가상 컴퓨터
+    runs-on: macos-latest
+
+    steps:
+      # (1) 코드 가져오기
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # (2) Node.js 설정
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # (3) PNPM 설치
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      # (4) .env 파일 복원
+      - name: Generate .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      # (5) 의존성 설치
+      # 여기서 실행하면 better-sqlite3가 'Mac용'으로 컴파일됩니다.
+      - name: Install Dependencies
+        run: pnpm install
+
+      # (6) Core 패키지 빌드
+      - name: Build Core Package
+        run: pnpm --filter @blog-automation/core build
+
+      # (7) Desktop 앱 빌드
+      - name: Build Desktop App
+        run: pnpm --filter @blog-automation/desktop build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ⚠️ 맥 빌드 시 인증서가 없으면 에러가 날 수 있는데,
+          # 이를 무시하고 빌드를 진행하게 하는 옵션입니다. (테스트용 빌드에 적합)
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      # (8) 결과물 업로드
+      # 생성된 .dmg 파일을 GitHub에 저장합니다.
+      - name: Upload Mac Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlogAutomation-Mac
+          path: apps/desktop/dist_electron/*.dmg

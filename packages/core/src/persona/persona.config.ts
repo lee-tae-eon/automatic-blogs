@@ -240,6 +240,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "종합적으로 판단하건대",
       "방문 시 참고하시기 바랍니다",
       "(백과사전처럼 딱딱한 정보 나열)",
+      "존재하지 않는 가상의 URL 링크 기재",
     ],
   },
 };
