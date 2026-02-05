@@ -101,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BlogAutomation-Windows # 다운로드될 압축 파일 이름
-          path: apps/desktop/dist_electron/*.exe # 업로드할 파일 경로 (exe만)
+          path: apps/desktop/dist-electron/*.exe # 업로드할 파일 경로 (exe만)
 
   # ----------------------------------------------------------------------------
   # [작업 2] 맥용 빌드 (.dmg 생성)
@@ -167,4 +167,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BlogAutomation-Mac
-          path: apps/desktop/dist_electron/*.dmg
+          path: apps/desktop/dist-electron/*.dmg
