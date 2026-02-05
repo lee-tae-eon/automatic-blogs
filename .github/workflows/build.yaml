@@ -54,8 +54,14 @@ jobs:
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
 
-      - name: Build Desktop App
-        run: pnpm --filter @blog-automation/desktop build:win
+      - name: Build Main Process (TSC)
+        run: pnpm --filter @blog-automation/desktop electron:build
+
+      - name: Build Renderer (Vite)
+        run: pnpm --filter @blog-automation/desktop vite build
+
+      - name: Package Windows App (Electron Builder)
+        run: pnpm --filter @blog-automation/desktop exec electron-builder --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
