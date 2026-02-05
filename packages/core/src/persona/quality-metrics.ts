@@ -59,6 +59,17 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 3, // 실제 사용 사진 많이
     keywordDensity: [1.5, 2.5],
   },
+
+  travelLog: {
+    targetLength: [1500, 2800],
+    headingCount: 5,
+    paragraphMaxLength: 130, // 호흡을 짧게 해서 감성 유지
+    sentenceMaxLength: 60,
+    emojiUsage: "moderate", // 감정 표현을 위해 적절히 사용
+    tableRequired: false, // 감성을 위해 표는 생략하거나 선택
+    imageCount: 3, // 여행지 풍경 중요
+    keywordDensity: [1.2, 2.2],
+  },
 };
 
 // ============================================

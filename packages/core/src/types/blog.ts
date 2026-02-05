@@ -30,7 +30,8 @@ export type Persona =
   | "empathetic"
   | "storytelling"
   | "friendly"
-  | "experiential";
+  | "experiential"
+  | "travelLog";
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의
