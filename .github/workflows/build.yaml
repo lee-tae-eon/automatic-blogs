@@ -90,6 +90,9 @@ jobs:
         env:
           # GitHub API 호출 등을 위해 토큰을 주입합니다 (자동 생성됨)
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug -List Files
+        run: ls -R apps/desktop
+        shell: bash
 
       # (8) 결과물 업로드 (Artifact)
       # 가상 컴퓨터는 작업이 끝나면 삭제되므로, 생성된 .exe 파일을
@@ -153,6 +156,10 @@ jobs:
           # ⚠️ 맥 빌드 시 인증서가 없으면 에러가 날 수 있는데,
           # 이를 무시하고 빌드를 진행하게 하는 옵션입니다. (테스트용 빌드에 적합)
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Debug -List Files
+        run: ls -R apps/desktop
+        shell: bash
 
       # (8) 결과물 업로드
       # 생성된 .dmg 파일을 GitHub에 저장합니다.

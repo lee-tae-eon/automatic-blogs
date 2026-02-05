@@ -5,11 +5,11 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "electron:build": "rm -rf dist-electron && tsc -p tsconfig.electron.json",
+    "electron:build": "rimraf dist_electron && tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build:mac": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder --mac",
-    "build:win": "rm -rf dist_electron && pnpm electron:build && vite build && electron-builder --win"
+    "build:mac": "rimraf dist_electron && pnpm electron:build && vite build && electron-builder --mac",
+    "build:win": "rimraf dist_electron && pnpm electron:build && vite build && electron-builder --win"
   },
   "build": {
     "appId": "com.blog.automation.aiden",
