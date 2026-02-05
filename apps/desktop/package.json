@@ -2,6 +2,10 @@
   "name": "@blog-automation/desktop",
   "version": "1.0.0",
   "description": "AI Blog Automation Desktop App",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lee-tae-eon/automatic-blogs.git"
+  },
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
