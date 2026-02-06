@@ -15,6 +15,8 @@ export interface NaverPostInput {
   tags?: string[];
   category?: string;
   references?: { name: string; url: string }[];
+  persona?: string; // 추가
+  tone?: string;    // 추가
   onProgress?: (message: string) => void;
   headless?: boolean;
 }
@@ -27,6 +29,18 @@ export class NaverPublisher {
   constructor(customProjectRoot?: string) {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
     this.userDataDir = path.join(this.projectRoot, ".auth/naver");
+
+    // ✅ 디렉토리가 없으면 미리 생성 (권한 및 존재 확인)
+    if (!fs.existsSync(this.userDataDir)) {
+      fs.mkdirSync(this.userDataDir, { recursive: true });
+      console.log(
+        `📂 [NaverPublisher] 인증 디렉토리 생성: ${this.userDataDir}`,
+      );
+    } else {
+      console.log(
+        `📂 [NaverPublisher] 기존 인증 디렉토리 사용: ${this.userDataDir}`,
+      );
+    }
   }
 
   /**
@@ -49,17 +63,15 @@ export class NaverPublisher {
 
     const refHtml = `
       <br><hr><br>
-      <blockquote>
-        <p><strong>🔗 참고 자료 및 최신 뉴스 출처</strong></p>
-        <ul style="list-style-type: disc;">
-          ${references
-            .map(
-              (ref) =>
-                `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></li>`,
-            )
-            .join("")}
-        </ul>
-      </blockquote>
+      <p><strong>🔗 참고 자료 및 최신 뉴스 출처</strong></p>
+      <ul>
+        ${references
+          .map(
+            (ref) =>
+              `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></li>`,
+          )
+          .join("")}
+      </ul>
     `;
     return html + refHtml;
   }
@@ -72,6 +84,8 @@ export class NaverPublisher {
     tags = [],
     category,
     references,
+    persona,  // ✅ 누락되었던 변수 추가
+    tone,     // ✅ 누락되었던 변수 추가
     onProgress,
     headless = false,
   }: NaverPostInput) {
@@ -85,28 +99,39 @@ export class NaverPublisher {
       // ✅ 실행 환경에 따라 브라우저 경로 설정 (Electron 패키징 대응)
       const launchOptions: any = {
         headless: headless,
-        args: ["--disable-blink-features=AutomationControlled"],
+        args: [
+          "--disable-blink-features=AutomationControlled",
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+        ],
         permissions: ["clipboard-read", "clipboard-write"],
+        userAgent:
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        viewport: { width: 1280, height: 800 },
       };
 
       // 1. PLAYWRIGHT_BROWSERS_PATH가 설정되어 있다면, 해당 폴더 내에서 실행 파일을 직접 탐색
       if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
         const browserRoot = process.env.PLAYWRIGHT_BROWSERS_PATH;
-        
+
         // 운영체제별 크로미움 실행 파일 상대 경로 정의
         let executableRelativePath = "";
         if (process.platform === "darwin") {
           // macOS: ms-playwright/chromium-XXXX/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing
           // glob을 사용하기 어려우므로 폴더 구조를 직접 탐색하거나 예측해야 함
           try {
-            const chromiumFolders = fs.readdirSync(browserRoot).filter(f => f.startsWith("chromium-"));
+            const chromiumFolders = fs
+              .readdirSync(browserRoot)
+              .filter((f) => f.startsWith("chromium-"));
             if (chromiumFolders.length > 0) {
-              const chromeAppDir = fs.readdirSync(path.join(browserRoot, chromiumFolders[0])).find(f => f.startsWith("chrome-mac"));
+              const chromeAppDir = fs
+                .readdirSync(path.join(browserRoot, chromiumFolders[0]))
+                .find((f) => f.startsWith("chrome-mac"));
               if (chromeAppDir) {
                 executableRelativePath = path.join(
                   chromiumFolders[0],
                   chromeAppDir,
-                  "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+                  "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
                 );
               }
             }
@@ -116,27 +141,40 @@ export class NaverPublisher {
         } else if (process.platform === "win32") {
           // Windows: ms-playwright/chromium-XXXX/chrome-win/chrome.exe
           try {
-            const chromiumFolders = fs.readdirSync(browserRoot).filter(f => f.startsWith("chromium-"));
+            const chromiumFolders = fs
+              .readdirSync(browserRoot)
+              .filter((f) => f.startsWith("chromium-"));
             if (chromiumFolders.length > 0) {
-              executableRelativePath = path.join(chromiumFolders[0], "chrome-win", "chrome.exe");
+              executableRelativePath = path.join(
+                chromiumFolders[0],
+                "chrome-win",
+                "chrome.exe",
+              );
             }
           } catch (e) {
             console.error("📂 브라우저 폴더 탐색 실패:", e);
           }
         }
 
-        const fullExecutablePath = path.join(browserRoot, executableRelativePath);
+        const fullExecutablePath = path.join(
+          browserRoot,
+          executableRelativePath,
+        );
         if (fs.existsSync(fullExecutablePath)) {
           launchOptions.executablePath = fullExecutablePath;
-          console.log(`🚀 커스텀 브라우저 실행 경로 사용: ${fullExecutablePath}`);
+          console.log(
+            `🚀 커스텀 브라우저 실행 경로 사용: ${fullExecutablePath}`,
+          );
         } else {
-          console.warn(`⚠️ 브라우저를 찾을 수 없음 (기본 경로 시도): ${fullExecutablePath}`);
+          console.warn(
+            `⚠️ 브라우저를 찾을 수 없음 (기본 경로 시도): ${fullExecutablePath}`,
+          );
         }
       }
-      
+
       this.currentContext = await chromium.launchPersistentContext(
         this.userDataDir,
-        launchOptions
+        launchOptions,
       );
 
       context = this.currentContext;
@@ -169,7 +207,11 @@ export class NaverPublisher {
           );
         }
         await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-        onProgress?.("로그인 완료");
+        onProgress?.("로그인 완료 (세션 저장 중...)");
+
+        // 세션이 디스크에 기록될 시간을 벌어줌
+        await page.waitForTimeout(3000);
+
         await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
           waitUntil: "domcontentloaded",
           timeout: 20000,
@@ -187,8 +229,18 @@ export class NaverPublisher {
       await editor.enterTitle(title);
       await page.waitForTimeout(1000);
 
-      // 2. ✅ 본문 입력 전: '본문 + 출처' 합치기
-      const finalHtml = this.appendReferences(htmlContent, references);
+      // ✅ [Persona-based Exclusion] 특정 페르소나는 톤과 상관없이 출처 기재 제외
+      // 대상: 친근형(friendly), 스토리텔링형(storytelling), 체험형(experiential)
+      const excludedPersonas = ["friendly", "storytelling", "experiential"];
+      const shouldExcludeRef = persona && excludedPersonas.includes(persona);
+      
+      let finalHtml = htmlContent;
+      if (shouldExcludeRef) {
+        console.log(`ℹ️ [NaverPublisher] '${persona}' 페르소나는 출처 기재를 일괄 제외합니다.`);
+      } else {
+        console.log(`✅ [NaverPublisher] '${persona}' 페르소나에 출처 링크를 결합합니다.`);
+        finalHtml = this.appendReferences(htmlContent, references);
+      }
 
       onProgress?.("본문 내용 작성 중...");
       await editor.enterContent(finalHtml);
@@ -216,7 +268,13 @@ export class NaverPublisher {
       throw error;
     } finally {
       if (context) {
+        onProgress?.("💾 세션 데이터 저장을 위해 잠시 대기합니다...");
+        // ⚠️ 중요: 브라우저가 쿠키/스토리지를 디스크에 쓸 시간을 3~5초 정도 줍니다.
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         await context.close();
+        this.currentContext = null;
+        onProgress?.("👋 브라우저 안전 종료 완료");
       }
     }
   }

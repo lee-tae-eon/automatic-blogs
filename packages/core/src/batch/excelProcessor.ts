@@ -76,7 +76,6 @@ export class ExcelProcessor {
           persona: row["Persona"] || "informative",
           tone: row["Tone"] || "professional",
           category: row["카테고리"] || row["Category"],
-          platform: row["플랫폼"] || row["Platform"],
           keywords: row["키워드"] || row["Keywords"],
           status: row["상태"] || row["Status"] || "대기",
         };

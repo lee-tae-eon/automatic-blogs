@@ -89,7 +89,6 @@ export interface AiGeneratedPost {
   references?: { name: string; url: string }[];
 }
 export interface Publication extends AiGeneratedPost {
-  platform: BlogPlatform;
   category: string;
   createdAt: string;
 }
@@ -101,13 +100,11 @@ export interface GeneratePostInput {
   onProgress?: (message: string) => void;
 }
 
-export type BlogPlatform = "naver" | "tistory";
 export interface BatchTask {
   topic: string;
   persona: Persona;
   tone: Tone;
   category: string;
   keywords?: string[]; // Optional로 설정
-  platform?: BlogPlatform;
   status: "대기" | "진행" | "완료" | "실패";
 }

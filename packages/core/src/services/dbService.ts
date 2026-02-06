@@ -59,6 +59,60 @@ export class DbService {
       )
     `;
     this.db.exec(createTableQuery);
+
+    // ✅ 생성된 포스트 캐시 테이블 추가
+    const createPostCacheQuery = `
+      CREATE TABLE IF NOT EXISTS post_cache (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic TEXT NOT NULL,
+        persona TEXT NOT NULL,
+        tone TEXT NOT NULL,
+        content TEXT NOT NULL, -- Publication 객체(JSON)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    this.db.exec(createPostCacheQuery);
+    
+    // 인덱스 추가 (검색 속도 향상)
+    this.db.exec("CREATE INDEX IF NOT EXISTS idx_post_cache_keys ON post_cache (topic, persona, tone)");
+  }
+
+  /**
+   * 생성된 포스트 캐시 저장
+   */
+  savePost(topic: string, persona: string, tone: string, publication: any) {
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO post_cache (topic, persona, tone, content)
+        VALUES (?, ?, ?, ?)
+      `);
+      stmt.run(topic, persona, tone, JSON.stringify(publication));
+      console.log(`💾 [DB] 포스트 캐시 저장 완료 (${topic} / ${persona} / ${tone})`);
+    } catch (error) {
+      console.error("❌ [DB] 포스트 캐시 저장 실패:", error);
+    }
+  }
+
+  /**
+   * 캐시된 포스트 조회
+   */
+  getCachedPost(topic: string, persona: string, tone: string): any | null {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT content FROM post_cache
+        WHERE topic = ? AND persona = ? AND tone = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+      `);
+      const row = stmt.get(topic, persona, tone) as any;
+      if (!row) return null;
+      
+      console.log(`♻️ [DB] 포스트 캐시 히트! (${topic})`);
+      return JSON.parse(row.content);
+    } catch (error) {
+      console.error("❌ [DB] 포스트 캐시 조회 실패:", error);
+      return null;
+    }
   }
 
   /**

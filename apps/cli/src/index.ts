@@ -27,7 +27,6 @@ async function main() {
     tone: "professional", // 새로 추가한 톤앤매너
     keywords: ["영종도맛집", "인천여행", "내돈내산"],
     category: "일상정보",
-    platform: "naver",
     status: "대기",
   };
 

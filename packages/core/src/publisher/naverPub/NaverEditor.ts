@@ -128,9 +128,11 @@ export class NaverEditor {
             break;
 
           case "blockquote-paragraph":
-            await this.pasteHtml(
-              `<blockquote><p>${block.html}</p></blockquote>`,
-            );
+            // 이미 <p> 태그를 포함하고 있을 경우 중복 방지
+            const bqContent = block.html.startsWith("<p") 
+              ? block.html 
+              : `<p>${block.html}</p>`;
+            await this.pasteHtml(`<blockquote>${bqContent}</blockquote>`);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
@@ -256,6 +258,7 @@ export class NaverEditor {
           // 인용구 내부에서도 이미지 태그가 있을 수 있음
           $el.children().each((_, child) => {
             const $child = $(child);
+            const childTagName = child.tagName?.toLowerCase();
             const cText = $child.text().trim();
             const cMatch = cText.match(imageRegex);
             
@@ -265,18 +268,18 @@ export class NaverEditor {
                     keyword: cMatch[1].trim()
                 });
             } else {
-                const cTag = child.tagName?.toLowerCase();
-                if (cTag?.match(/^h[1-6]$/)) {
+                if (childTagName?.match(/^h[1-6]$/)) {
                   blocks.push({
                     type: "blockquote-heading",
                     text: cText,
                     html: $child.html(),
                   });
                 } else {
+                  // ✅ 핵심: $.html($child)를 사용하여 태그 자체를 포함한 HTML을 보존 (링크 유실 방지)
                   blocks.push({
                     type: "blockquote-paragraph",
                     text: cText,
-                    html: $child.html(),
+                    html: $.html($child), 
                   });
                 }
             }

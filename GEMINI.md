@@ -39,6 +39,7 @@ This file defines the core philosophy and architecture of the system. The agent 
 - **의존성**: 패키지 버전 변경은 신중해야 하며, 반드시 `pnpm` 명령어를 사용합니다.
 - **테스트**: 새로운 기능 추가 시 `apps/cli` 또는 전용 테스트 스크립트를 통해 로직을 검증합니다.
 - **데이터 보존**: `.auth/` 디렉토리에 저장되는 세션 정보가 유실되지 않도록 주의합니다.
+- **Git 제어**: 사용자가 명시적으로 요청하지 않는 한 에이전트는 커밋, 푸시 등 Git 작업을 수행하거나 제안하지 않습니다. (Git control: The agent will not perform or suggest Git operations like commit/push unless explicitly requested by the user.)
 
 ## 6. 답변의 정의
 
