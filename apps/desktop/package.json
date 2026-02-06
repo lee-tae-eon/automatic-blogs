@@ -56,6 +56,13 @@
       {
         "from": "../../.env",
         "to": ".env"
+      },
+      {
+        "from": "ms-playwright",
+        "to": "ms-playwright",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "files": [
