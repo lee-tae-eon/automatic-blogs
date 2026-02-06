@@ -12,7 +12,7 @@
     "electron:build": "tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "playwright:install": "PLAYWRIGHT_BROWSERS_PATH=ms-playwright npx playwright install chromium",
+    "playwright:install": "cross-env PLAYWRIGHT_BROWSERS_PATH=ms-playwright npx playwright install chromium",
     "build:mac": "pnpm playwright:install && pnpm electron:build && vite build && electron-builder --mac",
     "build:win": "pnpm playwright:install && pnpm electron:build && vite build && electron-builder --win"
   },
@@ -81,6 +81,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.1.2",
+    "cross-env": "^10.1.0",
     "electron": "40.0.0",
     "electron-builder": "^26.4.0",
     "sass": "^1.97.3",
