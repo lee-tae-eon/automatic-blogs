@@ -62,6 +62,26 @@ jobs:
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
 
+      # ✅ [추가] Playwright 브라우저 설치 및 복사 (Windows)
+      - name: Install & Copy Playwright Browsers
+        shell: bash
+        run: |
+          # 1. 브라우저 설치 (프로젝트 루트 기준)
+          pnpm exec playwright install chromium
+
+          # 2. 브라우저 경로 찾기 및 복사 대상 폴더 생성
+          # Windows의 경우 기본 경로는 %USERPROFILE%\AppData\Local\ms-playwright
+          PLAYWRIGHT_DIR="$USERPROFILE/AppData/Local/ms-playwright"
+          DEST_DIR="apps/desktop/ms-playwright"
+          mkdir -p "$DEST_DIR"
+
+          # 3. Chromium만 복사 (용량 최적화)
+          echo "Copying Chromium from $PLAYWRIGHT_DIR to $DEST_DIR..."
+          cp -r "$PLAYWRIGHT_DIR/chromium-"* "$DEST_DIR/"
+          
+          # 복사 확인
+          ls -R "$DEST_DIR"
+
       - name: Build Main Process (TSC)
         run: pnpm --filter @blog-automation/desktop electron:build
 
@@ -116,6 +136,25 @@ jobs:
 
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
+
+      # ✅ [추가] Playwright 브라우저 설치 및 복사 (Mac)
+      - name: Install & Copy Playwright Browsers
+        run: |
+          # 1. 브라우저 설치
+          pnpm exec playwright install chromium
+
+          # 2. 브라우저 경로 찾기 및 복사 대상 폴더 생성
+          # Mac의 경우 기본 경로는 ~/Library/Caches/ms-playwright
+          PLAYWRIGHT_DIR="$HOME/Library/Caches/ms-playwright"
+          DEST_DIR="apps/desktop/ms-playwright"
+          mkdir -p "$DEST_DIR"
+
+          # 3. Chromium만 복사 (용량 최적화)
+          echo "Copying Chromium from $PLAYWRIGHT_DIR to $DEST_DIR..."
+          cp -R "$PLAYWRIGHT_DIR/chromium-"* "$DEST_DIR/"
+          
+          # 복사 확인
+          ls -R "$DEST_DIR"
 
       - name: Build Desktop App
         run: pnpm --filter @blog-automation/desktop build:mac

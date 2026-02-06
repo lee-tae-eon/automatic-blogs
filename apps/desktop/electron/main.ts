@@ -16,15 +16,21 @@ import {
 // import { GeminiClient } from "@blog-automation/core/ai";
 
 // ==========================================
-// 1. 환경 변수 설정
+// 1. 환경 변수 및 브라우저 경로 설정 (CRITICAL)
 // ==========================================
 const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 
 if (app.isPackaged) {
-  // 빌드된 상태 (Production): 리소스 폴더 내 .env 참조
+  // 빌드된 상태 (Production)
   dotenv.config({ path: path.join(process.resourcesPath, ".env") });
+
+  // Playwright 브라우저 경로를 앱 내부 리소스로 강제 지정
+  // electron-builder의 extraResources 설정을 통해 복사된 경로: resources/ms-playwright
+  const bundledBrowserPath = path.join(process.resourcesPath, "ms-playwright");
+  process.env.PLAYWRIGHT_BROWSERS_PATH = bundledBrowserPath;
+  console.log(`🌍 Playwright Browser Path set to: ${bundledBrowserPath}`);
 } else {
-  // 개발 모드 (Development): 모노레포 루트 .env 참조
+  // 개발 모드 (Development)
   dotenv.config({ path: path.join(__dirname, "../../../.env") });
 }
 
