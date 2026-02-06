@@ -54,6 +54,9 @@ jobs:
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
 
+      - name: Enable Long Paths
+        run: git config --system core.longpaths true
+
       - name: Build Main Process (TSC)
         run: pnpm --filter @blog-automation/desktop electron:build
 
@@ -61,7 +64,7 @@ jobs:
         run: pnpm --filter @blog-automation/desktop vite build
 
       - name: Package Windows App (Electron Builder)
-        run: pnpm --filter @blog-automation/desktop exec electron-builder --win
+        run: pnpm --filter @blog-automation/desktop run build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
