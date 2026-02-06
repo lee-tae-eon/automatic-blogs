@@ -247,8 +247,8 @@ function registerIpcHandlers() {
           tags: post.tags || post.focusKeywords || [],
           category: post.category,
           references: post.references,
-          persona: post.persona || task.persona, // 추가
-          tone: post.tone || task.tone,       // 추가
+          persona: post.persona, // 수정
+          tone: post.tone,       // 수정
           headless: post.headless, // UI에서 전달받은 headless 옵션 적용
           onProgress: (message: string) => {
             event.sender.send("process-log", message);
