@@ -92,6 +92,14 @@ export async function generatePost({
       const dbPath = projectRoot || process.cwd();
       const db = new DbService(dbPath);
 
+      // ✅ 1-1. 포스트 캐시 확인 (정확히 일치하는 경우 재사용)
+      const cachedPost = db.getCachedPost(task.topic, task.persona, task.tone);
+      if (cachedPost) {
+        onProgress?.("♻️ 기존에 생성된 콘텐츠가 있어 재사용합니다.");
+        // 캐시된 데이터 반환 (createdAt 등은 최신으로 갱신하지 않고 그대로 유지하거나, 필요 시 갱신)
+        return cachedPost; 
+      }
+
       // 2. 뉴스 데이터 확보 (Cache-First 전략)
       let newsContext = "";
       onProgress?.("데이터 확보 중...");
@@ -164,6 +172,9 @@ export async function generatePost({
       // 3. 🛡️ 안전 가이드라인 검수 및 강제 수정 (Sanitizer)
       onProgress?.("🛡️ 안전 가이드라인 검수 중...");
       const sanitizedPublication = sanitizeContent(rawPublication, task.topic);
+
+      // ✅ 4. 결과 캐싱 (DB 저장)
+      db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);
 
       onProgress?.("포스팅 생성 완료");
       return sanitizedPublication;
