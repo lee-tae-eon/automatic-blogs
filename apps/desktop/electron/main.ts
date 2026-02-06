@@ -175,7 +175,7 @@ function registerIpcHandlers() {
               client: geminiClient,
               task: task,
               projectRoot: userDataPath,
-              onProgress: (message) => {
+              onProgress: (message: string) => {
                 if (mainWindow && !mainWindow.isDestroyed()) {
                   mainWindow.webContents.send("process-log", message);
                 }
@@ -245,7 +245,7 @@ function registerIpcHandlers() {
           category: post.category,
           references: post.references,
           headless: post.headless, // UI에서 전달받은 headless 옵션 적용
-          onProgress: (message) => {
+          onProgress: (message: string) => {
             event.sender.send("process-log", message);
           },
         });

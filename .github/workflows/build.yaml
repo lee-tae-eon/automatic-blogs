@@ -48,14 +48,19 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.AUTO_BLOG_ENV_FILE }}
 
+      - name: Enable Long Paths
+        run: git config --system core.longpaths true
+
+      - name: Force Hoisted Node Linker for Windows (MAX_PATH fix)
+        run: |
+          echo "node-linker=hoisted" > .npmrc
+          echo "symlink=true" >> .npmrc
+
       - name: Install Dependencies
-        run: pnpm install --shamefully-hoist
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
-
-      - name: Enable Long Paths
-        run: git config --system core.longpaths true
 
       - name: Build Main Process (TSC)
         run: pnpm --filter @blog-automation/desktop electron:build
