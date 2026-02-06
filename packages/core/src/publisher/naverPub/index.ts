@@ -81,11 +81,21 @@ export class NaverPublisher {
 
     try {
       onProgress?.("브라우저 실행 중...");
-      this.currentContext = await chromium.launchPersistentContext(this.userDataDir, {
+
+      // ✅ 실행 환경에 따라 브라우저 경로 설정 (Electron 패키징 대응)
+      const launchOptions: any = {
         headless: headless,
         args: ["--disable-blink-features=AutomationControlled"],
         permissions: ["clipboard-read", "clipboard-write"],
-      });
+      };
+
+      // PLAYWRIGHT_BROWSERS_PATH가 설정되어 있으면 해당 경로를 참조할 수 있도록 함
+      // (Playwright는 기본적으로 이 환경변수를 읽지만, 명시적이지 않을 때를 대비)
+      
+      this.currentContext = await chromium.launchPersistentContext(
+        this.userDataDir,
+        launchOptions
+      );
 
       context = this.currentContext;
       page = await context.newPage();

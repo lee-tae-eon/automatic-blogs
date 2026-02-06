@@ -12,8 +12,9 @@
     "electron:build": "tsc -p tsconfig.electron.json",
     "electron:start": "pnpm electron:build && NODE_ENV=development electron .",
     "desktop:start": "concurrently \"vite\" \"wait-on http://localhost:5173 && pnpm run electron:start\"",
-    "build:mac": "pnpm electron:build && vite build && electron-builder --mac",
-    "build:win": "pnpm electron:build && vite build && electron-builder --win"
+    "playwright:install": "PLAYWRIGHT_BROWSERS_PATH=ms-playwright npx playwright install chromium",
+    "build:mac": "pnpm playwright:install && pnpm electron:build && vite build && electron-builder --mac",
+    "build:win": "pnpm playwright:install && pnpm electron:build && vite build && electron-builder --win"
   },
   "build": {
     "appId": "com.blog.automation.aiden",
