@@ -51,14 +51,12 @@ export class NaverPublisher {
       <br><hr><br>
       <blockquote>
         <p><strong>🔗 참고 자료 및 최신 뉴스 출처</strong></p>
-        <ul style="list-style-type: disc;">
-          ${references
-            .map(
-              (ref) =>
-                `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></li>`,
-            )
-            .join("")}
-        </ul>
+        ${references
+          .map(
+            (ref) =>
+              `<p><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></p>`,
+          )
+          .join("")}
       </blockquote>
     `;
     return html + refHtml;
@@ -85,8 +83,14 @@ export class NaverPublisher {
       // ✅ 실행 환경에 따라 브라우저 경로 설정 (Electron 패키징 대응)
       const launchOptions: any = {
         headless: headless,
-        args: ["--disable-blink-features=AutomationControlled"],
+        args: [
+          "--disable-blink-features=AutomationControlled",
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+        ],
         permissions: ["clipboard-read", "clipboard-write"],
+        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        viewport: { width: 1280, height: 800 },
       };
 
       // 1. PLAYWRIGHT_BROWSERS_PATH가 설정되어 있다면, 해당 폴더 내에서 실행 파일을 직접 탐색
@@ -169,7 +173,11 @@ export class NaverPublisher {
           );
         }
         await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-        onProgress?.("로그인 완료");
+        onProgress?.("로그인 완료 (세션 저장 중...)");
+        
+        // 세션이 디스크에 기록될 시간을 벌어줌
+        await page.waitForTimeout(3000); 
+        
         await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
           waitUntil: "domcontentloaded",
           timeout: 20000,

@@ -28,6 +28,17 @@ export class NaverAuthenticator {
       await this.page.keyboard.press(pasteKey);
       await this.page.waitForTimeout(800);
 
+      // ✅ 3. 로그인 상태 유지 체크 (Persistence 강화)
+      try {
+        const keepLoginSelector = "label[for='keep']";
+        if (await this.page.$(keepLoginSelector)) {
+          await this.page.click(keepLoginSelector);
+          console.log("   📌 로그인 상태 유지(Keep) 체크 완료");
+        }
+      } catch (e) {
+        console.warn("   ⚠️ 로그인 상태 유지 체크박스를 찾을 수 없습니다.");
+      }
+
       const loginButtonSelector = ".btn_login";
       await this.page.waitForSelector(loginButtonSelector, { timeout: 5000 });
       await this.page.click(loginButtonSelector);

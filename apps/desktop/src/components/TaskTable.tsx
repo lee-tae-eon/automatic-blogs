@@ -76,7 +76,6 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             <th style={{ padding: "12px", width: "40px" }}></th>
             <th style={{ padding: "12px" }}>주제</th>
             <th style={{ padding: "12px" }}>상태</th>
-            <th style={{ padding: "12px" }}>플랫폼</th>
             <th style={{ padding: "12px" }}>키워드</th>
           </tr>
         </thead>
@@ -111,14 +110,15 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         {task.status}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", color: "#6c757d" }}>{task.platform || "Naver"}</td>
-                    <td style={{ padding: "12px", color: "#6c757d", fontSize: "0.9rem" }}>{task.keyword || "-"}</td>
+                    <td style={{ padding: "12px", color: "#6c757d", fontSize: "0.9rem" }}>
+                      {Array.isArray(task.keywords) ? task.keywords.join(", ") : task.keywords || "-"}
+                    </td>
                   </tr>
                   
                   {isExpanded && (
                     <tr style={{ backgroundColor: "#fff", borderBottom: "1px solid #dee2e6" }}>
                       <td></td>
-                      <td colSpan={4} style={{ padding: "15px 12px 20px 12px" }}>
+                      <td colSpan={3} style={{ padding: "15px 12px 20px 12px" }}>
                         <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
                           <div className="form-group">
                             <label style={{ display: "block", fontSize: "0.8rem", color: "#adb5bd", marginBottom: "4px" }}>페르소나</label>
@@ -165,7 +165,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             })
           ) : (
             <tr>
-              <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: "#adb5bd" }}>
+              <td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#adb5bd" }}>
                 데이터가 없습니다. 파일을 먼저 업로드해주세요.
               </td>
             </tr>

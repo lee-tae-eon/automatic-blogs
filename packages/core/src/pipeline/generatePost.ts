@@ -154,7 +154,6 @@ export async function generatePost({
       // 임시 객체 생성
       const rawPublication: Publication = {
         ...aiPost,
-        platform: task.platform || "naver",
         category: task.category,
         createdAt: new Date().toISOString(),
       };
