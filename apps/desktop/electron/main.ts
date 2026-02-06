@@ -4,19 +4,8 @@ import * as fs from "fs/promises";
 import dotenv from "dotenv";
 import Store from "electron-store";
 
-// ✅ Core 패키지 정적 Import (안정성 및 번들링 최적화)
-// SQLite가 없어도 Core 인터페이스만 맞다면 에러가 나지 않습니다.
-import {
-  generatePost,
-  ExcelProcessor,
-  NaverPublisher,
-  markdownToHtml,
-  GeminiClient,
-} from "@blog-automation/core";
-// import { GeminiClient } from "@blog-automation/core/ai";
-
 // ==========================================
-// 1. 환경 변수 및 브라우저 경로 설정 (CRITICAL)
+// 1. 환경 변수 및 브라우저 경로 설정 (CRITICAL - Import 전에 설정 권장)
 // ==========================================
 const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 
@@ -25,7 +14,6 @@ if (app.isPackaged) {
   dotenv.config({ path: path.join(process.resourcesPath, ".env") });
 
   // Playwright 브라우저 경로를 앱 내부 리소스로 강제 지정
-  // electron-builder의 extraResources 설정을 통해 복사된 경로: resources/ms-playwright
   const bundledBrowserPath = path.join(process.resourcesPath, "ms-playwright");
   process.env.PLAYWRIGHT_BROWSERS_PATH = bundledBrowserPath;
   console.log(`🌍 Playwright Browser Path set to: ${bundledBrowserPath}`);
@@ -33,6 +21,15 @@ if (app.isPackaged) {
   // 개발 모드 (Development)
   dotenv.config({ path: path.join(__dirname, "../../../.env") });
 }
+
+// ✅ Core 패키지 Import (환경 변수 설정 이후)
+import {
+  generatePost,
+  ExcelProcessor,
+  NaverPublisher,
+  markdownToHtml,
+  GeminiClient,
+} from "@blog-automation/core";
 
 // ==========================================
 // 2. 스토어 초기화
