@@ -49,7 +49,7 @@ jobs:
           ENV_FILE: ${{ secrets.AUTO_BLOG_ENV_FILE }}
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --shamefully-hoist
 
       - name: Build Core Package
         run: pnpm --filter @blog-automation/core build
