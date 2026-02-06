@@ -89,8 +89,50 @@ export class NaverPublisher {
         permissions: ["clipboard-read", "clipboard-write"],
       };
 
-      // PLAYWRIGHT_BROWSERS_PATH가 설정되어 있으면 해당 경로를 참조할 수 있도록 함
-      // (Playwright는 기본적으로 이 환경변수를 읽지만, 명시적이지 않을 때를 대비)
+      // 1. PLAYWRIGHT_BROWSERS_PATH가 설정되어 있다면, 해당 폴더 내에서 실행 파일을 직접 탐색
+      if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
+        const browserRoot = process.env.PLAYWRIGHT_BROWSERS_PATH;
+        
+        // 운영체제별 크로미움 실행 파일 상대 경로 정의
+        let executableRelativePath = "";
+        if (process.platform === "darwin") {
+          // macOS: ms-playwright/chromium-XXXX/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing
+          // glob을 사용하기 어려우므로 폴더 구조를 직접 탐색하거나 예측해야 함
+          try {
+            const chromiumFolders = fs.readdirSync(browserRoot).filter(f => f.startsWith("chromium-"));
+            if (chromiumFolders.length > 0) {
+              const chromeAppDir = fs.readdirSync(path.join(browserRoot, chromiumFolders[0])).find(f => f.startsWith("chrome-mac"));
+              if (chromeAppDir) {
+                executableRelativePath = path.join(
+                  chromiumFolders[0],
+                  chromeAppDir,
+                  "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+                );
+              }
+            }
+          } catch (e) {
+            console.error("📂 브라우저 폴더 탐색 실패:", e);
+          }
+        } else if (process.platform === "win32") {
+          // Windows: ms-playwright/chromium-XXXX/chrome-win/chrome.exe
+          try {
+            const chromiumFolders = fs.readdirSync(browserRoot).filter(f => f.startsWith("chromium-"));
+            if (chromiumFolders.length > 0) {
+              executableRelativePath = path.join(chromiumFolders[0], "chrome-win", "chrome.exe");
+            }
+          } catch (e) {
+            console.error("📂 브라우저 폴더 탐색 실패:", e);
+          }
+        }
+
+        const fullExecutablePath = path.join(browserRoot, executableRelativePath);
+        if (fs.existsSync(fullExecutablePath)) {
+          launchOptions.executablePath = fullExecutablePath;
+          console.log(`🚀 커스텀 브라우저 실행 경로 사용: ${fullExecutablePath}`);
+        } else {
+          console.warn(`⚠️ 브라우저를 찾을 수 없음 (기본 경로 시도): ${fullExecutablePath}`);
+        }
+      }
       
       this.currentContext = await chromium.launchPersistentContext(
         this.userDataDir,
