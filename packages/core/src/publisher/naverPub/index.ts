@@ -7,6 +7,9 @@ import { NaverAuthenticator } from "./NaverAuthenticator";
 import { NaverEditor } from "./NaverEditor";
 import { NaverPublicationManager } from "./NaverPublicationManager";
 
+/**
+ * 네이버 블로그 발행을 위한 입력 데이터 인터페이스
+ */
 export interface NaverPostInput {
   blogId: string;
   title: string;
@@ -15,12 +18,16 @@ export interface NaverPostInput {
   tags?: string[];
   category?: string;
   references?: { name: string; url: string }[];
-  persona?: string; // 추가
-  tone?: string;    // 추가
+  persona?: string;
+  tone?: string;
   onProgress?: (message: string) => void;
   headless?: boolean;
 }
 
+/**
+ * NaverPublisher
+ * 네이버 블로그 자동 발행을 총괄하는 오케스트레이터 클래스입니다.
+ */
 export class NaverPublisher {
   private userDataDir: string;
   private projectRoot: string;
@@ -30,16 +37,18 @@ export class NaverPublisher {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
     this.userDataDir = path.join(this.projectRoot, ".auth/naver");
 
-    // ✅ 디렉토리가 없으면 미리 생성 (권한 및 존재 확인)
+    this.ensureAuthDirectory();
+  }
+
+  /**
+   * 인증 정보가 저장될 디렉토리를 확인하고 없으면 생성합니다.
+   */
+  private ensureAuthDirectory() {
     if (!fs.existsSync(this.userDataDir)) {
       fs.mkdirSync(this.userDataDir, { recursive: true });
-      console.log(
-        `📂 [NaverPublisher] 인증 디렉토리 생성: ${this.userDataDir}`,
-      );
+      console.log(`📂 [NaverPublisher] 인증 디렉토리 생성: ${this.userDataDir}`);
     } else {
-      console.log(
-        `📂 [NaverPublisher] 기존 인증 디렉토리 사용: ${this.userDataDir}`,
-      );
+      console.log(`📂 [NaverPublisher] 기존 인증 디렉토리 사용: ${this.userDataDir}`);
     }
   }
 
@@ -54,7 +63,9 @@ export class NaverPublisher {
     }
   }
 
-  // ✅ 2. 출처를 HTML로 변환하는 프라이빗 메서드
+  /**
+   * 본문 하단에 출처(References) 링크 섹션을 추가합니다.
+   */
   private appendReferences(
     html: string,
     references?: { name: string; url: string }[],
@@ -76,161 +87,150 @@ export class NaverPublisher {
     return html + refHtml;
   }
 
-  async postToBlog({
-    blogId,
-    title,
-    htmlContent,
-    password,
-    tags = [],
-    category,
-    references,
-    persona,  // ✅ 누락되었던 변수 추가
-    tone,     // ✅ 누락되었던 변수 추가
-    onProgress,
-    headless = false,
-  }: NaverPostInput) {
-    let context: BrowserContext | null = null;
-    let page: Page | null = null;
-    let currentTaskName = title;
+  /**
+   * 실행 환경(Electron/OS)에 따른 브라우저 실행 파일 경로를 탐색합니다.
+   */
+  private getExecutablePath(): string | undefined {
+    const browserRoot = process.env.PLAYWRIGHT_BROWSERS_PATH;
+    if (!browserRoot) return undefined;
 
     try {
-      onProgress?.("브라우저 실행 중...");
+      const chromiumFolders = fs.readdirSync(browserRoot).filter((f) => f.startsWith("chromium-"));
+      if (chromiumFolders.length === 0) return undefined;
 
-      // ✅ 실행 환경에 따라 브라우저 경로 설정 (Electron 패키징 대응)
-      const launchOptions: any = {
-        headless: headless,
-        args: [
-          "--disable-blink-features=AutomationControlled",
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-        ],
-        permissions: ["clipboard-read", "clipboard-write"],
-        userAgent:
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        viewport: { width: 1280, height: 800 },
-      };
+      let relativePath = "";
+      const latestFolder = chromiumFolders[0];
 
-      // 1. PLAYWRIGHT_BROWSERS_PATH가 설정되어 있다면, 해당 폴더 내에서 실행 파일을 직접 탐색
-      if (process.env.PLAYWRIGHT_BROWSERS_PATH) {
-        const browserRoot = process.env.PLAYWRIGHT_BROWSERS_PATH;
-
-        // 운영체제별 크로미움 실행 파일 상대 경로 정의
-        let executableRelativePath = "";
-        if (process.platform === "darwin") {
-          // macOS: ms-playwright/chromium-XXXX/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing
-          // glob을 사용하기 어려우므로 폴더 구조를 직접 탐색하거나 예측해야 함
-          try {
-            const chromiumFolders = fs
-              .readdirSync(browserRoot)
-              .filter((f) => f.startsWith("chromium-"));
-            if (chromiumFolders.length > 0) {
-              const chromeAppDir = fs
-                .readdirSync(path.join(browserRoot, chromiumFolders[0]))
-                .find((f) => f.startsWith("chrome-mac"));
-              if (chromeAppDir) {
-                executableRelativePath = path.join(
-                  chromiumFolders[0],
-                  chromeAppDir,
-                  "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-                );
-              }
-            }
-          } catch (e) {
-            console.error("📂 브라우저 폴더 탐색 실패:", e);
-          }
-        } else if (process.platform === "win32") {
-          // Windows: ms-playwright/chromium-XXXX/chrome-win/chrome.exe
-          try {
-            const chromiumFolders = fs
-              .readdirSync(browserRoot)
-              .filter((f) => f.startsWith("chromium-"));
-            if (chromiumFolders.length > 0) {
-              executableRelativePath = path.join(
-                chromiumFolders[0],
-                "chrome-win",
-                "chrome.exe",
-              );
-            }
-          } catch (e) {
-            console.error("📂 브라우저 폴더 탐색 실패:", e);
-          }
-        }
-
-        const fullExecutablePath = path.join(
-          browserRoot,
-          executableRelativePath,
-        );
-        if (fs.existsSync(fullExecutablePath)) {
-          launchOptions.executablePath = fullExecutablePath;
-          console.log(
-            `🚀 커스텀 브라우저 실행 경로 사용: ${fullExecutablePath}`,
-          );
-        } else {
-          console.warn(
-            `⚠️ 브라우저를 찾을 수 없음 (기본 경로 시도): ${fullExecutablePath}`,
+      if (process.platform === "darwin") {
+        const chromeAppDir = fs
+          .readdirSync(path.join(browserRoot, latestFolder))
+          .find((f) => f.startsWith("chrome-mac"));
+        if (chromeAppDir) {
+          relativePath = path.join(
+            latestFolder,
+            chromeAppDir,
+            "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
           );
         }
+      } else if (process.platform === "win32") {
+        relativePath = path.join(latestFolder, "chrome-win", "chrome.exe");
       }
 
-      this.currentContext = await chromium.launchPersistentContext(
-        this.userDataDir,
-        launchOptions,
-      );
+      const fullPath = path.join(browserRoot, relativePath);
+      return fs.existsSync(fullPath) ? fullPath : undefined;
+    } catch (e) {
+      console.error("📂 브라우저 경로 탐색 실패:", e);
+      return undefined;
+    }
+  }
 
-      context = this.currentContext;
-      page = await context.newPage();
+  /**
+   * 브라우저 컨텍스트를 초기화하고 페이지를 생성합니다.
+   */
+  private async initializeContext(headless: boolean): Promise<Page> {
+    const launchOptions: any = {
+      headless,
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+      ],
+      permissions: ["clipboard-read", "clipboard-write"],
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 800 },
+    };
 
-      page.on("dialog", async (dialog) => {
-        const message = dialog.message();
-        console.log(`🔔 다이얼로그 감지: ${message}`);
-        await dialog.accept();
-        console.log("   ✅ 다이얼로그 자동 승인");
-      });
+    const customPath = this.getExecutablePath();
+    if (customPath) {
+      launchOptions.executablePath = customPath;
+      console.log(`🚀 커스텀 브라우저 실행 경로 사용: ${customPath}`);
+    }
 
-      onProgress?.("네이버 블로그 접속 중...");
+    this.currentContext = await chromium.launchPersistentContext(this.userDataDir, launchOptions);
+    const page = await this.currentContext.newPage();
+
+    // 다이얼로그(Alert 등) 자동 승인 설정
+    page.on("dialog", async (dialog) => {
+      console.log(`🔔 다이얼로그 자동 승인: ${dialog.message()}`);
+      await dialog.accept();
+    });
+
+    return page;
+  }
+
+  /**
+   * 네이버 로그인을 처리합니다. 이미 세션이 있는 경우 건너뜁니다.
+   */
+  private async handleLogin(page: Page, blogId: string, password?: string, onProgress?: (msg: string) => void) {
+    onProgress?.("네이버 블로그 접속 중...");
+    await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    await page.waitForTimeout(2000);
+
+    if (page.url().includes("nid.naver.com")) {
+      onProgress?.("네이버 로그인 진행 중...");
+      if (password) {
+        const authenticator = new NaverAuthenticator(page);
+        await authenticator.login(blogId, password);
+      } else {
+        onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
+        console.log("👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).");
+      }
+      
+      await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
+      onProgress?.("로그인 완료 (세션 저장 중...)");
+      await page.waitForTimeout(3000);
+
       await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
         waitUntil: "domcontentloaded",
-        timeout: 30000,
+        timeout: 20000,
       });
+    }
+  }
 
-      await page.waitForTimeout(2000);
+  /**
+   * 에러 발생 시 로그를 파일로 기록합니다.
+   */
+  private logError(taskName: string, error: any, url: string) {
+    const logPath = path.join(process.cwd(), "error-log.txt");
+    const timestamp = new Date().toLocaleString("ko-KR");
+    const errorEntry = `\n==================================================\n[${timestamp}]\n📍 대상 포스트: ${taskName}\n❌ 에러 메시지: ${error.message || error}\n🔗 발생 URL: ${url}\n--------------------------------------------------\n`;
+    try {
+      fs.appendFileSync(logPath, errorEntry, "utf8");
+      console.log(`📝 에러 로그 저장 완료: ${logPath}`);
+    } catch (err) {
+      console.error("💾 로그 파일 저장 실패:", err);
+    }
+  }
 
-      if (page.url().includes("nid.naver.com")) {
-        onProgress?.("네이버 로그인 진행 중...");
-        if (password) {
-          const authenticator = new NaverAuthenticator(page);
-          await authenticator.login(blogId, password);
-        } else {
-          onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
-          console.log(
-            "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
-          );
-        }
-        await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-        onProgress?.("로그인 완료 (세션 저장 중...)");
+  /**
+   * [Public API] 블로그에 포스트를 작성하고 발행합니다.
+   */
+  async postToBlog(input: NaverPostInput) {
+    const { blogId, title, htmlContent, password, tags = [], category, references, persona, onProgress, headless = false } = input;
+    let page: Page | null = null;
 
-        // 세션이 디스크에 기록될 시간을 벌어줌
-        await page.waitForTimeout(3000);
+    try {
+      onProgress?.("브라우저 환경 준비 중...");
+      page = await this.initializeContext(headless);
 
-        await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
-          waitUntil: "domcontentloaded",
-          timeout: 20000,
-        });
-      }
+      // 1. 로그인 처리
+      await this.handleLogin(page, blogId, password, onProgress);
 
-      // ✅ 3. 본문 입력 전 출처 섹션 결합
+      // 2. 에디터 진입 및 초기화
       const editor = new NaverEditor(page, this.projectRoot, title, tags);
-      onProgress?.("임시 저장 팝업 제거 중...");
+      onProgress?.("에디터 초기화 중...");
       await editor.clearPopups();
-
-      onProgress?.("에디터 초기화 및 제목 입력 중...");
       await page.waitForTimeout(2000);
 
+      // 3. 제목 입력
       await editor.enterTitle(title);
       await page.waitForTimeout(1000);
 
-      // ✅ [Persona-based Exclusion] 특정 페르소나는 톤과 상관없이 출처 기재 제외
-      // 대상: 친근형(friendly), 스토리텔링형(storytelling), 체험형(experiential)
+      // 4. 본문 구성 (페르소나 기반 출처 필터링 적용)
       const excludedPersonas = ["friendly", "storytelling", "experiential"];
       const shouldExcludeRef = persona && excludedPersonas.includes(persona);
       
@@ -238,7 +238,6 @@ export class NaverPublisher {
       if (shouldExcludeRef) {
         console.log(`ℹ️ [NaverPublisher] '${persona}' 페르소나는 출처 기재를 일괄 제외합니다.`);
       } else {
-        console.log(`✅ [NaverPublisher] '${persona}' 페르소나에 출처 링크를 결합합니다.`);
         finalHtml = this.appendReferences(htmlContent, references);
       }
 
@@ -246,33 +245,23 @@ export class NaverPublisher {
       await editor.enterContent(finalHtml);
       await page.waitForTimeout(1000);
 
+      // 5. 최종 발행
       onProgress?.("태그 설정 및 최종 발행 중...");
       const publicationManager = new NaverPublicationManager(page);
       await publicationManager.publish(tags, category);
 
       onProgress?.("블로그 발행 완료");
       console.log("✅ 작성 및 발행 완료!");
+      
     } catch (error: any) {
       console.error("❌ 네이버 발행 오류:", error);
-      if (page) {
-        const logPath = path.join(process.cwd(), "error-log.txt");
-        const timestamp = new Date().toLocaleString("ko-KR");
-        const errorEntry = `\n==================================================\n[${timestamp}]\n📍 대상 포스트: ${currentTaskName}\n❌ 에러 메시지: ${error.message || error}\n🔗 발생 URL: ${page.url()}\n--------------------------------------------------\n`;
-        try {
-          fs.appendFileSync(logPath, errorEntry, "utf8");
-          console.log(`📝 에러 로그 저장 완료: ${logPath}`);
-        } catch (err) {
-          console.error("💾 로그 파일 저장 실패:", err);
-        }
-      }
+      if (page) this.logError(title, error, page.url());
       throw error;
     } finally {
-      if (context) {
+      if (this.currentContext) {
         onProgress?.("💾 세션 데이터 저장을 위해 잠시 대기합니다...");
-        // ⚠️ 중요: 브라우저가 쿠키/스토리지를 디스크에 쓸 시간을 3~5초 정도 줍니다.
         await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        await context.close();
+        await this.currentContext.close();
         this.currentContext = null;
         onProgress?.("👋 브라우저 안전 종료 완료");
       }
