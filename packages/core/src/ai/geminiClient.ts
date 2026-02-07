@@ -113,7 +113,7 @@ export class GeminiClient implements BaseAiClient {
     try {
       // 검색 기능을 위해 모델을 새로 인스턴스화 (tools 설정 필요)
       const searchModel = this.genAI.getGenerativeModel({
-        model: "gemini-1.5-flash", // Grounding은 1.5 Flash 이상 권장
+        model: this.model.model, // 기존 인스턴스에 설정된 모델명(e.g. gemini-2.5-flash) 사용
         tools: [{ googleSearch: {} }] as any, // 구글 검색 도구 활성화 (타입 에러 방지를 위해 any 캐스팅)
       });
 
