@@ -69,36 +69,65 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       </div>
 
       {/* 오른쪽: 제어 버튼들 */}
-      {hasTasks && (
-        <div className="button-group" style={{ display: "flex", gap: "12px" }}>
-          <button
-            className="btn-secondary"
-            onClick={onClear}
-            disabled={isProcessing}
-            style={{ padding: "8px 15px", fontSize: "0.85rem", border: "1px solid #dee2e6", borderRadius: "6px", backgroundColor: "#fff", cursor: "pointer" }}
-          >
-            목록 삭제
-          </button>
-          {isProcessing ? (
-            <button 
-              className="btn-danger" 
-              onClick={onStop}
-              style={{ padding: "8px 15px", fontSize: "0.85rem", backgroundColor: "#fa5252", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
-            >
-              ⛔ 작업 중지
-            </button>
-          ) : (
-            <button
-              className="btn-primary"
-              onClick={onPublish}
-              disabled={isProcessing}
-              style={{ padding: "8px 15px", fontSize: "0.85rem", backgroundColor: "#03c75a", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
-            >
-              일괄 발행 시작
-            </button>
-          )}
-        </div>
-      )}
+      <div className="button-group" style={{ display: "flex", gap: "12px" }}>
+        <button
+          onClick={onClear}
+          disabled={!hasTasks || isProcessing}
+          style={{ 
+            padding: "8px 15px", 
+            fontSize: "0.85rem", 
+            border: "1px solid #dee2e6", 
+            borderRadius: "6px", 
+            backgroundColor: !hasTasks ? "#f1f3f5" : "#fff", 
+            cursor: !hasTasks ? "default" : "pointer",
+            color: !hasTasks ? "#adb5bd" : "#495057",
+            fontWeight: "500"
+          }}
+        >
+          목록 전체 삭제
+        </button>
+        
+        {hasTasks && (
+          <>
+            {isProcessing ? (
+              <button 
+                onClick={onStop}
+                style={{ 
+                  padding: "8px 18px", 
+                  fontSize: "0.85rem", 
+                  backgroundColor: "#fa5252", 
+                  color: "#fff", 
+                  border: "none", 
+                  borderRadius: "6px", 
+                  cursor: "pointer", 
+                  fontWeight: "bold",
+                  boxShadow: "0 2px 4px rgba(250, 82, 82, 0.2)"
+                }}
+              >
+                ⛔ 작업 중지
+              </button>
+            ) : (
+              <button
+                onClick={onPublish}
+                disabled={isProcessing}
+                style={{ 
+                  padding: "8px 18px", 
+                  fontSize: "0.85rem", 
+                  backgroundColor: "#03c75a", 
+                  color: "#fff", 
+                  border: "none", 
+                  borderRadius: "6px", 
+                  cursor: "pointer", 
+                  fontWeight: "bold",
+                  boxShadow: "0 2px 4px rgba(3, 199, 90, 0.2)"
+                }}
+              >
+                일괄 발행 시작
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
