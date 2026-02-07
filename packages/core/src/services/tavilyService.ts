@@ -30,4 +30,27 @@ export class TavilyService {
       return ""; // 에러 시 빈 문자열 반환하여 기존 로직 유지
     }
   }
+
+  /**
+   * 실시간 헐리우드 핫이슈를 검색하여 원문 리스트를 반환합니다.
+   * @param customQuery - 특정 배우나 주제가 있을 경우 해당 키워드로 검색
+   */
+  async fetchTrendingHollywood(customQuery?: string) {
+    try {
+      const query = customQuery 
+        ? `${customQuery} Hollywood celebrity news gossip trending today`
+        : "top trending Hollywood celebrity gossip news today tmz people dailymail";
+
+      const response = await axios.post(this.baseUrl, {
+        api_key: this.apiKey,
+        query,
+        search_depth: "basic",
+        max_results: 8,
+      });
+      return response.data.results;
+    } catch (error) {
+      console.error("❌ 헐리우드 트렌드 검색 실패:", error);
+      return [];
+    }
+  }
 }

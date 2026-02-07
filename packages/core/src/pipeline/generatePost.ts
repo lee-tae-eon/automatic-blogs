@@ -117,6 +117,10 @@ export async function generatePost({
         if (topicIntent.isPlace) {
           searchQuery = `${task.topic} 정확한 위치 상호명 메뉴 가격 정보`;
           onProgress?.(`장소 데이터 정밀 검색 중: ${task.topic}`);
+        } else if (task.persona === "hollywood-reporter") {
+          // 헐리우드 특파원인 경우 영어 소스 검색 강화
+          searchQuery = `${task.topic} latest news gossip tmz people dailymail`;
+          onProgress?.(`🎬 헐리우드 현지 뉴스 검색 중: ${task.topic}`);
         } else {
           onProgress?.(`실시간 정보 검색 중: ${task.topic}`);
         }

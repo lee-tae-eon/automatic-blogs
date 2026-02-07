@@ -29,6 +29,7 @@ import {
   NaverPublisher,
   markdownToHtml,
   GeminiClient,
+  TavilyService,
 } from "@blog-automation/core";
 
 // ==========================================
@@ -97,6 +98,53 @@ async function runWithAbort<T>(
 }
 
 function registerIpcHandlers() {
+  // ----------------------------------------
+  // [Discovery] 헐리우드 핫이슈 가져오기
+  // ----------------------------------------
+  ipcMain.handle("fetch-hollywood-trends", async (event, query?: string) => {
+    try {
+      const tavily = new TavilyService();
+      const rawTrends = await tavily.fetchTrendingHollywood(query);
+      
+      if (rawTrends.length === 0) return { success: false, error: "뉴스를 가져오지 못했습니다." };
+
+      const credentials: any = store.get("user-credentials");
+      const { geminiKey, subGemini } = credentials || {};
+      const apiKey = geminiKey || subGemini || process.env.GEMINI_API_KEY;
+      const modelName = process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-1.5-flash";
+      
+      if (!apiKey) throw new Error("API 키가 없습니다.");
+      
+      const client = new GeminiClient(apiKey, modelName);
+      
+      const prompt = `
+        다음은 현재 헐리우드${query ? `('${query}' 관련)` : ""}에서 화제가 되는 뉴스 검색 결과들입니다.
+        이 뉴스들 중에서 한국의 블로그 독자들이 가장 흥미로워할 만한 개별 토픽 5개를 선정해 주세요.
+        ${query ? `반드시 '${query}'와 직접적으로 관련된 내용이어야 합니다.` : "각 토픽은 중복되지 않고 서로 다른 사건이어야 합니다."}
+        
+        [출력 규칙]
+        1. 반드시 아래 JSON 배열 형식으로만 응답하세요.
+        2. 마크다운 코드 블록(\`\`\`json ...)을 사용하지 마세요.
+        3. 다른 부연 설명이나 텍스트를 절대 포함하지 마세요.
+        
+        [형식]
+        [
+          { "topic": "주제(한글)", "summary": "짧은 요약(한글)", "keywords": ["키워드1", "키워드2"] },
+          ...
+        ]
+        
+        검색 결과:
+        ${JSON.stringify(rawTrends)}
+      `;
+
+      const topics = await client.generateJson<any[]>(prompt);
+      return { success: true, data: topics };
+    } catch (error: any) {
+      console.error("트렌드 가져오기 실패:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
   // ----------------------------------------
   // [Abort] 프로세스 중단
   // ----------------------------------------

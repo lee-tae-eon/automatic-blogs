@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
       "publish-post",
       "get-store-data",
       "update-task",
+      "fetch-hollywood-trends",
     ];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, ...args);

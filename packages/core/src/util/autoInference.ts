@@ -64,6 +64,7 @@ export function inferTargetAudience(topic: string, persona: Persona): string {
     friendly: "가볍게 읽고 싶은 사람들",
     experiential: "실제 경험담을 원하는 사람들",
     travelLog: "여행지의 생생한 분위기를 느끼고 싶은 사람들",
+    "hollywood-reporter": "헐리우드 스타와 영화 소식에 관심 있는 사람들",
   };
 
   return personaDefaultTargets[persona] || "일반 독자";
@@ -83,6 +84,7 @@ export function inferContentGoal(
       friendly: "engagement", // 친근한 소통
       experiential: "conversion", // 구매/행동 유도
       travelLog: "engagement", // 여행지 공감 및 소통
+      "hollywood-reporter": "engagement", // 연예 소식 공유 및 소통
     };
 
   return goalMap[persona] || "informative";

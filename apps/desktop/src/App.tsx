@@ -3,6 +3,7 @@ import "./App.scss";
 import { Header } from "./components/Header";
 import { useAppViewModel } from "./model/useAppViewModel";
 import { FileUploader } from "./components/FileUploader";
+import { ManualTaskInput } from "./components/ManualTaskInput"; // 추가
 import { ActionButtons } from "./components/ActionButtons";
 import { TaskTable } from "./components/TaskTable";
 import { LogConsole } from "./components/LogConsole";
@@ -18,7 +19,10 @@ export const App: React.FC = () => {
         onChange={actions.handleCredentialChange}
       />
 
-      <FileUploader onFileSelect={actions.processFile} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+        <FileUploader onFileSelect={actions.processFile} />
+        <ManualTaskInput onAddTask={actions.handleAddTask} />
+      </div>
 
       <ActionButtons
         hasTasks={tasks.length > 0}

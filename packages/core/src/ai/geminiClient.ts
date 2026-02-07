@@ -68,18 +68,31 @@ export class GeminiClient implements BaseAiClient {
     // API 호출은 성공했으나, 응답을 파싱하는 과정에서 에러가 발생할 수 있습니다.
     try {
       // 1. 마크다운 코드 블록 제거 및 텍스트 정제
-      const cleanedText = responseText
+      let cleanedText = responseText
         .replace(/```json/g, "")
         .replace(/```/g, "")
         .trim();
 
-      // 2. 만약 앞뒤에 설명이 붙어있을 경우를 대비해 첫 '{'와 마지막 '}' 사이만 추출
-      const jsonStart = cleanedText.indexOf("{");
-      const jsonEnd = cleanedText.lastIndexOf("}");
+      // 2. 만약 앞뒤에 설명이 붙어있을 경우를 대비해 JSON 시작점과 끝점을 찾음
+      // { 또는 [ 중 먼저 나오는 것을 시작점으로, } 또는 ] 중 마지막에 나오는 것을 끝점으로 설정
+      const objectStart = cleanedText.indexOf("{");
+      const arrayStart = cleanedText.indexOf("[");
+      
+      let jsonStart = -1;
+      if (objectStart !== -1 && arrayStart !== -1) {
+        jsonStart = Math.min(objectStart, arrayStart);
+      } else {
+        jsonStart = objectStart !== -1 ? objectStart : arrayStart;
+      }
 
-      if (jsonStart === -1 || jsonEnd === -1) {
+      const objectEnd = cleanedText.lastIndexOf("}");
+      const arrayEnd = cleanedText.lastIndexOf("]");
+      const jsonEnd = Math.max(objectEnd, arrayEnd);
+
+      if (jsonStart === -1 || jsonEnd === -1 || jsonStart >= jsonEnd) {
         throw new Error(`응답에서 JSON 형식을 찾을 수 없습니다.`);
       }
+      
       const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
       return JSON.parse(jsonString.trim()) as T;
     } catch (parseError: any) {
