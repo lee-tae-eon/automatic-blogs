@@ -68,18 +68,31 @@ export class GeminiClient implements BaseAiClient {
     // API 호출은 성공했으나, 응답을 파싱하는 과정에서 에러가 발생할 수 있습니다.
     try {
       // 1. 마크다운 코드 블록 제거 및 텍스트 정제
-      const cleanedText = responseText
+      let cleanedText = responseText
         .replace(/```json/g, "")
         .replace(/```/g, "")
         .trim();
 
-      // 2. 만약 앞뒤에 설명이 붙어있을 경우를 대비해 첫 '{'와 마지막 '}' 사이만 추출
-      const jsonStart = cleanedText.indexOf("{");
-      const jsonEnd = cleanedText.lastIndexOf("}");
+      // 2. 만약 앞뒤에 설명이 붙어있을 경우를 대비해 JSON 시작점과 끝점을 찾음
+      // { 또는 [ 중 먼저 나오는 것을 시작점으로, } 또는 ] 중 마지막에 나오는 것을 끝점으로 설정
+      const objectStart = cleanedText.indexOf("{");
+      const arrayStart = cleanedText.indexOf("[");
+      
+      let jsonStart = -1;
+      if (objectStart !== -1 && arrayStart !== -1) {
+        jsonStart = Math.min(objectStart, arrayStart);
+      } else {
+        jsonStart = objectStart !== -1 ? objectStart : arrayStart;
+      }
 
-      if (jsonStart === -1 || jsonEnd === -1) {
+      const objectEnd = cleanedText.lastIndexOf("}");
+      const arrayEnd = cleanedText.lastIndexOf("]");
+      const jsonEnd = Math.max(objectEnd, arrayEnd);
+
+      if (jsonStart === -1 || jsonEnd === -1 || jsonStart >= jsonEnd) {
         throw new Error(`응답에서 JSON 형식을 찾을 수 없습니다.`);
       }
+      
       const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
       return JSON.parse(jsonString.trim()) as T;
     } catch (parseError: any) {
@@ -89,6 +102,38 @@ export class GeminiClient implements BaseAiClient {
       throw new Error(
         `AI가 유효한 JSON 형식을 반환하지 않았습니다. ${parseError?.message || ""}`,
       );
+    }
+  }
+
+  /**
+   * Gemini의 Google Search Grounding 기능을 사용하여 최신 정보를 검색합니다.
+   * @param query 검색어
+   */
+  async searchWithGrounding(query: string): Promise<string> {
+    try {
+      // 검색 기능을 위해 모델을 새로 인스턴스화 (tools 설정 필요)
+      const searchModel = this.genAI.getGenerativeModel({
+        model: this.model.model, // 기존 인스턴스에 설정된 모델명(e.g. gemini-2.5-flash) 사용
+        tools: [{ googleSearch: {} }] as any, // 구글 검색 도구 활성화 (타입 에러 방지를 위해 any 캐스팅)
+      });
+
+      const prompt = `
+        다음 주제에 대한 최신 뉴스, 가십, 트렌드를 구글에서 검색해서 자세히 알려줘.
+        주제: ${query}
+        
+        [요청사항]
+        - 현재 시점(Today)의 가장 핫한 이슈 위주로 찾아줘.
+        - 한국 블로그 독자들이 흥미로워할 만한 자극적이거나 화제가 되는 내용을 포함해줘.
+        - 검색 결과의 핵심 내용들을 요약해서 텍스트로 반환해줘.
+      `;
+
+      const result = await searchModel.generateContent(prompt);
+      const response = result.response;
+      return response.text();
+    } catch (error: any) {
+      console.warn("⚠️ Gemini Grounding 검색 실패 (Tavily로 대체 진행):", error.message);
+      // 검색 실패 시 빈 문자열 반환 (메인 로직에서 Tavily 결과만 사용하게 됨)
+      return "";
     }
   }
 }

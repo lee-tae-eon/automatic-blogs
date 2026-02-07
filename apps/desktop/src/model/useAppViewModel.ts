@@ -75,30 +75,45 @@ export const useAppViewModel = () => {
     }));
   };
 
-  const updateTaskInExcel = async (
+  const handleAddTask = (task: BatchTask) => {
+    setTasks((prev) => [...prev, task]);
+    addLog(`작업 추가됨: ${task.topic}`);
+  };
+
+  const updateTaskState = async (
     index: number,
     updates: { status?: BatchTask["status"]; persona?: Persona; tone?: Tone },
   ) => {
-    if (!currentFilePath) return;
+    // 1. 상태 먼저 업데이트 (메모리)
+    setTasks((prevTasks) =>
+      prevTasks.map((task, idx) => {
+        if (idx === index) {
+          return { ...task, ...updates };
+        }
+        return task;
+      }),
+    );
 
-    const task = tasks[index];
-    if (!task) return;
+    // 2. 엑셀 파일이 있는 경우에만 파일 업데이트 수행
+    if (currentFilePath) {
+      const task = tasks[index];
+      if (!task) return;
 
-    const result = await window.ipcRenderer.invoke("update-task", {
-      filePath: currentFilePath,
-      index,
-      status: updates.status || task.status,
-      persona: updates.persona || task.persona,
-      tone: updates.tone || task.tone,
-    });
+      try {
+        const result = await window.ipcRenderer.invoke("update-task", {
+          filePath: currentFilePath,
+          index,
+          status: updates.status || task.status,
+          persona: updates.persona || task.persona,
+          tone: updates.tone || task.tone,
+        });
 
-    if (!result.success) {
-      console.error(`엑셀 저장 실패 (Row ${index + 1}):`, result.error);
-      // 에러가 발생해도 전체 프로세스를 멈출지 여부는 선택이지만,
-      // 저장이 안 되는 건 치명적이므로 사용자에게 알림.
-      // 연속으로 뜨는 것을 방지하기 위해 콘솔만 찍고, 상위에서 처리하도록 throw 할 수도 있음.
-      // 여기서는 일단 에러를 throw하여 handlePublishAll의 catch 블록으로 이동하게 함.
-      throw new Error(`엑셀 저장 실패: ${result.error}`);
+        if (!result.success) {
+          console.error(`엑셀 저장 실패 (Row ${index + 1}):`, result.error);
+        }
+      } catch (e) {
+        console.error("파일 업데이트 중 오류:", e);
+      }
     }
   };
 
@@ -106,29 +121,11 @@ export const useAppViewModel = () => {
     taskIndex: number,
     newPersona: Persona,
   ) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task, index) => {
-        if (index === taskIndex) {
-          const updatedTask = { ...task, persona: newPersona };
-          updateTaskInExcel(taskIndex, { persona: newPersona });
-          return updatedTask;
-        }
-        return task;
-      }),
-    );
+    await updateTaskState(taskIndex, { persona: newPersona });
   };
 
   const handleToneChange = async (taskIndex: number, newTone: Tone) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task, index) => {
-        if (index === taskIndex) {
-          const updatedTask = { ...task, tone: newTone };
-          updateTaskInExcel(taskIndex, { tone: newTone });
-          return updatedTask;
-        }
-        return task;
-      }),
-    );
+    await updateTaskState(taskIndex, { tone: newTone });
   };
 
   const processFile = async (file: File) => {
@@ -209,11 +206,8 @@ export const useAppViewModel = () => {
       }
 
       // 1. 진행 상태 반영
-      addLog(`[${i + 1}] 콘텐츠 생성 중: ${task.keyword}`);
-      setTasks((prev) =>
-        prev.map((t, idx) => (idx === i ? { ...t, status: "진행" } : t)),
-      );
-      await updateTaskInExcel(i, { status: "진행" });
+      addLog(`[${i + 1}] 콘텐츠 생성 중: ${task.topic}`);
+      await updateTaskState(i, { status: "진행" });
 
       try {
         // 생성
@@ -223,16 +217,13 @@ export const useAppViewModel = () => {
         );
 
         if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
-          addLog(`[${i + 1}] 중단됨: ${task.keyword}`);
-          setTasks((prev) =>
-            prev.map((t, idx) => (idx === i ? { ...t, status: "대기" } : t)),
-          );
-          await updateTaskInExcel(i, { status: "대기" });
+          addLog(`[${i + 1}] 중단됨: ${task.topic}`);
+          await updateTaskState(i, { status: "대기" });
           break;
         }
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
 
-        addLog(`[${i + 1}] 블로그 발행 중: ${task.keyword}`);
+        addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
         // 발행
         const pubResult = await window.ipcRenderer.invoke(
           "publish-post",
@@ -243,12 +234,9 @@ export const useAppViewModel = () => {
         );
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
-        addLog(`[${i + 1}] 완료: ${task.keyword}`);
+        addLog(`[${i + 1}] 완료: ${task.topic}`);
         // 2. 완료 상태 반영
-        setTasks((prev) =>
-          prev.map((t, idx) => (idx === i ? { ...t, status: "완료" } : t)),
-        );
-        await updateTaskInExcel(i, { status: "완료" });
+        await updateTaskState(i, { status: "완료" });
       } catch (error: any) {
         // 중단으로 인한 에러인 경우 무시
         if (error.name === "AbortError" || shouldStopRef.current) {
@@ -259,10 +247,7 @@ export const useAppViewModel = () => {
         addLog(`[${i + 1}] 에러 발생: ${error.message || error}`);
         console.error(error);
         // 3. 실패 상태 반영
-        setTasks((prev) =>
-          prev.map((t, idx) => (idx === i ? { ...t, status: "실패" } : t)),
-        );
-        await updateTaskInExcel(i, { status: "실패" });
+        await updateTaskState(i, { status: "실패" });
       }
     }
 
@@ -280,6 +265,7 @@ export const useAppViewModel = () => {
     state: { tasks, isProcessing, credentials, logs },
     actions: {
       handleCredentialChange,
+      handleAddTask, // 추가
       processFile,
       handleClearAll,
       handleStop,

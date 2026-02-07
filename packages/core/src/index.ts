@@ -11,3 +11,9 @@ export * from "./persona/persona.config";
 export * from "./pipeline/generatePrompt";
 export * from "./tone/tone_config";
 export * from "./ai/geminiClient";
+
+// 서비스 (외부 연동 및 DB)
+export * from "./services/tavilyService";
+export * from "./services/pexelImageService";
+export * from "./services/unsplashService";
+export * from "./services/dbService";

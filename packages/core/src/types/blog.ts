@@ -31,7 +31,8 @@ export type Persona =
   | "storytelling"
   | "friendly"
   | "experiential"
-  | "travelLog";
+  | "travelLog"
+  | "hollywood-reporter"; // 헐리우드 전문 리포터 추가
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의

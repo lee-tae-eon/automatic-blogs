@@ -4,14 +4,17 @@ if (typeof global.File === "undefined") {
   (global as any).File = File;
 }
 
+// ⚠️ 중요: 환경 변수 로드가 다른 모듈보다 먼저 실행되어야 함
+import { ENV } from "./env";
+
 import {
   BatchTask,
   GeminiClient,
   generatePost,
   NaverPublisher,
+  markdownToHtml,
 } from "@blog-automation/core";
 
-import { ENV } from "./env";
 import { naverIdProfile } from "./testConstant";
 
 async function main() {
@@ -22,11 +25,11 @@ async function main() {
 
   // 1. 최신 규격에 맞춘 테스트 입력 데이터
   const input: BatchTask = {
-    topic: "청라 ", // 살고 계신 지역 기반 예시
+    topic: "청라 맛집", // 살고 계신 지역 기반 예시
     persona: "informative", // 이제 문자열 매칭 대신 enum/type 사용
     tone: "professional", // 새로 추가한 톤앤매너
-    keywords: ["영종도맛집", "인천여행", "내돈내산"],
-    category: "일상정보",
+    keywords: ["청라맛집", "인천맛집", "내돈내산"],
+    category: "맛집",
     status: "대기",
   };
 
@@ -40,6 +43,7 @@ async function main() {
     const post = await generatePost({
       client: aiClient,
       task: input,
+      onProgress: (msg) => console.log(`      > ${msg}`),
     });
 
     console.log(`   ✅ 글 생성 완료: ${post.title}`);
@@ -56,18 +60,23 @@ async function main() {
     }
 
     // 3. 최신 NaverPublisher 로직 실행
-    // 이제 NaverPublisher 내부의 NaverEditor가
-    // 우리가 만든 HTML 붙여넣기 + 이미지 정제 로직을 실행함
     const publisher = new NaverPublisher();
+    
+    // Markdown -> HTML 변환 (데스크탑 앱과 동일하게 처리)
+    const htmlContent = await markdownToHtml(post.content);
 
     console.log("   🌐 네이버 블로그 업로드 시작...");
     await publisher.postToBlog({
       blogId: naverIdProfile.id,
       password: naverIdProfile.password,
       title: post.title,
-      htmlContent: post.content, // 이제 core 내부에서 HTML 변환까지 처리되도록 연결
-      tags: post.focusKeywords,
+      htmlContent: htmlContent, 
+      tags: post.tags || post.focusKeywords,
       category: input.category,
+      references: post.references,
+      persona: input.persona, // ✅ 추가된 필드
+      tone: input.tone,       // ✅ 추가된 필드
+      onProgress: (msg) => console.log(`      > ${msg}`),
     });
 
     console.log("\n✨ 디버깅 프로세스가 성공적으로 완료되었습니다!");

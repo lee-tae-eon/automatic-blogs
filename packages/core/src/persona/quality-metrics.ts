@@ -70,6 +70,17 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 3, // 여행지 풍경 중요
     keywordDensity: [1.2, 2.2],
   },
+
+  "hollywood-reporter": {
+    targetLength: [1500, 2800],
+    headingCount: 5,
+    paragraphMaxLength: 150,
+    sentenceMaxLength: 70,
+    emojiUsage: "moderate",
+    tableRequired: false,
+    imageCount: 3,
+    keywordDensity: [1.5, 2.5],
+  },
 };
 
 // ============================================

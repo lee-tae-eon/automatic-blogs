@@ -10,12 +10,14 @@ export class NaverEditor {
   private tempDir: string;
   private topic: string;
   private tags: string[];
+  private persona: string;
 
   constructor(
     private page: Page,
     projectRoot: string,
     topic: string,
     tags: string[] = [],
+    persona: string = "informative"
   ) {
     this.tempDir = path.join(projectRoot, "temp_images");
     if (!fs.existsSync(this.tempDir)) {
@@ -23,6 +25,7 @@ export class NaverEditor {
     }
     this.topic = topic;
     this.tags = tags;
+    this.persona = persona;
   }
 
   /**
@@ -160,6 +163,12 @@ export class NaverEditor {
             break;
 
           case "image":
+            // ✅ 헐리우드 특파원 페르소나는 이미지 검색 생략 (스톡 이미지 부적절)
+            if (this.persona === "hollywood-reporter") {
+              console.log("ℹ️ [NaverEditor] 'hollywood-reporter' 페르소나는 Pexels 이미지 검색을 생략합니다.");
+              break;
+            }
+
             // ✅ 이미지 개수 제한 및 키워드 처리
             if (imageCount >= MAX_IMAGES) {
               console.log(

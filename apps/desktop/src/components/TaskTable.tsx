@@ -13,6 +13,8 @@ const personaOptions: { label: string; value: Persona }[] = [
   { label: "스토리텔링형", value: "storytelling" },
   { label: "친근형", value: "friendly" },
   { label: "체험형", value: "experiential" },
+  { label: "여행기", value: "travelLog" },
+  { label: "헐리우드특파원", value: "hollywood-reporter" },
 ];
 
 const toneOptions: { label: string; value: Tone }[] = [

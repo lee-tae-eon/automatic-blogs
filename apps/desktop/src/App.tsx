@@ -2,7 +2,7 @@ import React from "react";
 import "./App.scss";
 import { Header } from "./components/Header";
 import { useAppViewModel } from "./model/useAppViewModel";
-import { FileUploader } from "./components/FileUploader";
+import { ManualTaskInput } from "./components/ManualTaskInput";
 import { ActionButtons } from "./components/ActionButtons";
 import { TaskTable } from "./components/TaskTable";
 import { LogConsole } from "./components/LogConsole";
@@ -12,14 +12,16 @@ export const App: React.FC = () => {
   const { tasks, isProcessing, credentials, logs } = state;
 
   return (
-    <div className="container">
+    <div className="container" style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
       <Header
         credentials={credentials}
         onChange={actions.handleCredentialChange}
       />
 
-      <FileUploader onFileSelect={actions.processFile} />
+      {/* 메인 입력 영역: 2단 레이아웃 (트렌드 + 폼) */}
+      <ManualTaskInput onAddTask={actions.handleAddTask} />
 
+      {/* 제어 영역: 엑셀 업로드 및 실행 버튼 */}
       <ActionButtons
         hasTasks={tasks.length > 0}
         isProcessing={isProcessing}
@@ -27,8 +29,10 @@ export const App: React.FC = () => {
         onClear={actions.handleClearAll}
         onStop={actions.handleStop}
         onPublish={actions.handlePublishAll}
+        onFileUpload={actions.processFile}
       />
 
+      {/* 작업 목록 영역 */}
       <TaskTable
         tasks={tasks}
         onPersonaChange={actions.handlePersonaChange}

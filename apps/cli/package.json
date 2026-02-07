@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "ts-node src/index.ts",
+    "rebuild": "npm rebuild better-sqlite3",
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
