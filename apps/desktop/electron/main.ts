@@ -11,14 +11,16 @@ const isDev = !app.isPackaged || process.env.NODE_ENV === "development";
 
 // ✅ .env 로드 경로 최적화 (절대 경로 사용)
 const rootPath = path.join(__dirname, "../../..");
-const envPath = isDev 
-  ? path.join(rootPath, ".env") 
+const envPath = isDev
+  ? path.join(rootPath, ".env")
   : path.join(process.resourcesPath, ".env");
 
 dotenv.config({ path: envPath });
 
 console.log(`🌍 Environment loaded from: ${envPath}`);
-console.log(`🤖 Default Model: ${process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash"}`);
+console.log(
+  `🤖 Default Model: ${process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash"}`,
+);
 
 if (app.isPackaged) {
   // 빌드된 상태 (Production)
@@ -108,79 +110,97 @@ function registerIpcHandlers() {
   // [Discovery] 헐리우드 핫이슈 가져오기
   // ----------------------------------------
   ipcMain.handle("fetch-hollywood-trends", async (event, query?: string) => {
-    try {
-            const credentials: any = store.get("user-credentials");
-            const { geminiKey, subGemini } = credentials || {};
-            const apiKey = geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
-            const modelName = process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
-      
+    const credentials: any = store.get("user-credentials");
+    const { geminiKey, subGemini } = credentials || {};
 
-      if (!apiKey) throw new Error("API 키가 없습니다.");
+    // 사용 가능한 키 목록 생성
+    const apiKeys = [
+      geminiKey,
+      subGemini,
+      process.env.VITE_GEMINI_API_KEY,
+    ].filter((k) => !!k && k.trim() !== "");
 
-      const client = new GeminiClient(apiKey, modelName);
-      const tavily = new TavilyService();
-
-      // 1. 하이브리드 검색: Tavily와 Gemini Grounding 동시 실행
-      console.log(`🔍 하이브리드 검색 시작: '${query || "Hollywood Trends"}'`);
-
-      const [tavilyResults, geminiSearchResults] = await Promise.all([
-        tavily.fetchTrendingHollywood(query),
-        client.searchWithGrounding(
-          query || "Hollywood celebrity news gossip trending today",
-        ),
-      ]);
-
-      // 검색 결과가 둘 다 없으면 에러
-      if (
-        (!tavilyResults || tavilyResults.length === 0) &&
-        !geminiSearchResults
-      ) {
-        return {
-          success: false,
-          error: "모든 검색 엔진에서 정보를 가져오지 못했습니다.",
-        };
-      }
-
-      // 2. 데이터 병합 및 중복 제거를 위한 프롬프트 구성
-      const combinedData = `
-        [Source A: Tavily Search Results]
-        ${JSON.stringify(tavilyResults)}
-
-        [Source B: Google Search Results (Gemini Grounding)]
-        ${geminiSearchResults}
-      `;
-
-      const prompt = `
-        다음은 두 개의 서로 다른 검색 엔진(Tavily, Google)에서 수집한 헐리우드${query ? `('${query}' 관련)` : ""} 최신 뉴스 데이터입니다.
-        두 소스의 정보를 종합하고 분석하여, 한국의 블로그 독자들이 가장 흥미로워할 만한 **핵심 토픽 5개**를 선정해 주세요.
-
-        [지침]
-        1. **교차 검증**: 두 소스에 공통적으로 언급된 이슈는 신뢰도가 높으므로 우선순위를 두세요.
-        2. **최신성**: 가장 최근(몇 시간 내)에 발생한 속보를 1순위로 두세요.
-        3. **흥미성**: 단순 정보보다는 스캔들, 캐스팅 비화, 결별/열애 등 블로그 소재로 좋은 내용을 뽑으세요.
-        4. ${query ? `반드시 '${query}'와 직접적으로 관련된 내용이어야 합니다.` : "각 토픽은 중복되지 않고 서로 다른 사건이어야 합니다."}
-
-        [데이터 소스]
-        ${combinedData}
-
-        [출력 규칙]
-        1. 반드시 아래 JSON 배열 형식으로만 응답하세요.
-        2. 마크다운 코드 블록(\`\`\`json ...)을 사용하지 마세요.
-        3. 다른 부연 설명이나 텍스트를 절대 포함하지 마세요.
-
-        [형식]
-        [
-          { "topic": "주제(한글)", "summary": "짧은 요약(한글)", "keywords": ["키워드1", "키워드2"] },
-          ...
-        ]
-      `;
-
-      const topics = await client.generateJson<any[]>(prompt);
-      return { success: true, data: topics };
-    } catch (error: any) {
-      console.error("트렌드 가져오기 실패:", error);
-      return { success: false, error: error.message };
+    if (apiKeys.length === 0) {
+      return { success: false, error: "사용 가능한 API 키가 없습니다." };
     }
+
+    let lastError: any;
+
+    for (const apiKey of apiKeys) {
+      try {
+        console.log(
+          `🔍 하이브리드 검색 시도 (Key: ${apiKey.slice(0, 5)}...): '${query || "Hollywood Trends"}'`,
+        );
+
+        const modelName =
+          process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+        const client = new GeminiClient(apiKey, modelName);
+        const tavily = new TavilyService();
+
+        // 1. 하이브리드 검색: Tavily와 Gemini Grounding 동시 실행
+        const [tavilyResults, geminiSearchResults] = await Promise.all([
+          tavily.fetchTrendingHollywood(query),
+          client.searchWithGrounding(
+            query || "Hollywood celebrity news gossip trending today",
+          ),
+        ]);
+
+        // 검색 결과가 둘 다 없으면 에러
+        if (
+          (!tavilyResults || tavilyResults.length === 0) &&
+          !geminiSearchResults
+        ) {
+          console.warn(
+            `⚠️ 키(${apiKey.slice(0, 5)}...) 결과 없음. 다음 키 시도.`,
+          );
+          continue;
+        }
+
+        // 2. 데이터 병합 및 요약 프롬프트
+        const combinedData = `
+          [Source A: Tavily Search Results]
+          ${JSON.stringify(tavilyResults)}
+
+          [Source B: Google Search Results (Gemini Grounding)]
+          ${geminiSearchResults}
+        `;
+
+        const prompt = `
+          다음은 두 개의 서로 다른 검색 엔진에서 수집한 헐리우드${query ? `('${query}' 관련)` : ""} 최신 뉴스 데이터입니다.
+          한국 블로그 독자들이 흥미로워할 만한 핵심 토픽 5개를 선정하여 JSON 배열로 응답하세요.
+
+          [데이터 소스]
+          ${combinedData}
+
+          [출력 규칙]
+          1. 반드시 아래 JSON 배열 형식으로만 응답 (마크다운, 부연설명 절대 금지)
+          [
+            { "topic": "주제(한글)", "summary": "짧은 요약(한글)", "keywords": ["키워드1", "키워드2"] },
+            ...
+          ]
+        `;
+
+        const topics = await client.generateJson<any[]>(prompt);
+        return { success: true, data: topics };
+      } catch (error: any) {
+        lastError = error;
+        const errorMsg = error.message || "";
+        if (errorMsg.includes("429") || errorMsg.includes("limit")) {
+          console.warn(
+            `⚠️ 키(${apiKey.slice(0, 5)}...) 할당량 초과. 다음 키로 재시도합니다.`,
+          );
+          continue;
+        }
+        console.error(`❌ 키(${apiKey.slice(0, 5)}...) 에러 발생:`, errorMsg);
+        // 일반적인 에러의 경우 다음 키 시도
+        continue;
+      }
+    }
+
+    return {
+      success: false,
+      error: `모든 API 키가 할당량을 초과했거나 에러가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError?.message || ""})`,
+    };
   });
 
   // ----------------------------------------
