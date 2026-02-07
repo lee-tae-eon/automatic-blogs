@@ -78,6 +78,15 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   };
 
   return (
+    <>
+    <style>
+      {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+    </style>
     <div className="manual-input-container" style={{ 
       display: "grid",
       gridTemplateColumns: "350px 1fr",
@@ -131,8 +140,37 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
         <div style={{ 
           height: "300px", 
           overflowY: "auto",
-          paddingRight: "5px"
+          paddingRight: "5px",
+          position: "relative"
         }}>
+          {isFetchingTrends && (
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(255, 255, 255, 0.8)",
+              zIndex: 10,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              borderRadius: "8px"
+            }}>
+              <div className="spinner" style={{
+                width: "30px",
+                height: "30px",
+                border: "3px solid #f3f3f3",
+                borderTop: "3px solid #ff4757",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite"
+              }}></div>
+              <span style={{ fontSize: "0.85rem", color: "#ff4757", fontWeight: "bold" }}>하이브리드 엔진 검색 중...</span>
+            </div>
+          )}
+
           {trends.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -272,5 +310,6 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
         </form>
       </div>
     </div>
+    </>
   );
 };

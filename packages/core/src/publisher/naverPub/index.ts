@@ -70,13 +70,16 @@ export class NaverPublisher {
     html: string,
     references?: { name: string; url: string }[],
   ): string {
-    if (!references || references.length === 0) return html;
+    // 유효한 출처만 필터링 (이름과 URL이 모두 있어야 함)
+    const validRefs = (references || []).filter(ref => ref && ref.name?.trim() && ref.url?.trim());
+    
+    if (validRefs.length === 0) return html;
 
     const refHtml = `
       <br><hr><br>
       <p><strong>🔗 참고 자료 및 최신 뉴스 출처</strong></p>
       <ul>
-        ${references
+        ${validRefs
           .map(
             (ref) =>
               `<li><a href="${ref.url}" target="_blank" rel="noopener noreferrer">${ref.name} 기사 원문 보기</a></li>`,
@@ -221,7 +224,7 @@ export class NaverPublisher {
       await this.handleLogin(page, blogId, password, onProgress);
 
       // 2. 에디터 진입 및 초기화
-      const editor = new NaverEditor(page, this.projectRoot, title, tags);
+      const editor = new NaverEditor(page, this.projectRoot, title, tags, persona);
       onProgress?.("에디터 초기화 중...");
       await editor.clearPopups();
       await page.waitForTimeout(2000);

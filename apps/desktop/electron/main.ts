@@ -103,11 +103,6 @@ function registerIpcHandlers() {
   // ----------------------------------------
   ipcMain.handle("fetch-hollywood-trends", async (event, query?: string) => {
     try {
-      const tavily = new TavilyService();
-      const rawTrends = await tavily.fetchTrendingHollywood(query);
-      
-      if (rawTrends.length === 0) return { success: false, error: "뉴스를 가져오지 못했습니다." };
-
       const credentials: any = store.get("user-credentials");
       const { geminiKey, subGemini } = credentials || {};
       const apiKey = geminiKey || subGemini || process.env.GEMINI_API_KEY;
@@ -116,12 +111,43 @@ function registerIpcHandlers() {
       if (!apiKey) throw new Error("API 키가 없습니다.");
       
       const client = new GeminiClient(apiKey, modelName);
+      const tavily = new TavilyService();
+
+      // 1. 하이브리드 검색: Tavily와 Gemini Grounding 동시 실행
+      console.log(`🔍 하이브리드 검색 시작: '${query || "Hollywood Trends"}'`);
+      
+      const [tavilyResults, geminiSearchResults] = await Promise.all([
+        tavily.fetchTrendingHollywood(query),
+        client.searchWithGrounding(query || "Hollywood celebrity news gossip trending today"),
+      ]);
+
+      // 검색 결과가 둘 다 없으면 에러
+      if ((!tavilyResults || tavilyResults.length === 0) && !geminiSearchResults) {
+        return { success: false, error: "모든 검색 엔진에서 정보를 가져오지 못했습니다." };
+      }
+
+      // 2. 데이터 병합 및 중복 제거를 위한 프롬프트 구성
+      const combinedData = `
+        [Source A: Tavily Search Results]
+        ${JSON.stringify(tavilyResults)}
+
+        [Source B: Google Search Results (Gemini Grounding)]
+        ${geminiSearchResults}
+      `;
       
       const prompt = `
-        다음은 현재 헐리우드${query ? `('${query}' 관련)` : ""}에서 화제가 되는 뉴스 검색 결과들입니다.
-        이 뉴스들 중에서 한국의 블로그 독자들이 가장 흥미로워할 만한 개별 토픽 5개를 선정해 주세요.
-        ${query ? `반드시 '${query}'와 직접적으로 관련된 내용이어야 합니다.` : "각 토픽은 중복되지 않고 서로 다른 사건이어야 합니다."}
+        다음은 두 개의 서로 다른 검색 엔진(Tavily, Google)에서 수집한 헐리우드${query ? `('${query}' 관련)` : ""} 최신 뉴스 데이터입니다.
+        두 소스의 정보를 종합하고 분석하여, 한국의 블로그 독자들이 가장 흥미로워할 만한 **핵심 토픽 5개**를 선정해 주세요.
         
+        [지침]
+        1. **교차 검증**: 두 소스에 공통적으로 언급된 이슈는 신뢰도가 높으므로 우선순위를 두세요.
+        2. **최신성**: 가장 최근(몇 시간 내)에 발생한 속보를 1순위로 두세요.
+        3. **흥미성**: 단순 정보보다는 스캔들, 캐스팅 비화, 결별/열애 등 블로그 소재로 좋은 내용을 뽑으세요.
+        4. ${query ? `반드시 '${query}'와 직접적으로 관련된 내용이어야 합니다.` : "각 토픽은 중복되지 않고 서로 다른 사건이어야 합니다."}
+        
+        [데이터 소스]
+        ${combinedData}
+
         [출력 규칙]
         1. 반드시 아래 JSON 배열 형식으로만 응답하세요.
         2. 마크다운 코드 블록(\`\`\`json ...)을 사용하지 마세요.
@@ -132,9 +158,6 @@ function registerIpcHandlers() {
           { "topic": "주제(한글)", "summary": "짧은 요약(한글)", "keywords": ["키워드1", "키워드2"] },
           ...
         ]
-        
-        검색 결과:
-        ${JSON.stringify(rawTrends)}
       `;
 
       const topics = await client.generateJson<any[]>(prompt);

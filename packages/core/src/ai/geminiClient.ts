@@ -104,4 +104,36 @@ export class GeminiClient implements BaseAiClient {
       );
     }
   }
+
+  /**
+   * Gemini의 Google Search Grounding 기능을 사용하여 최신 정보를 검색합니다.
+   * @param query 검색어
+   */
+  async searchWithGrounding(query: string): Promise<string> {
+    try {
+      // 검색 기능을 위해 모델을 새로 인스턴스화 (tools 설정 필요)
+      const searchModel = this.genAI.getGenerativeModel({
+        model: "gemini-1.5-flash", // Grounding은 1.5 Flash 이상 권장
+        tools: [{ googleSearch: {} }] as any, // 구글 검색 도구 활성화 (타입 에러 방지를 위해 any 캐스팅)
+      });
+
+      const prompt = `
+        다음 주제에 대한 최신 뉴스, 가십, 트렌드를 구글에서 검색해서 자세히 알려줘.
+        주제: ${query}
+        
+        [요청사항]
+        - 현재 시점(Today)의 가장 핫한 이슈 위주로 찾아줘.
+        - 한국 블로그 독자들이 흥미로워할 만한 자극적이거나 화제가 되는 내용을 포함해줘.
+        - 검색 결과의 핵심 내용들을 요약해서 텍스트로 반환해줘.
+      `;
+
+      const result = await searchModel.generateContent(prompt);
+      const response = result.response;
+      return response.text();
+    } catch (error: any) {
+      console.warn("⚠️ Gemini Grounding 검색 실패 (Tavily로 대체 진행):", error.message);
+      // 검색 실패 시 빈 문자열 반환 (메인 로직에서 Tavily 결과만 사용하게 됨)
+      return "";
+    }
+  }
 }
