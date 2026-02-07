@@ -78,175 +78,199 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   };
 
   return (
-    <div className="manual-input-card" style={{ 
-      padding: "20px", 
+    <div className="manual-input-container" style={{ 
+      display: "grid",
+      gridTemplateColumns: "350px 1fr",
+      gap: "20px",
       backgroundColor: "#fff", 
-      borderRadius: "8px", 
-      border: "1px solid #dee2e6",
-      marginBottom: "20px"
+      borderRadius: "12px", 
+      border: "1px solid #e9ecef",
+      padding: "20px",
+      marginBottom: "20px",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.02)"
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", gap: "10px" }}>
-        <h3 style={{ margin: 0, fontSize: "1.1rem", whiteSpace: "nowrap" }}>📝 직접 작업 추가</h3>
-        <div style={{ display: "flex", gap: "5px", flex: 1, justifyContent: "flex-end" }}>
-          <input 
-            type="text" 
-            placeholder="배우 이름 또는 주제 (선택)" 
-            value={trendQuery}
-            onChange={(e) => setTrendQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && fetchTrends()}
-            style={{ 
-              padding: "6px 10px", 
-              fontSize: "0.8rem", 
-              borderRadius: "4px", 
-              border: "1px solid #ced4da",
-              width: "180px"
-            }}
-          />
-          <button 
-            onClick={fetchTrends}
-            disabled={isFetchingTrends}
-            style={{ 
-              padding: "6px 12px", 
-              fontSize: "0.8rem", 
-              backgroundColor: "#ff4757", 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "4px",
-              cursor: "pointer",
-              opacity: isFetchingTrends ? 0.6 : 1,
-              whiteSpace: "nowrap"
-            }}
-          >
-            {isFetchingTrends ? "🔍 분석 중..." : "🔥 이슈 찾기"}
-          </button>
+      {/* 왼쪽: 헐리우드 트렌드 탐색 */}
+      <div className="trends-section" style={{ borderRight: "1px solid #f1f3f5", paddingRight: "20px" }}>
+        <div style={{ marginBottom: "15px" }}>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: "1rem", color: "#212529" }}>🔥 헐리우드 핫이슈</h3>
+          <div style={{ display: "flex", gap: "5px" }}>
+            <input 
+              type="text" 
+              placeholder="배우/주제 검색..." 
+              value={trendQuery}
+              onChange={(e) => setTrendQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchTrends()}
+              style={{ 
+                flex: 1,
+                padding: "8px 12px", 
+                fontSize: "0.85rem", 
+                borderRadius: "6px", 
+                border: "1px solid #dee2e6",
+                outline: "none"
+              }}
+            />
+            <button 
+              onClick={fetchTrends}
+              disabled={isFetchingTrends}
+              style={{ 
+                padding: "8px 15px", 
+                fontSize: "0.85rem", 
+                backgroundColor: "#ff4757", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold"
+              }}
+            >
+              {isFetchingTrends ? "..." : "검색"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ 
+          height: "300px", 
+          overflowY: "auto",
+          paddingRight: "5px"
+        }}>
+          {trends.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "0.75rem", color: "#adb5bd" }}>추천 토픽 ({trends.length})</span>
+                <button onClick={clearTrends} style={{ background: "none", border: "none", color: "#adb5bd", fontSize: "0.75rem", cursor: "pointer" }}>초기화</button>
+              </div>
+              {trends.map((t, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => selectTrend(t)}
+                  style={{ 
+                    padding: "12px", 
+                    backgroundColor: "#f8f9fa", 
+                    border: "1px solid #e9ecef", 
+                    borderRadius: "8px", 
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fff5f5";
+                    e.currentTarget.style.borderColor = "#feb2b2";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f8f9fa";
+                    e.currentTarget.style.borderColor = "#e9ecef";
+                  }}
+                >
+                  <strong style={{ fontSize: "0.9rem", display: "block", marginBottom: "4px", color: "#2d3436" }}>{t.topic}</strong>
+                  <div style={{ fontSize: "0.8rem", color: "#636e72", lineHeight: "1.4" }}>{t.summary}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ 
+              height: "100%", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center", 
+              color: "#adb5bd",
+              fontSize: "0.85rem",
+              textAlign: "center",
+              border: "2px dashed #f1f3f5",
+              borderRadius: "8px"
+            }}>
+              이슈를 검색하여<br/>빠르게 주제를 선정하세요
+            </div>
+          )}
         </div>
       </div>
 
-      {trends.length > 0 && (
-        <div style={{ 
-          marginBottom: "20px", 
-          padding: "10px", 
-          backgroundColor: "#fff5f5", 
-          borderRadius: "6px", 
-          border: "1px solid #feb2b2",
-          position: "relative"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-            <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: "bold", color: "#c53030" }}>추천 토픽 (클릭 시 자동 입력)</p>
-            <button 
-              onClick={clearTrends}
-              style={{ background: "none", border: "none", color: "#e53e3e", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline" }}
+      {/* 오른쪽: 직접 입력 폼 */}
+      <div className="form-section">
+        <h3 style={{ margin: "0 0 20px 0", fontSize: "1rem", color: "#212529" }}>📝 작업 상세 정보</h3>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+          <div className="form-group" style={{ gridColumn: "span 2" }}>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>포스팅 주제</label>
+            <input
+              type="text"
+              placeholder="블로그 포스트 주제를 입력하거나 왼쪽 이슈를 클릭하세요"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+            />
+          </div>
+          
+          <div className="form-group">
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>키워드</label>
+            <input
+              type="text"
+              placeholder="쉼표로 구분"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>카테고리</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>페르소나</label>
+            <select 
+              value={persona} 
+              onChange={(e) => setPersona(e.target.value as Persona)}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
             >
-              닫기
+              <option value="informative">정보형</option>
+              <option value="empathetic">공감형</option>
+              <option value="storytelling">스토리텔링형</option>
+              <option value="friendly">친근형</option>
+              <option value="experiential">체험형</option>
+              <option value="travelLog">여행기</option>
+              <option value="hollywood-reporter">헐리우드특파원</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>톤앤매너</label>
+            <select 
+              value={tone} 
+              onChange={(e) => setTone(e.target.value as Tone)}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
+            >
+              <option value="professional">전문적인</option>
+              <option value="witty">재치있는</option>
+              <option value="candid">솔직담백한</option>
+              <option value="energetic">활기찬</option>
+              <option value="serious">냉철한</option>
+              <option value="incisive">비판적인</option>
+            </select>
+          </div>
+
+          <div style={{ gridColumn: "span 2", textAlign: "right", marginTop: "10px" }}>
+            <button 
+              type="submit"
+              style={{ 
+                padding: "12px 30px", 
+                backgroundColor: "#03c75a", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "6px", 
+                fontWeight: "bold",
+                cursor: "pointer",
+                boxShadow: "0 2px 4px rgba(3, 199, 90, 0.2)"
+              }}
+            >
+              대기열에 추가하기
             </button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {trends.map((t, i) => (
-              <div 
-                key={i} 
-                onClick={() => selectTrend(t)}
-                style={{ 
-                  padding: "8px", 
-                  backgroundColor: "#fff", 
-                  border: "1px solid #fed7d7", 
-                  borderRadius: "4px", 
-                  cursor: "pointer",
-                  fontSize: "0.85rem"
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#fff5f5"}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-              >
-                <strong>{t.topic}</strong>
-                <div style={{ fontSize: "0.75rem", color: "#718096", marginTop: "2px" }}>{t.summary}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
-        <div className="form-group" style={{ gridColumn: "span 2" }}>
-          <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px" }}>주제 (Topic)</label>
-          <input
-            type="text"
-            placeholder="블로그 포스트 주제를 입력하세요"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ced4da" }}
-          />
-        </div>
-        
-        <div className="form-group">
-          <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px" }}>키워드 (쉼표로 구분)</label>
-          <input
-            type="text"
-            placeholder="키워드1, 키워드2..."
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ced4da" }}
-          />
-        </div>
-
-        <div className="form-group">
-          <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px" }}>카테고리</label>
-          <input
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ced4da" }}
-          />
-        </div>
-
-        <div className="form-group">
-          <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px" }}>페르소나</label>
-          <select 
-            value={persona} 
-            onChange={(e) => setPersona(e.target.value as Persona)}
-            style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ced4da" }}
-          >
-            <option value="informative">정보형</option>
-            <option value="empathetic">공감형</option>
-            <option value="storytelling">스토리텔링형</option>
-            <option value="friendly">친근형</option>
-            <option value="experiential">체험형</option>
-            <option value="travelLog">여행기</option>
-            <option value="hollywood-reporter">헐리우드특파원</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "5px" }}>톤앤매너</label>
-          <select 
-            value={tone} 
-            onChange={(e) => setTone(e.target.value as Tone)}
-            style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ced4da" }}
-          >
-            <option value="professional">전문적인</option>
-            <option value="witty">재치있는</option>
-            <option value="candid">솔직담백한</option>
-            <option value="energetic">활기찬</option>
-            <option value="serious">냉철한</option>
-            <option value="incisive">비판적인</option>
-          </select>
-        </div>
-
-        <div style={{ gridColumn: "span 2", textAlign: "right" }}>
-          <button 
-            type="submit"
-            style={{ 
-              padding: "10px 20px", 
-              backgroundColor: "#03c75a", 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "4px", 
-              fontWeight: "bold",
-              cursor: "pointer"
-            }}
-          >
-            추가하기
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
