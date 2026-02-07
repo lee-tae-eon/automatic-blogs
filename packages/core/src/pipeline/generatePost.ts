@@ -167,6 +167,8 @@ export async function generatePost({
       const rawPublication: Publication = {
         ...aiPost,
         category: task.category,
+        persona: task.persona,
+        tone: task.tone,
         createdAt: new Date().toISOString(),
       };
       

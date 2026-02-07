@@ -348,21 +348,37 @@ function registerIpcHandlers() {
         const userDataPath = app.getPath("userData");
         currentPublisher = new NaverPublisher(userDataPath);
 
-        await currentPublisher.postToBlog({
-          blogId,
-          password,
-          title: post.title,
-          htmlContent,
-          tags: post.tags || post.focusKeywords || [],
-          category: post.category,
-          references: post.references,
-          persona: post.persona, // 수정
-          tone: post.tone, // 수정
-          headless: post.headless, // UI에서 전달받은 headless 옵션 적용
-          onProgress: (message: string) => {
-            event.sender.send("process-log", message);
-          },
-        });
+                await currentPublisher.postToBlog({
+
+                  blogId,
+
+                  password,
+
+                  title: post.title,
+
+                  htmlContent,
+
+                  tags: post.tags || post.focusKeywords || [],
+
+                  category: post.category,
+
+                  references: post.references,
+
+                  persona: post.persona, // 타입 확장으로 이제 확실히 전달됨
+
+                  tone: post.tone,
+
+                  headless: post.headless, // UI에서 전달받은 headless 옵션 적용
+
+                  onProgress: (message: string) => {
+
+                    event.sender.send("process-log", message);
+
+                  },
+
+                });
+
+        
 
         return { success: true };
       }, globalAbortController);
