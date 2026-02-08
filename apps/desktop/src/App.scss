@@ -13,9 +13,6 @@
 }
 
 .app-header {
-  display: flex;
-  justify-content: space-between; // 제목은 왼쪽, 설정은 오른쪽
-  align-items: flex-start;
   margin-bottom: 20px;
 
   h1 {
@@ -36,7 +33,7 @@
   .platform-group {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 20px;
 
     .label {
       width: 60px;

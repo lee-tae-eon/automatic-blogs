@@ -18,10 +18,14 @@ export const useAppViewModel = () => {
   const [credentials, setCredentials] = useState({
     naverId: "",
     naverPw: "",
+    tistoryId: "",
+    tistoryToken: "",
     geminiKey: "",
     subGemini: "",
     headless: false,
     modelType: "normal" as "fast" | "normal",
+    enableNaver: true,
+    enableTistory: false,
   });
 
   // 1. 초기 로드
@@ -37,6 +41,8 @@ export const useAppViewModel = () => {
           ...storedCreds,
           headless: storedCreds.headless ?? false,
           modelType: storedCreds.modelType ?? "normal",
+          enableNaver: storedCreds.enableNaver ?? true,
+          enableTistory: storedCreds.enableTistory ?? false,
         }));
       }
       setIsStoreLoaded(true);
@@ -234,11 +240,38 @@ export const useAppViewModel = () => {
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
         // 발행
-        const pubResult = await window.ipcRenderer.invoke("publish-post", {
-          ...genResult.data,
-          headless: credentials.headless,
-        });
-        if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
+        const publishTasks: Promise<any>[] = [];
+
+        if (credentials.enableNaver) {
+          publishTasks.push(
+            window.ipcRenderer.invoke("publish-post", {
+              ...genResult.data,
+              platform: "naver",
+              blogId: credentials.naverId,
+              password: credentials.naverPw,
+              headless: credentials.headless,
+            }),
+          );
+        }
+
+        if (credentials.enableTistory) {
+          publishTasks.push(
+            window.ipcRenderer.invoke("publish-post", {
+              ...genResult.data,
+              platform: "tistory",
+              blogId: credentials.tistoryId,
+              accessToken: credentials.tistoryToken,
+            }),
+          );
+        }
+
+        if (publishTasks.length === 0) {
+          throw new Error("발행할 플랫폼이 선택되지 않았습니다.");
+        }
+
+        const pubResults = await Promise.all(publishTasks);
+        const failedPub = pubResults.find((r) => !r.success);
+        if (failedPub) throw new Error(failedPub.error || "발행 실패");
 
         addLog(`[${i + 1}] 완료: ${task.topic}`);
         // 2. 완료 상태 반영

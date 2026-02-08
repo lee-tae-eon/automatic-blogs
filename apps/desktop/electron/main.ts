@@ -35,6 +35,7 @@ import {
   generatePost,
   ExcelProcessor,
   NaverPublisher,
+  TistoryPublisher,
   markdownToHtml,
   GeminiClient,
   TavilyService,
@@ -446,66 +447,113 @@ function registerIpcHandlers() {
     }
   });
 
-  // ----------------------------------------
-  // [Naver] 블로그 발행
-  // ----------------------------------------
-  ipcMain.handle("publish-post", async (event, post) => {
-    globalAbortController = new AbortController();
+    // ----------------------------------------
 
-    try {
-      return await runWithAbort(async () => {
-        const credentials: any = store.get("user-credentials");
-        const blogId = credentials?.naverId || process.env.NAVER_BLOG_ID;
-        const password = credentials?.naverPw || process.env.NAVER_PASSWORD;
+    // [Blog] 블로그 발행 (Multi-Platform)
 
-        if (!blogId || !password) {
-          throw new Error("네이버 계정 정보가 없습니다.");
+    // ----------------------------------------
+
+    ipcMain.handle("publish-post", async (event, payload) => {
+
+      globalAbortController = new AbortController();
+
+  
+
+      try {
+
+        return await runWithAbort(async () => {
+
+          const { platform, blogId, password, accessToken, headless, ...postData } = payload;
+
+          const userDataPath = app.getPath("userData");
+
+          
+
+          let publisher;
+
+          const publishOptions: any = {
+
+            blogId,
+
+            onProgress: (message: string) => {
+
+              event.sender.send("process-log", `[${platform.toUpperCase()}] ${message}`);
+
+            },
+
+          };
+
+  
+
+          if (platform === "tistory") {
+
+            publisher = new TistoryPublisher();
+
+            publishOptions.accessToken = accessToken;
+
+          } else {
+
+            // Default: Naver
+
+            currentPublisher = new NaverPublisher(userDataPath);
+
+            publisher = currentPublisher;
+
+            publishOptions.password = password;
+
+            publishOptions.headless = headless;
+
+          }
+
+  
+
+          // 마크다운을 HTML로 변환 (이미 되어있을 수도 있지만 안전을 위해)
+
+          // 만약 postData.content가 이미 HTML이라면 markdownToHtml이 그대로 반환하거나 처리할 것임
+
+          const htmlContent = await markdownToHtml(postData.content);
+
+          
+
+          await publisher.publish(publishOptions, {
+
+            ...postData,
+
+            content: htmlContent,
+
+            tags: postData.tags || postData.focusKeywords || [],
+
+          });
+
+  
+
+          return { success: true };
+
+        }, globalAbortController);
+
+      } catch (error: any) {
+
+        if (error.message === "AbortError") {
+
+          return { success: false, error: "AbortError" };
+
         }
 
-        const htmlContent = await markdownToHtml(post.content);
-        const userDataPath = app.getPath("userData");
-        currentPublisher = new NaverPublisher(userDataPath);
+        console.error(`❌ [${payload.platform}] 발행 실패:`, error);
 
-        await currentPublisher.postToBlog({
-          blogId,
+        return { success: false, error: error.message };
 
-          password,
+      } finally {
 
-          title: post.title,
+        currentPublisher = null;
 
-          htmlContent,
+        globalAbortController = null;
 
-          tags: post.tags || post.focusKeywords || [],
-
-          category: post.category,
-
-          references: post.references,
-
-          persona: post.persona, // 타입 확장으로 이제 확실히 전달됨
-
-          tone: post.tone,
-
-          headless: post.headless, // UI에서 전달받은 headless 옵션 적용
-
-          onProgress: (message: string) => {
-            event.sender.send("process-log", message);
-          },
-        });
-
-        return { success: true };
-      }, globalAbortController);
-    } catch (error: any) {
-      if (error.message === "AbortError") {
-        console.log("⚠️ 발행 작업이 사용자에 의해 중단되었습니다.");
-        return { success: false, error: "AbortError" };
       }
-      console.error("❌ 발행 실패:", error);
-      return { success: false, error: error.message };
-    } finally {
-      currentPublisher = null;
-      globalAbortController = null;
-    }
-  });
+
+    });
+
+  
 
   // ----------------------------------------
   // [Excel] 작업 상태 업데이트
