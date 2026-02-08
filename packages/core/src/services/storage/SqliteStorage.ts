@@ -67,6 +67,13 @@ export class SqliteStorage implements IStorage {
     };
   }
 
+  deleteNews(topic: string): void {
+    const stmt = this.db.prepare(`
+      DELETE FROM news_cache WHERE topic = ?
+    `);
+    stmt.run(topic);
+  }
+
   savePost(topic: string, persona: string, tone: string, publication: any): void {
     const stmt = this.db.prepare(`
       INSERT INTO post_cache (topic, persona, tone, content)

@@ -188,6 +188,16 @@ export async function generatePost({
       console.error(`[GeneratePost] Error:`, error);
       lastError = error;
 
+      // 🚨 에러 발생 시 뉴스 캐시 무효화 (다음 시도 시 깨끗한 상태로 검색)
+      try {
+        const dbPath = projectRoot || process.cwd();
+        const db = new DbService(dbPath);
+        console.warn(`⚠️ [GeneratePost] 에러 발생으로 인해 '${task.topic}'의 뉴스 캐시를 삭제합니다.`);
+        db.deleteNews(task.topic);
+      } catch (dbError) {
+        console.error("❌ 뉴스 캐시 삭제 실패:", dbError);
+      }
+
       // 429 에러(Quota Exceeded)인 경우 재시도하지 않고 즉시 상위로 던져서 모델 변경을 유도함
       const errorMsg = error instanceof Error ? error.message : String(error);
       if (

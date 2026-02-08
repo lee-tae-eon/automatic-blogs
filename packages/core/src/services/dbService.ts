@@ -28,6 +28,10 @@ export class DbService implements IStorage {
     return this.storage.getRecentNews(topic);
   }
 
+  deleteNews(topic: string): void {
+    this.storage.deleteNews(topic);
+  }
+
   savePost(topic: string, persona: string, tone: string, publication: any): void {
     this.storage.savePost(topic, persona, tone, publication);
   }

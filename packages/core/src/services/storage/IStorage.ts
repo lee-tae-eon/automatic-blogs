@@ -22,6 +22,11 @@ export interface IStorage {
   getRecentNews(topic: string): NewsCache | null;
 
   /**
+   * 뉴스 데이터 삭제 (에러 발생 시 캐시 무효화용)
+   */
+  deleteNews(topic: string): void;
+
+  /**
    * 생성된 포스트 저장
    */
   savePost(topic: string, persona: string, tone: string, publication: any): void;

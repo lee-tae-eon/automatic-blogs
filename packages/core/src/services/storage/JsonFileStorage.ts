@@ -61,6 +61,13 @@ export class JsonFileStorage implements IStorage {
     return this.data.news[topic] || null;
   }
 
+  deleteNews(topic: string): void {
+    if (this.data.news[topic]) {
+      delete this.data.news[topic];
+      this.save();
+    }
+  }
+
   savePost(topic: string, persona: string, tone: string, publication: any): void {
     const key = `${topic}_${persona}_${tone}`;
     this.data.posts[key] = {

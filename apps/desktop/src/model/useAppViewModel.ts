@@ -21,6 +21,7 @@ export const useAppViewModel = () => {
     geminiKey: "",
     subGemini: "",
     headless: false,
+    modelType: "normal" as "fast" | "normal",
   });
 
   // 1. 초기 로드
@@ -31,10 +32,11 @@ export const useAppViewModel = () => {
         "user-credentials",
       );
       if (storedCreds) {
-        setCredentials((prev) => ({ 
-          ...prev, 
+        setCredentials((prev) => ({
+          ...prev,
           ...storedCreds,
-          headless: storedCreds.headless ?? false 
+          headless: storedCreds.headless ?? false,
+          modelType: storedCreds.modelType ?? "normal",
         }));
       }
       setIsStoreLoaded(true);
@@ -67,11 +69,15 @@ export const useAppViewModel = () => {
   }, []);
 
   // 4. 핸들러들
-  const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setCredentials((prev) => ({ 
-      ...prev, 
-      [name]: type === "checkbox" ? checked : value 
+  const handleCredentialChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setCredentials((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -201,7 +207,7 @@ export const useAppViewModel = () => {
       }
 
       if (task.status === "완료") {
-        addLog(`[${i + 1}] 이미 완료된 항목입니다: ${task.keyword}`);
+        addLog(`[${i + 1}] 이미 완료된 항목입니다: ${task.topic}`);
         continue;
       }
 
@@ -211,12 +217,15 @@ export const useAppViewModel = () => {
 
       try {
         // 생성
-        const genResult = await window.ipcRenderer.invoke(
-          "generate-post",
-          tasks[i],
-        );
+        const genResult = await window.ipcRenderer.invoke("generate-post", {
+          ...tasks[i],
+          modelType: credentials.modelType, // 글로벌 설정값 적용
+        });
 
-        if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
+        if (
+          shouldStopRef.current ||
+          abortControllerRef.current?.signal.aborted
+        ) {
           addLog(`[${i + 1}] 중단됨: ${task.topic}`);
           await updateTaskState(i, { status: "대기" });
           break;
@@ -225,13 +234,10 @@ export const useAppViewModel = () => {
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
         // 발행
-        const pubResult = await window.ipcRenderer.invoke(
-          "publish-post",
-          {
-            ...genResult.data,
-            headless: credentials.headless
-          }
-        );
+        const pubResult = await window.ipcRenderer.invoke("publish-post", {
+          ...genResult.data,
+          headless: credentials.headless,
+        });
         if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
 
         addLog(`[${i + 1}] 완료: ${task.topic}`);

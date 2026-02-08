@@ -271,15 +271,22 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
       {/* 오른쪽: 직접 입력 폼 */}
       <div className="form-section">
         <h3 style={{ margin: "0 0 20px 0", fontSize: "1rem", color: "#212529" }}>📝 작업 상세 정보</h3>
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+        <form onSubmit={handleSubmit} style={{ 
+          display: "grid", 
+          gridTemplateColumns: "1fr 1fr", 
+          gap: "20px",
+          width: "100%"
+        }}>
           <div className="form-group" style={{ gridColumn: "span 2" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>포스팅 주제</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              포스팅 주제 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <input
               type="text"
               placeholder="블로그 포스트 주제를 입력하거나 왼쪽 이슈를 클릭하세요"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
           
@@ -290,26 +297,30 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               placeholder="쉼표로 구분"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>카테고리</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              카테고리 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <input
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>페르소나</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              페르소나 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <select 
               value={persona} 
               onChange={(e) => setPersona(e.target.value as Persona)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
               <option value="informative">정보형</option>
               <option value="empathetic">공감형</option>
@@ -322,11 +333,13 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>톤앤매너</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              톤앤매너 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <select 
               value={tone} 
               onChange={(e) => setTone(e.target.value as Tone)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
               <option value="professional">전문적인</option>
               <option value="witty">재치있는</option>

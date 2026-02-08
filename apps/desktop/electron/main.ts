@@ -133,7 +133,14 @@ function registerIpcHandlers() {
         );
 
         const modelName =
-          process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+          credentials.modelType === "fast"
+            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+        console.log(
+          `🤖 검색 엔진 모델: ${modelName} (${credentials.modelType || "normal"})`,
+        );
+
         const client = new GeminiClient(apiKey, modelName);
         const tavily = new TavilyService();
 
@@ -229,7 +236,14 @@ function registerIpcHandlers() {
         );
 
         const modelName =
-          process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+          credentials.modelType === "fast"
+            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+        console.log(
+          `🤖 검색 엔진 모델: ${modelName} (${credentials.modelType || "normal"})`,
+        );
+
         const client = new GeminiClient(apiKey, modelName);
         const tavily = new TavilyService();
 
@@ -237,7 +251,8 @@ function registerIpcHandlers() {
         const [tavilyResults, geminiSearchResults] = await Promise.all([
           tavily.fetchTrendingKorea(query),
           client.searchWithGrounding(
-            query || "오늘 대한민국 실시간 인기 검색어 핫이슈 뉴스 트렌드 커뮤니티 반응",
+            query ||
+              "오늘 대한민국 실시간 인기 검색어 핫이슈 뉴스 트렌드 커뮤니티 반응",
           ),
         ]);
 
@@ -373,8 +388,18 @@ function registerIpcHandlers() {
               throw new Error("AbortError");
 
             console.log(`🔑 Key 사용 시도: ${apiKey.slice(0, 5)}...`);
+
+            // 글로벌 설정 또는 태스크별 설정 사용
+            const selectedModelType = task.modelType || credentials.modelType;
             const modelName =
-              process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+              selectedModelType === "fast"
+                ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+                : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+            console.log(
+              `🤖 생성 엔진 모델: ${modelName} (${selectedModelType || "normal"})`,
+            );
+
             const geminiClient = new GeminiClient(apiKey, modelName);
 
             publication = await generatePost({
@@ -441,37 +466,31 @@ function registerIpcHandlers() {
         const userDataPath = app.getPath("userData");
         currentPublisher = new NaverPublisher(userDataPath);
 
-                await currentPublisher.postToBlog({
+        await currentPublisher.postToBlog({
+          blogId,
 
-                  blogId,
+          password,
 
-                  password,
+          title: post.title,
 
-                  title: post.title,
+          htmlContent,
 
-                  htmlContent,
+          tags: post.tags || post.focusKeywords || [],
 
-                  tags: post.tags || post.focusKeywords || [],
+          category: post.category,
 
-                  category: post.category,
+          references: post.references,
 
-                  references: post.references,
+          persona: post.persona, // 타입 확장으로 이제 확실히 전달됨
 
-                  persona: post.persona, // 타입 확장으로 이제 확실히 전달됨
+          tone: post.tone,
 
-                  tone: post.tone,
+          headless: post.headless, // UI에서 전달받은 headless 옵션 적용
 
-                  headless: post.headless, // UI에서 전달받은 headless 옵션 적용
-
-                  onProgress: (message: string) => {
-
-                    event.sender.send("process-log", message);
-
-                  },
-
-                });
-
-        
+          onProgress: (message: string) => {
+            event.sender.send("process-log", message);
+          },
+        });
 
         return { success: true };
       }, globalAbortController);
