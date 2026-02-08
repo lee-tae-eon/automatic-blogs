@@ -485,25 +485,55 @@ function registerIpcHandlers() {
 
   
 
-          if (platform === "tistory") {
+                  if (platform === "tistory") {
 
-            publisher = new TistoryPublisher();
+  
 
-            publishOptions.accessToken = accessToken;
+                    currentPublisher = new TistoryPublisher(userDataPath) as any;
 
-          } else {
+  
 
-            // Default: Naver
+                    publisher = currentPublisher;
 
-            currentPublisher = new NaverPublisher(userDataPath);
+  
 
-            publisher = currentPublisher;
+                    publishOptions.password = password;
 
-            publishOptions.password = password;
+  
 
-            publishOptions.headless = headless;
+                    publishOptions.headless = headless;
 
-          }
+  
+
+                  } else {
+
+  
+
+                    // Default: Naver
+
+  
+
+                    currentPublisher = new NaverPublisher(userDataPath);
+
+  
+
+                    publisher = currentPublisher;
+
+  
+
+                    publishOptions.password = password;
+
+  
+
+                    publishOptions.headless = headless;
+
+  
+
+                  }
+
+  
+
+          
 
   
 

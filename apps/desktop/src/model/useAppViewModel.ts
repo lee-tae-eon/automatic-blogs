@@ -19,7 +19,7 @@ export const useAppViewModel = () => {
     naverId: "",
     naverPw: "",
     tistoryId: "",
-    tistoryToken: "",
+    tistoryPw: "",
     geminiKey: "",
     subGemini: "",
     headless: false,
@@ -43,6 +43,7 @@ export const useAppViewModel = () => {
           modelType: storedCreds.modelType ?? "normal",
           enableNaver: storedCreds.enableNaver ?? true,
           enableTistory: storedCreds.enableTistory ?? false,
+          tistoryPw: storedCreds.tistoryPw || storedCreds.tistoryToken || "", // 마이그레이션 호환성
         }));
       }
       setIsStoreLoaded(true);
@@ -260,7 +261,7 @@ export const useAppViewModel = () => {
               ...genResult.data,
               platform: "tistory",
               blogId: credentials.tistoryId,
-              accessToken: credentials.tistoryToken,
+              password: credentials.tistoryPw,
             }),
           );
         }

@@ -9,7 +9,7 @@ interface HeaderProps {
     headless: boolean;
     modelType: "fast" | "normal";
     tistoryId: string;
-    tistoryToken: string;
+    tistoryPw: string;
     enableNaver: boolean;
     enableTistory: boolean;
   };
@@ -165,10 +165,10 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
                 }}
               />
               <input
-                name="tistoryToken"
+                name="tistoryPw"
                 type="password"
-                placeholder="Access Token"
-                value={credentials.tistoryToken}
+                placeholder="비밀번호"
+                value={credentials.tistoryPw}
                 onChange={onChange}
                 disabled={!credentials.enableTistory}
                 style={{
