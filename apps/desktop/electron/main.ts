@@ -447,143 +447,91 @@ function registerIpcHandlers() {
     }
   });
 
-    // ----------------------------------------
+  // ----------------------------------------
 
-    // [Blog] 블로그 발행 (Multi-Platform)
+  // [Blog] 블로그 발행 (Multi-Platform)
 
-    // ----------------------------------------
+  // ----------------------------------------
 
-    ipcMain.handle("publish-post", async (event, payload) => {
+  ipcMain.handle("publish-post", async (event, payload) => {
+    globalAbortController = new AbortController();
 
-      globalAbortController = new AbortController();
+    try {
+      return await runWithAbort(async () => {
+        const {
+          platform,
+          blogId,
+          password,
+          accessToken,
+          headless,
+          ...postData
+        } = payload;
 
-  
+        const userDataPath = app.getPath("userData");
 
-      try {
+        let publisher;
 
-        return await runWithAbort(async () => {
+        const publishOptions: any = {
+          blogId,
 
-          const { platform, blogId, password, accessToken, headless, ...postData } = payload;
+          onProgress: (message: string) => {
+            event.sender.send(
+              "process-log",
+              `[${platform.toUpperCase()}] ${message}`,
+            );
+          },
+        };
 
-          const userDataPath = app.getPath("userData");
+        if (platform === "tistory") {
+          currentPublisher = new TistoryPublisher(userDataPath) as any;
 
-          
+          publisher = currentPublisher;
 
-          let publisher;
+          publishOptions.password = password;
 
-          const publishOptions: any = {
+          publishOptions.headless = headless;
+        } else {
+          // Default: Naver
 
-            blogId,
+          currentPublisher = new NaverPublisher(userDataPath);
 
-            onProgress: (message: string) => {
+          publisher = currentPublisher;
 
-              event.sender.send("process-log", `[${platform.toUpperCase()}] ${message}`);
+          publishOptions.password = password;
 
-            },
-
-          };
-
-  
-
-                  if (platform === "tistory") {
-
-  
-
-                    currentPublisher = new TistoryPublisher(userDataPath) as any;
-
-  
-
-                    publisher = currentPublisher;
-
-  
-
-                    publishOptions.password = password;
-
-  
-
-                    publishOptions.headless = headless;
-
-  
-
-                  } else {
-
-  
-
-                    // Default: Naver
-
-  
-
-                    currentPublisher = new NaverPublisher(userDataPath);
-
-  
-
-                    publisher = currentPublisher;
-
-  
-
-                    publishOptions.password = password;
-
-  
-
-                    publishOptions.headless = headless;
-
-  
-
-                  }
-
-  
-
-          
-
-  
-
-          // 마크다운을 HTML로 변환 (이미 되어있을 수도 있지만 안전을 위해)
-
-          // 만약 postData.content가 이미 HTML이라면 markdownToHtml이 그대로 반환하거나 처리할 것임
-
-          const htmlContent = await markdownToHtml(postData.content);
-
-          
-
-          await publisher.publish(publishOptions, {
-
-            ...postData,
-
-            content: htmlContent,
-
-            tags: postData.tags || postData.focusKeywords || [],
-
-          });
-
-  
-
-          return { success: true };
-
-        }, globalAbortController);
-
-      } catch (error: any) {
-
-        if (error.message === "AbortError") {
-
-          return { success: false, error: "AbortError" };
-
+          publishOptions.headless = headless;
         }
 
-        console.error(`❌ [${payload.platform}] 발행 실패:`, error);
+        // 마크다운을 HTML로 변환 (이미 되어있을 수도 있지만 안전을 위해)
 
-        return { success: false, error: error.message };
+        // 만약 postData.content가 이미 HTML이라면 markdownToHtml이 그대로 반환하거나 처리할 것임
 
-      } finally {
+        const htmlContent = await markdownToHtml(postData.content);
 
-        currentPublisher = null;
+        await publisher?.publish(publishOptions, {
+          ...postData,
 
-        globalAbortController = null;
+          content: htmlContent,
 
+          tags: postData.tags || postData.focusKeywords || [],
+        });
+
+        return { success: true };
+      }, globalAbortController);
+    } catch (error: any) {
+      if (error.message === "AbortError") {
+        return { success: false, error: "AbortError" };
       }
 
-    });
+      console.error(`❌ [${payload.platform}] 발행 실패:`, error);
 
-  
+      return { success: false, error: error.message };
+    } finally {
+      currentPublisher = null;
+
+      globalAbortController = null;
+    }
+  });
 
   // ----------------------------------------
   // [Excel] 작업 상태 업데이트
