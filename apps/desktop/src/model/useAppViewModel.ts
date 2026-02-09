@@ -269,15 +269,16 @@ export const useAppViewModel = () => {
   /**
    * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
    */
-  const handleStartWithKeyword = async (analysis: any) => {
+  const handleStartWithKeyword = async (analysis: any, category: string) => {
     if (isProcessing) return;
 
     setIsProcessing(true);
-    addLog(`🚀 [Auto-Pilot] 선정된 키워드 '${analysis.keyword}'로 발행 시작`);
+    addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${category}) 발행 시작`);
 
     try {
       const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
         analysis,
+        category, // 카테고리 전달
         modelType: credentials.modelType,
         headless: credentials.headless,
       });

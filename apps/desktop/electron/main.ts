@@ -523,7 +523,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle(
     "run-autopilot-step2",
-    async (event, { analysis, modelType, headless }) => {
+    async (event, { analysis, category, modelType, headless }) => {
       globalAbortController = new AbortController();
 
       try {
@@ -573,6 +573,7 @@ function registerIpcHandlers() {
 
           return await runAutoPilot({
             broadTopic: analysis.keyword,
+            blogBoardName: category, // UI에서 입력받은 category를 blogBoardName으로 전달
 
             config: {
               searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
@@ -624,7 +625,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle(
     "run-autopilot",
-    async (event, { keyword, modelType, headless }) => {
+    async (event, { keyword, category, modelType, headless }) => {
       globalAbortController = new AbortController();
 
       try {
@@ -685,26 +686,19 @@ function registerIpcHandlers() {
             throw new Error("발행할 플랫폼이 선택되지 않았습니다.");
 
           // 4. 파이프라인 실행
-
           return await runAutoPilot({
             broadTopic: keyword, // keyword를 broadTopic으로 매핑
-
+            blogBoardName: category, // UI에서 전달받은 값 그대로 사용
             config: scoutConfig,
-
             userDataPath,
-
             geminiClient,
-
             publishPlatforms,
-
             credentials: {
               naver: { id: naverId, pw: naverPw },
 
               tistory: { id: tistoryId, pw: tistoryPw },
             },
-
             headless,
-
             onProgress: (message: string) => {
               if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send("process-log", message);

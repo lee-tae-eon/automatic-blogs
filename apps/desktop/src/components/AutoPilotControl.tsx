@@ -4,7 +4,7 @@ interface AutoPilotControlProps {
   isProcessing: boolean;
   candidates: any[];
   onFetch: (topic: string) => void;
-  onStart: (analysis: any) => void;
+  onStart: (analysis: any, category: string) => void; // 카테고리 인자 추가
 }
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
@@ -15,6 +15,10 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
 }) => {
   const [topic, setTopic] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  
+  // 발행 설정 모달 상태
+  const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
+  const [categoryInput, setCategoryInput] = useState("");
 
   // 로딩 메시지 순환 효과
   useEffect(() => {
@@ -46,6 +50,22 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     onFetch(topic.trim());
   };
 
+  const openPublishModal = (candidate: any) => {
+    setSelectedCandidate(candidate);
+    // 기본 카테고리 추천 (주제 기반)
+    setCategoryInput(topic || "전체"); 
+  };
+
+  const confirmPublish = () => {
+    if (!selectedCandidate) return;
+    if (!categoryInput.trim()) {
+      alert("카테고리 이름을 입력해주세요. (블로그에 실제 존재하는 게시판 이름)");
+      return;
+    }
+    onStart(selectedCandidate, categoryInput.trim());
+    setSelectedCandidate(null); // 모달 닫기
+  };
+
   const isAnalyzing = isProcessing && candidates.length === 0;
 
   return (
@@ -64,17 +84,12 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
         overflow: "hidden"
       }}
     >
-      {/* 로딩 바 애니메이션 (분석 중일 때만 표시) */}
+      {/* 로딩 바 애니메이션 */}
       {isAnalyzing && (
         <div style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "4px",
+          position: "absolute", top: 0, left: 0, width: "100%", height: "4px",
           background: "linear-gradient(90deg, #6366f1 0%, #a5b4fc 50%, #6366f1 100%)",
-          backgroundSize: "200% 100%",
-          animation: "loading-bar 1.5s infinite linear"
+          backgroundSize: "200% 100%", animation: "loading-bar 1.5s infinite linear"
         }} />
       )}
 
@@ -98,12 +113,8 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
             if (e.key === "Enter") handleFetch();
           }}
           style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "8px",
-            border: "1px solid #c7d2fe",
-            fontSize: "1rem",
-            outline: "none",
+            flex: 1, padding: "12px", borderRadius: "8px",
+            border: "1px solid #c7d2fe", fontSize: "1rem", outline: "none",
           }}
         />
         <button
@@ -111,41 +122,26 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
           disabled={isProcessing || !topic.trim()}
           style={{
             backgroundColor: isProcessing ? "#94a3b8" : "#6366f1",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            padding: "0 25px",
-            fontWeight: "bold",
-            cursor: isProcessing ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
+            color: "white", border: "none", borderRadius: "8px", padding: "0 25px",
+            fontWeight: "bold", cursor: isProcessing ? "not-allowed" : "pointer",
+            display: "flex", alignItems: "center", gap: "8px"
           }}
         >
           {isAnalyzing && (
             <span className="spinner" style={{
-              width: "14px",
-              height: "14px",
-              border: "2px solid white",
-              borderTopColor: "transparent",
-              borderRadius: "50%",
-              animation: "spin 0.8s infinite linear"
+              width: "14px", height: "14px", border: "2px solid white",
+              borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s infinite linear"
             }} />
           )}
           {isAnalyzing ? "분석 중..." : "황금 키워드 발굴"}
         </button>
       </div>
 
-      {/* 상태 메시지 표시 */}
+      {/* 상태 메시지 */}
       {statusMessage && (
         <div style={{ 
-          fontSize: "0.85rem", 
-          color: "#4f46e5", 
-          backgroundColor: "#eef2ff", 
-          padding: "10px", 
-          borderRadius: "6px",
-          textAlign: "center",
-          fontWeight: "500",
+          fontSize: "0.85rem", color: "#4f46e5", backgroundColor: "#eef2ff", 
+          padding: "10px", borderRadius: "6px", textAlign: "center", fontWeight: "500",
           animation: "pulse 2s infinite"
         }}>
           {statusMessage}
@@ -180,27 +176,21 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                     </td>
                     <td style={{ padding: "10px", textAlign: "center" }}>
                       <span style={{ 
-                        padding: "2px 8px", 
-                        borderRadius: "12px", 
+                        padding: "2px 8px", borderRadius: "12px", 
                         backgroundColor: c.score >= 60 ? "#dcfce7" : "#fee2e2",
-                        color: c.score >= 60 ? "#166534" : "#991b1b",
-                        fontWeight: "bold"
+                        color: c.score >= 60 ? "#166534" : "#991b1b", fontWeight: "bold"
                       }}>
                         {c.score}점
                       </span>
                     </td>
                     <td style={{ padding: "10px", textAlign: "center" }}>
                       <button
-                        onClick={() => onStart(c)}
+                        onClick={() => openPublishModal(c)}
                         disabled={isProcessing}
                         style={{
-                          padding: "5px 12px",
-                          borderRadius: "6px",
-                          backgroundColor: "#4f46e5",
-                          color: "white",
-                          border: "none",
-                          fontSize: "0.75rem",
-                          cursor: isProcessing ? "not-allowed" : "pointer"
+                          padding: "5px 12px", borderRadius: "6px",
+                          backgroundColor: "#4f46e5", color: "white", border: "none",
+                          fontSize: "0.75rem", cursor: isProcessing ? "not-allowed" : "pointer"
                         }}
                       >
                         {isProcessing ? "진행 중" : "발행하기"}
@@ -214,20 +204,69 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
         </div>
       )}
 
-      {/* 애니메이션 스타일 */}
+      {/* 발행 설정 모달 */}
+      {selectedCandidate && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+          backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: "white", padding: "25px", borderRadius: "12px",
+            width: "400px", boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            display: "flex", flexDirection: "column", gap: "15px"
+          }}>
+            <h3 style={{ margin: 0, color: "#333" }}>🚀 발행 설정</h3>
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>
+                선택된 키워드
+              </label>
+              <div style={{ padding: "10px", backgroundColor: "#f1f5f9", borderRadius: "6px", fontWeight: "bold" }}>
+                {selectedCandidate.keyword}
+              </div>
+            </div>
+            
+            <div>
+              <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>
+                업로드할 블로그 게시판 이름 (필수)
+              </label>
+              <input 
+                type="text" 
+                value={categoryInput}
+                onChange={(e) => setCategoryInput(e.target.value)}
+                placeholder="예: 일상, IT리뷰, 맛집탐방"
+                style={{
+                  width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1",
+                  fontSize: "0.95rem"
+                }}
+              />
+              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "5px" }}>
+                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요. (AI 컨텍스트와는 무관함)
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <button 
+                onClick={() => setSelectedCandidate(null)}
+                style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", backgroundColor: "white", cursor: "pointer" }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={confirmPublish}
+                style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "none", backgroundColor: "#4f46e5", color: "white", fontWeight: "bold", cursor: "pointer" }}
+              >
+                발행 시작
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes loading-bar {
-          from { background-position: 200% 0; }
-          to { background-position: -200% 0; }
-        }
-        @keyframes pulse {
-          0% { opacity: 0.6; }
-          50% { opacity: 1; }
-          100% { opacity: 0.6; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes loading-bar { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
       `}</style>
     </div>
   );

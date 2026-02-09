@@ -9,6 +9,7 @@ export interface KeywordAnalysis {
   totalSearchCnt: number; // 총 검색량
   competitionIndex: number; // 경쟁률 (발행량 / 검색량)
   topTitles: string[]; // 상위 블로그 제목들
+  topSnippets: string[]; // 상위 블로그 요약문들 (추가)
   score: number; // 최종 점수
   recommendation: string; // 추천 등급
 }
@@ -89,12 +90,12 @@ export class KeywordScoutService {
   }
 
   /**
-   * 2. 검색 결과 총 개수 및 상위 제목 조회 (검색 API)
+   * 2. 검색 결과 총 개수 및 상위 제목/요약 조회 (검색 API)
    */
-  async getSearchCompetition(keyword: string): Promise<{ total: number; titles: string[] }> {
+  async getSearchCompetition(keyword: string): Promise<{ total: number; titles: string[]; snippets: string[] }> {
     try {
       const response = await axios.get("https://openapi.naver.com/v1/search/blog.json", {
-        params: { query: keyword, display: 10 },
+        params: { query: keyword, display: 5 }, // 상위 5개 분석
         headers: {
           "X-Naver-Client-Id": this.config.searchClientId,
           "X-Naver-Client-Secret": this.config.searchClientSecret,
@@ -102,14 +103,18 @@ export class KeywordScoutService {
       });
 
       const total = response.data.total || 0;
-      const titles = response.data.items?.map((item: any) => 
+      const items = response.data.items || [];
+      const titles = items.map((item: any) => 
         item.title.replace(/<[^>]*>?/gm, "") // HTML 태그 제거
-      ) || [];
+      );
+      const snippets = items.map((item: any) => 
+        item.description.replace(/<[^>]*>?/gm, "") // HTML 태그 제거
+      );
 
-      return { total, titles };
+      return { total, titles, snippets };
     } catch (error) {
       console.error("Search API Error:", error);
-      return { total: 0, titles: [] };
+      return { total: 0, titles: [], snippets: [] };
     }
   }
 
@@ -120,27 +125,33 @@ export class KeywordScoutService {
     let score = 0;
 
     // A. 검색량 점수 (최대 40점)
-    // 1,000 ~ 10,000 사이를 황금 구간으로 가정
-    if (analysis.totalSearchCnt > 1000 && analysis.totalSearchCnt < 15000) {
-      score += 40;
-    } else if (analysis.totalSearchCnt >= 15000) {
-      score += 25; // 너무 높으면 대형 블로거가 많음
-    } else {
-      score += 15;
-    }
-
-    // B. 경쟁자 수 점수 (최대 30점)
-    // 발행량 / 검색량 비율이 낮을수록 좋음
-    if (analysis.competitionIndex < 1) {
-      score += 30; // 황금 키워드 (검색량이 발행량보다 많음)
-    } else if (analysis.competitionIndex < 5) {
+    // 소형 블로그를 위해 현실적인 구간으로 조정
+    if (analysis.totalSearchCnt > 5000) {
+      score += 40; 
+    } else if (analysis.totalSearchCnt > 1000) {
+      score += 30;
+    } else if (analysis.totalSearchCnt > 100) {
       score += 20;
-    } else if (analysis.competitionIndex < 10) {
-      score += 10;
+    } else {
+      score += 10; // 아주 적어도 기본 점수
     }
 
-    // C. 광고 키워드 포함 여부 (최대 10점)
-    const adKeywords = ["대출", "보험", "수술", "분양", "렌트"];
+    // B. 경쟁률 점수 (최대 50점) - v2.0 핵심: 검색량 대비 발행량
+    // Index가 낮을수록(발행량이 적을수록) 고점
+    if (analysis.competitionIndex < 1) {
+      score += 50; // 황금 (발행량 < 검색량)
+    } else if (analysis.competitionIndex < 10) {
+      score += 40; // 블루오션
+    } else if (analysis.competitionIndex < 50) {
+      score += 30; // 경쟁 있음
+    } else if (analysis.competitionIndex < 200) {
+      score += 20; // 레드오션
+    } else {
+      score += 5;  // 극심한 레드오션
+    }
+
+    // C. 제목 및 광고 필터 (최대 10점)
+    const adKeywords = ["대출", "보험", "수술", "분양", "렌트", "광고", "협찬"];
     const hasAdKeyword = adKeywords.some(kw => analysis.keyword.includes(kw));
     const titleAdCount = analysis.topTitles.filter(t => 
         adKeywords.some(ak => t.includes(ak))
@@ -148,16 +159,8 @@ export class KeywordScoutService {
 
     if (!hasAdKeyword && titleAdCount < 2) {
       score += 10;
-    } else if (titleAdCount > 5) {
-      score -= 20; // 광고판인 경우 감점
-    }
-
-    // D. 제목 길이 평균 (최대 20점)
-    const avgTitleLength = analysis.topTitles.reduce((acc, t) => acc + t.length, 0) / (analysis.topTitles.length || 1);
-    if (avgTitleLength > 20 && avgTitleLength < 40) {
-      score += 20; // 적당한 제목 길이는 분석하기 좋음
-    } else {
-      score += 10;
+    } else if (titleAdCount >= 5) {
+      score -= 20; // 광고 도배 키워드 강력 감점
     }
 
     return score;
@@ -183,6 +186,7 @@ export class KeywordScoutService {
       totalSearchCnt,
       competitionIndex,
       topTitles: competition.titles,
+      topSnippets: competition.snippets, // 추가
     };
 
     const score = this.calculateScore(baseAnalysis);

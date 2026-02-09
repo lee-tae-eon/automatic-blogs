@@ -20,6 +20,7 @@ async function testAutoPilot() {
 
   const options: any = {
     broadTopic: "보험", // 구체적인 키워드가 아닌 넓은 주제 입력
+    blogBoardName: "일상정보", // CLI 전용 기본값
     config,
     userDataPath: path.join(__dirname, "../../../"), // 프로젝트 루트 경로로 수정
     geminiClient: client,
