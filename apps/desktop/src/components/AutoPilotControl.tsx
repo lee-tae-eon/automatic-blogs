@@ -4,7 +4,7 @@ interface AutoPilotControlProps {
   isProcessing: boolean;
   candidates: any[];
   onFetch: (topic: string) => void;
-  onStop: () => void; // 중단 액션 추가
+  onStop: () => void;
   onStart: (analysis: any, category: string) => void;
 }
 
@@ -18,6 +18,10 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const [topic, setTopic] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   
+  // 발행 설정 모달 상태
+  const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
+  const [categoryInput, setCategoryInput] = useState("");
+
   const isAnalyzing = isProcessing && candidates.length === 0;
 
   // 로딩 메시지 순환 효과
@@ -57,21 +61,18 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
 
   const openPublishModal = (candidate: any) => {
     setSelectedCandidate(candidate);
-    // 기본 카테고리 추천 (주제 기반)
-    setCategoryInput(topic || "전체"); 
+    setCategoryInput("일상정보"); // 기본값 설정
   };
 
   const confirmPublish = () => {
     if (!selectedCandidate) return;
     if (!categoryInput.trim()) {
-      alert("카테고리 이름을 입력해주세요. (블로그에 실제 존재하는 게시판 이름)");
+      alert("블로그 게시판 이름을 입력해 주세요.");
       return;
     }
     onStart(selectedCandidate, categoryInput.trim());
-    setSelectedCandidate(null); // 모달 닫기
+    setSelectedCandidate(null);
   };
-
-  const isAnalyzing = isProcessing && candidates.length === 0;
 
   return (
     <div
@@ -252,14 +253,14 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                 type="text" 
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
-                placeholder="예: 일상, IT리뷰, 맛집탐방"
+                placeholder="예: 일상정보, IT리뷰, 맛집탐방"
                 style={{
                   width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1",
                   fontSize: "0.95rem"
                 }}
               />
               <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "5px" }}>
-                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요. (AI 컨텍스트와는 무관함)
+                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요.
               </p>
             </div>
 

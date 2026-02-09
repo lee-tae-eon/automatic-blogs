@@ -123,33 +123,23 @@ export class NaverEditor {
             break;
 
           case "blockquote-heading":
-            const bqHeadStyle = 'style="border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #333; line-height: 1.8; word-break: keep-all;"';
-            const bqHeadHtml = `<blockquote ${bqHeadStyle}><h2>${block.text}</h2></blockquote>`;
-            await this.pasteHtml(bqHeadHtml);
+            // markdownToHtml에서 이미 스타일링된 block.html 사용
+            await this.pasteHtml(`<blockquote>${block.html}</blockquote>`);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
 
           case "blockquote-paragraph":
-            // 인용구 본문 스타일 적용
-            const bqStyle = 'style="border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #555; font-style: italic; line-height: 1.8; word-break: keep-all;"';
-            const bqContent = block.html.startsWith("<p") 
-              ? block.html.replace("<p", `<p style="line-height: 1.8; word-break: keep-all;"`) 
-              : `<p style="line-height: 1.8; word-break: keep-all;">${block.html}</p>`;
-            await this.pasteHtml(`<blockquote ${bqStyle}>${bqContent}</blockquote>`);
+            // markdownToHtml에서 이미 스타일링된 block.html 사용
+            await this.pasteHtml(`<blockquote>${block.html}</blockquote>`);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
 
           case "heading":
-            const tag =
-              block.prefix === "■ "
-                ? "h1"
-                : block.prefix === "▶ "
-                  ? "h2"
-                  : "h3";
-            // 제목에 가독성 스타일 적용
-            await this.pasteHtml(`<${tag} style="line-height: 1.6; word-break: keep-all; margin-bottom: 10px;">${block.text}</${tag}>`);
+            // 이미 <h1>~<h3> 태그와 스타일이 포함된 html 사용
+            const headingHtml = block.html.startsWith("<h") ? block.html : `<h3>${block.html}</h3>`;
+            await this.pasteHtml(headingHtml);
             await this.page.keyboard.press("Enter");
             break;
 
@@ -160,7 +150,8 @@ export class NaverEditor {
             break;
 
           case "list":
-            await this.pasteHtml(`<ul><li>${block.html}</li></ul>`);
+            // 리스트도 이미 스타일링된 상태
+            await this.pasteHtml(block.html);
             await this.page.keyboard.press("Enter");
             break;
 
@@ -228,8 +219,8 @@ export class NaverEditor {
 
           case "paragraph":
           default:
-            // ✅ 핵심: 일반 문단에 행간 및 단어 끊김 방지 스타일 적용
-            await this.pasteHtml(`<p style="line-height: 1.8; word-break: keep-all; margin-bottom: 15px;">${block.html}</p>`);
+            // markdownToHtml에서 이미 스타일링된 block.html 사용
+            await this.pasteHtml(block.html);
             await this.page.keyboard.press("Enter");
             break;
         }
