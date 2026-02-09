@@ -10,12 +10,24 @@ export interface RssTrend {
 export class RssService {
   /**
    * 구글 트렌드 및 뉴스 RSS에서 최신 이슈를 가져옵니다.
+   * @param region 지역 (KR/US)
+   * @param query 검색어 (없으면 기본 테크 뉴스)
    */
-  async fetchTrendingTopics(region: "KR" | "US" = "KR"): Promise<RssTrend[]> {
-    // 구글 뉴스 트렌드 RSS (한국/미국)
-    const url = region === "KR" 
-      ? "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ko&gl=KR&ceid=KR:ko"
-      : "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en";
+  async fetchTrendingTopics(region: "KR" | "US" = "KR", query?: string): Promise<RssTrend[]> {
+    let url = "";
+    
+    if (query && query.trim()) {
+      // 🔍 검색어가 있는 경우: 구글 뉴스 검색 RSS 사용
+      const encodedQuery = encodeURIComponent(query);
+      url = region === "KR"
+        ? `https://news.google.com/rss/search?q=${encodedQuery}&hl=ko&gl=KR&ceid=KR:ko`
+        : `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-US&gl=US&ceid=US:en`;
+    } else {
+      // 📰 검색어가 없는 경우: 기본 테크 뉴스 헤드라인
+      url = region === "KR" 
+        ? "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ko&gl=KR&ceid=KR:ko"
+        : "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en";
+    }
 
     try {
       const response = await axios.get(url);

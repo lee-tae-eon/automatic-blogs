@@ -220,9 +220,9 @@ function registerIpcHandlers() {
   // ----------------------------------------
   ipcMain.handle("fetch-korea-trends", async (event, query?: string) => {
     try {
-      console.log("📡 RSS 기반 한국 트렌드 수집 시작...");
+      console.log(`📡 RSS 기반 한국 트렌드 수집 시작... (검색어: ${query || "없음"})`);
       const rss = new RssService();
-      const trends = await rss.fetchTrendingTopics("KR");
+      const trends = await rss.fetchTrendingTopics("KR", query);
 
       if (!trends || trends.length === 0) {
         return { success: false, error: "현재 가져올 수 있는 한국 트렌드가 없습니다." };
