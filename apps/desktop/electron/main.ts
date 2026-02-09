@@ -42,6 +42,7 @@ import {
   runAutoPilot, // 추가
   TopicExpanderService,
   KeywordScoutService,
+  RssService,
 } from "@blog-automation/core";
 
 // ==========================================
@@ -215,104 +216,30 @@ function registerIpcHandlers() {
   });
 
   // ----------------------------------------
-  // [Discovery] 한국 핫이슈 가져오기
+  // [Discovery] 한국 핫이슈 가져오기 (RSS 기반 - 비용 0원)
   // ----------------------------------------
   ipcMain.handle("fetch-korea-trends", async (event, query?: string) => {
-    const credentials: any = store.get("user-credentials");
-    const { geminiKey, subGemini } = credentials || {};
+    try {
+      console.log("📡 RSS 기반 한국 트렌드 수집 시작...");
+      const rss = new RssService();
+      const trends = await rss.fetchTrendingTopics("KR");
 
-    const apiKeys = [
-      geminiKey,
-      subGemini,
-      process.env.VITE_GEMINI_API_KEY,
-    ].filter((k) => !!k && k.trim() !== "");
-
-    if (apiKeys.length === 0) {
-      return { success: false, error: "사용 가능한 API 키가 없습니다." };
-    }
-
-    let lastError: any;
-
-    for (const apiKey of apiKeys) {
-      try {
-        console.log(
-          `🔍 한국 트렌드 검색 시도 (Key: ${apiKey.slice(0, 5)}...): '${query || "Korea Trends"}'`,
-        );
-
-        const modelName =
-          credentials.modelType === "fast"
-            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
-            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
-
-        console.log(
-          `🤖 검색 엔진 모델: ${modelName} (${credentials.modelType || "normal"})`,
-        );
-
-        const client = new GeminiClient(apiKey, modelName);
-        const tavily = new TavilyService();
-
-        // 1. 하이브리드 검색: Tavily와 Gemini Grounding 동시 실행
-        const [tavilyResults, geminiSearchResults] = await Promise.all([
-          tavily.fetchTrendingKorea(query),
-          client.searchWithGrounding(
-            query ||
-              "오늘 대한민국 실시간 인기 검색어 핫이슈 뉴스 트렌드 커뮤니티 반응",
-          ),
-        ]);
-
-        if (
-          (!tavilyResults || tavilyResults.length === 0) &&
-          !geminiSearchResults
-        ) {
-          console.warn(
-            `⚠️ 키(${apiKey.slice(0, 5)}...) 결과 없음. 다음 키 시도.`,
-          );
-          continue;
-        }
-
-        const combinedData = `
-          [Source A: Tavily Search Results]
-          ${JSON.stringify(tavilyResults)}
-
-          [Source B: Google Search Results (Gemini Grounding)]
-          ${geminiSearchResults}
-        `;
-
-        const prompt = `
-          다음은 두 개의 서로 다른 검색 엔진에서 수집한 대한민국${query ? `('${query}' 관련)` : ""} 최신 뉴스 및 트렌드 데이터입니다.
-          현재 한국 사회나 인터넷 커뮤니티에서 가장 화제가 되고 있는 핵심 토픽 5개를 선정하여 JSON 배열로 응답하세요.
-          연예, 사회, 경제, 라이프스타일 등 분야를 가리지 않고 가장 뜨거운 이슈를 골라주세요.
-
-          [데이터 소스]
-          ${combinedData}
-
-          [출력 규칙]
-          1. 반드시 아래 JSON 배열 형식으로만 응답 (마크다운, 부연설명 절대 금지)
-          [
-            { "topic": "주제(한글)", "summary": "짧은 요약(한글)", "keywords": ["키워드1", "키워드2"] }
-          ]
-        `;
-
-        const topics = await client.generateJson<any[]>(prompt);
-        return { success: true, data: topics };
-      } catch (error: any) {
-        lastError = error;
-        const errorMsg = error.message || "";
-        if (errorMsg.includes("429") || errorMsg.includes("limit")) {
-          console.warn(
-            `⚠️ 키(${apiKey.slice(0, 5)}...) 할당량 초과. 다음 키로 재시도합니다.`,
-          );
-          continue;
-        }
-        console.error(`❌ 키(${apiKey.slice(0, 5)}...) 에러 발생:`, errorMsg);
-        continue;
+      if (!trends || trends.length === 0) {
+        return { success: false, error: "현재 가져올 수 있는 한국 트렌드가 없습니다." };
       }
-    }
 
-    return {
-      success: false,
-      error: `모든 API 키가 할당량을 초과했거나 에러가 발생했습니다. 잠시 후 다시 시도해 주세요. (${lastError?.message || ""})`,
-    };
+      // RSS 결과 형식을 기존 UI와 맞추기 위해 변환
+      const formattedTopics = trends.map(t => ({
+        topic: t.title,
+        summary: `최신 이슈: ${t.title}`,
+        keywords: t.title.split(" ").slice(0, 2)
+      }));
+
+      return { success: true, data: formattedTopics };
+    } catch (error: any) {
+      console.error("❌ 한국 트렌드(RSS) 수집 에러:", error.message);
+      return { success: false, error: "트렌드를 가져오는 중 오류가 발생했습니다." };
+    }
   });
 
   // ----------------------------------------

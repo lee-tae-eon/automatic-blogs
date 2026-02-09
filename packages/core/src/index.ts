@@ -23,3 +23,4 @@ export * from "./services/dbService";
 export * from "./services/KeywordScoutService";
 export * from "./services/TopicExpanderService";
 export * from "./services/CompetitorAnalyzerService";
+export * from "./services/RssService";
