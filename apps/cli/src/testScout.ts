@@ -18,20 +18,27 @@ async function testScout() {
   console.log(`🔑 Client ID: ${config.searchClientId.slice(0, 5)}...`);
 
   const scout = new KeywordScoutService(config);
-  
+
   // 테스트하고 싶은 키워드 리스트
-  const testKeywords = ["제주도 여행", "아이폰 16 사전예약", "블로그 자동화", "오늘 점심 메뉴"];
+  const testKeywords = [
+    "제주도 여행",
+    "아이폰 16 사전예약",
+    "블로그 자동화",
+    "오늘 점심 메뉴",
+  ];
 
   for (const kw of testKeywords) {
     console.log(`
 -----------------------------------`);
     console.log(`🔍 분석 중: [${kw}]`);
-    
+
     try {
       const result = await scout.analyzeKeyword(kw);
       console.log(`📊 결과 요약:`);
       console.log(` - 점수: ${result.score}점 (${result.recommendation})`);
-      console.log(` - 월간 검색량: ${result.totalSearchCnt.toLocaleString()} (PC: ${result.monthlyPcSearchCnt}, Mo: ${result.monthlyMobileSearchCnt})`);
+      console.log(
+        ` - 월간 검색량: ${result.totalSearchCnt.toLocaleString()} (PC: ${result.monthlyPcSearchCnt}, Mo: ${result.monthlyMobileSearchCnt})`,
+      );
       console.log(` - 총 발행량: ${result.totalResults.toLocaleString()}`);
       console.log(` - 경쟁률: ${result.competitionIndex.toFixed(2)}`);
       console.log(` - 상위 제목 예시: ${result.topTitles[0] || "없음"}`);
