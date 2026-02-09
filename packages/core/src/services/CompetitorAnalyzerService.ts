@@ -44,18 +44,20 @@ export class CompetitorAnalyzerService {
     
     const differentiationStrategy = strategies.join("\n") || "전문적인 데이터와 수치를 활용하여 신뢰도를 높이세요.";
 
-    // 4. 소제목 및 분량 설정 (v3.8 밀도 강화)
-    const headings = topTitles.map(title => title.split(" ").slice(0, 3).join(" ")).slice(0, 3);
-    let estimatedLength = analysis.totalSearchCnt > 5000 ? 3000 : 2500;
+    // 4. 소제목 및 분량 설정 (v3.15 구조 강화)
+    const headings = topTitles.map(title => title.split(" ").slice(0, 3).join(" ")).slice(0, 5);
+    let estimatedLength = analysis.totalSearchCnt > 5000 ? 3500 : 3000;
     
     const suggestedOutline = [
-      `[심층 분석] ${analysis.keyword}의 진실과 오해 (전문가적 관점)`,
-      `[핵심 비교] ${analysis.keyword} vs 경쟁 제품/서비스 완벽 비교`,
-      `[실전 가이드] 실패 없는 선택을 위한 3가지 체크리스트`,
+      `[심층 분석] ${analysis.keyword}의 현재 트렌드와 핵심 쟁점`,
+      `[상세 가이드] 반드시 알아야 할 ${analysis.keyword}의 세부 특징`,
+      `[비교/분석] 경쟁사 데이터와 비교해본 실질적 장단점`,
+      `[실전 팁] 실패 확률을 줄이는 전문가만의 숨겨진 노하우`,
+      `[마무리] 효율적인 의사결정을 위한 최종 체크리스트`
     ];
 
     // 차별화 전략에 밀도 강화 지시 추가
-    const densityStrategy = "소제목은 3개로 제한하되, 각 소제목 아래에는 **최소 3~4개의 긴 문단과 1개의 상세 리스트(Bullet Points)**를 포함하여 정보의 밀도를 극대화하세요.";
+    const densityStrategy = "소제목은 5개로 구성하되, 각 소제목 아래에는 **최소 3~4개의 알찬 문단**을 배치하여 정보의 밀도를 극대화하세요. 단순 나열을 지양하고 깊이 있는 통찰력을 제공하세요.";
 
     return {
       headings,

@@ -65,6 +65,16 @@ export interface QualityMetrics {
   keywordDensity: [number, number]; // [최소%, 최대%]
 }
 
+// v3.13: 오토파일럿 전용 전략 데이터 인터페이스
+export interface AutoPilotStrategy {
+  headings: string[];
+  suggestedOutline: string[];
+  differentiationStrategy: string;
+  styleDNA: string;
+  estimatedLength: number;
+  hasTable: boolean;
+}
+
 export interface BlogPostInput {
   topic: string;
   persona: Persona;
@@ -72,6 +82,9 @@ export interface BlogPostInput {
   category: string;
   keywords?: string[];
   latestNews?: string;
+  additionalInstructions?: string;
+  mode?: "manual" | "auto";
+  strategy?: AutoPilotStrategy;
 }
 
 export interface AiGeneratedPost {
@@ -94,6 +107,9 @@ export interface Publication extends AiGeneratedPost {
   createdAt: string;
   persona: Persona;
   tone: Tone;
+  category: string;
+  keywords?: string[];
+  latestNews?: string;
 }
 
 export interface GeneratePostInput {
@@ -108,6 +124,9 @@ export interface BatchTask {
   persona: Persona;
   tone: Tone;
   category: string;
-  keywords?: string[]; // Optional로 설정
+  keywords?: string[];
   status: "대기" | "진행" | "완료" | "실패";
+  additionalInstructions?: string;
+  mode?: "manual" | "auto";
+  strategy?: AutoPilotStrategy;
 }
