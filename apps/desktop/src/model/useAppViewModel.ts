@@ -237,12 +237,26 @@ export const useAppViewModel = () => {
   };
 
   /**
+   * v2.0 오토파일럿 중단 핸들러
+   */
+  const handleStopAutoPilot = () => {
+    shouldStopRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    window.ipcRenderer.send("abort-process");
+    addLog("🛑 [Auto-Pilot] 중단 요청을 보냈습니다.");
+  };
+
+  /**
    * v2.0 오토파일럿 1단계: 키워드 후보 분석
    */
   const handleFetchCandidates = async (broadTopic: string) => {
     if (isProcessing || !broadTopic.trim()) return;
 
     setIsProcessing(true);
+    shouldStopRef.current = false;
+    abortControllerRef.current = new AbortController();
     setCandidates([]);
     addLog(`🔍 [Auto-Pilot] 주제 '${broadTopic}' 분석 중...`);
 
@@ -256,13 +270,17 @@ export const useAppViewModel = () => {
         setCandidates(result.data);
         addLog(`✅ [Auto-Pilot] ${result.data.length}개의 키워드 후보를 찾았습니다.`);
       } else {
-        addLog(`❌ [Auto-Pilot] 분석 실패: ${result.error}`);
-        alert(`분석 실패: ${result.error}`);
+        if (result.error === "AbortError") {
+          addLog("🛑 [Auto-Pilot] 분석이 중단되었습니다.");
+        } else {
+          addLog(`❌ [Auto-Pilot] 분석 실패: ${result.error}`);
+        }
       }
     } catch (error: any) {
       addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
     } finally {
       setIsProcessing(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -414,6 +432,7 @@ export const useAppViewModel = () => {
       handleToneChange,
       handleAutoPilot,
       handleFetchCandidates,
+      handleStopAutoPilot, // 추가
       handleStartWithKeyword,
     },
   };

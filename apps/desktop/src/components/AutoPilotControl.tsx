@@ -4,26 +4,26 @@ interface AutoPilotControlProps {
   isProcessing: boolean;
   candidates: any[];
   onFetch: (topic: string) => void;
-  onStart: (analysis: any, category: string) => void; // 카테고리 인자 추가
+  onStop: () => void; // 중단 액션 추가
+  onStart: (analysis: any, category: string) => void;
 }
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   isProcessing,
   candidates,
   onFetch,
+  onStop,
   onStart,
 }) => {
   const [topic, setTopic] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   
-  // 발행 설정 모달 상태
-  const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
-  const [categoryInput, setCategoryInput] = useState("");
+  const isAnalyzing = isProcessing && candidates.length === 0;
 
   // 로딩 메시지 순환 효과
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isProcessing && candidates.length === 0) {
+    if (isAnalyzing) {
       const messages = [
         "🤖 AI가 주제와 관련된 황금 키워드를 발굴하고 있습니다...",
         "🔍 각 키워드의 실시간 검색량을 분석 중입니다...",
@@ -40,7 +40,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       setStatusMessage("");
     }
     return () => clearInterval(interval);
-  }, [isProcessing, candidates.length]);
+  }, [isAnalyzing]);
 
   const handleFetch = () => {
     if (!topic.trim()) {
@@ -48,6 +48,11 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       return;
     }
     onFetch(topic.trim());
+  };
+
+  const handleStop = () => {
+    onStop();
+    setStatusMessage("🛑 중단 요청 중...");
   };
 
   const openPublishModal = (candidate: any) => {
@@ -135,6 +140,19 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
           )}
           {isAnalyzing ? "분석 중..." : "황금 키워드 발굴"}
         </button>
+
+        {isProcessing && (
+          <button
+            onClick={handleStop}
+            style={{
+              backgroundColor: "#ef4444",
+              color: "white", border: "none", borderRadius: "8px", padding: "0 15px",
+              fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem"
+            }}
+          >
+            중단
+          </button>
+        )}
       </div>
 
       {/* 상태 메시지 */}

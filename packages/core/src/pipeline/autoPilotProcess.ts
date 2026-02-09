@@ -39,8 +39,15 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     // 1. 키워드 확장 (Scaling)
     log(`🧠 주제 '${broadTopic}' 분석 및 키워드 확장 중...`);
     const expander = new TopicExpanderService(geminiClient);
-    const candidates = await expander.expandTopic(broadTopic);
-    log(`✅ ${candidates.length}개의 후보 키워드 발굴 완료`);
+    let candidates = await expander.expandTopic(broadTopic);
+    
+    // [Safety] 과거 연도 키워드 강제 필터링
+    const currentYear = new Date().getFullYear().toString();
+    candidates = candidates.filter(c => 
+      !c.keyword.includes("2024") && !c.keyword.includes("2025")
+    );
+
+    log(`✅ ${candidates.length}개의 최신 후보 키워드 발굴 완료`);
 
     // 2. 황금 키워드 선정 (Selection)
     log(`⚖️ 후보 키워드 정밀 스코어링 시작...`);

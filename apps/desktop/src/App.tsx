@@ -24,6 +24,7 @@ export const App: React.FC = () => {
         isProcessing={isProcessing} 
         candidates={state.candidates}
         onFetch={actions.handleFetchCandidates}
+        onStop={actions.handleStopAutoPilot}
         onStart={actions.handleStartWithKeyword} 
       />
 

@@ -123,19 +123,20 @@ export class NaverEditor {
             break;
 
           case "blockquote-heading":
-            const bqHeadHtml = `<blockquote><h2>${block.text}</h2></blockquote>`;
+            const bqHeadStyle = 'style="border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #333; line-height: 1.8; word-break: keep-all;"';
+            const bqHeadHtml = `<blockquote ${bqHeadStyle}><h2>${block.text}</h2></blockquote>`;
             await this.pasteHtml(bqHeadHtml);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
-            // ❌ 기존 이미지 삽입 로직 삭제됨 (사용자 요청: 중복/과다 이미지 방지)
             break;
 
           case "blockquote-paragraph":
-            // 이미 <p> 태그를 포함하고 있을 경우 중복 방지
+            // 인용구 본문 스타일 적용
+            const bqStyle = 'style="border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #555; font-style: italic; line-height: 1.8; word-break: keep-all;"';
             const bqContent = block.html.startsWith("<p") 
-              ? block.html 
-              : `<p>${block.html}</p>`;
-            await this.pasteHtml(`<blockquote>${bqContent}</blockquote>`);
+              ? block.html.replace("<p", `<p style="line-height: 1.8; word-break: keep-all;"`) 
+              : `<p style="line-height: 1.8; word-break: keep-all;">${block.html}</p>`;
+            await this.pasteHtml(`<blockquote ${bqStyle}>${bqContent}</blockquote>`);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
@@ -147,7 +148,8 @@ export class NaverEditor {
                 : block.prefix === "▶ "
                   ? "h2"
                   : "h3";
-            await this.pasteHtml(`<${tag}>${block.text}</${tag}>`);
+            // 제목에 가독성 스타일 적용
+            await this.pasteHtml(`<${tag} style="line-height: 1.6; word-break: keep-all; margin-bottom: 10px;">${block.text}</${tag}>`);
             await this.page.keyboard.press("Enter");
             break;
 
@@ -226,8 +228,8 @@ export class NaverEditor {
 
           case "paragraph":
           default:
-            // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지
-            await this.pasteHtml(`<p>${block.html}</p>`);
+            // ✅ 핵심: 일반 문단에 행간 및 단어 끊김 방지 스타일 적용
+            await this.pasteHtml(`<p style="line-height: 1.8; word-break: keep-all; margin-bottom: 15px;">${block.html}</p>`);
             await this.page.keyboard.press("Enter");
             break;
         }

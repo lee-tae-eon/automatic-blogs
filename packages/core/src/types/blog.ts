@@ -107,7 +107,6 @@ export interface Publication extends AiGeneratedPost {
   createdAt: string;
   persona: Persona;
   tone: Tone;
-  category: string;
   keywords?: string[];
   latestNews?: string;
 }
