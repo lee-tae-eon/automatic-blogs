@@ -197,21 +197,27 @@ export class NaverPublisher implements IBlogPublisher {
       onProgress?.("네이버 로그인 진행 중...");
       if (password) {
         const authenticator = new NaverAuthenticator(page);
-        await authenticator.login(blogId, password);
+        try {
+          await authenticator.login(blogId, password);
+        } catch (e) {
+          onProgress?.("자동 로그인 실패. 수동 로그인을 시도해 주세요 (2분 대기).");
+        }
       } else {
         onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
-        console.log(
-          "👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).",
-        );
       }
 
+      console.log(
+        "👉 로그인이 필요합니다. 브라우저 창에서 로그인을 완료해 주세요 (2분 대기).",
+      );
+      
+      // 로그인 완료 후 블로그 페이지로 이동할 때까지 충분히 대기 (최대 2분)
       await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-      onProgress?.("로그인 완료 (세션 저장 중...)");
+      onProgress?.("로그인 확인 완료 (세션 저장 중...)");
       await page.waitForTimeout(3000);
 
       await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
         waitUntil: "domcontentloaded",
-        timeout: 20000,
+        timeout: 30000,
       });
     }
   }

@@ -6,6 +6,7 @@ import { ManualTaskInput } from "./components/ManualTaskInput";
 import { ActionButtons } from "./components/ActionButtons";
 import { TaskTable } from "./components/TaskTable";
 import { LogConsole } from "./components/LogConsole";
+import { AutoPilotControl } from "./components/AutoPilotControl"; // 추가
 
 export const App: React.FC = () => {
   const { state, actions } = useAppViewModel();
@@ -16,6 +17,14 @@ export const App: React.FC = () => {
       <Header
         credentials={credentials}
         onChange={actions.handleCredentialChange}
+      />
+
+      {/* v2.0 Auto-Pilot 영역 */}
+      <AutoPilotControl 
+        isProcessing={isProcessing} 
+        candidates={state.candidates}
+        onFetch={actions.handleFetchCandidates}
+        onStart={actions.handleStartWithKeyword} 
       />
 
       {/* 메인 입력 영역: 2단 레이아웃 (트렌드 + 폼) */}

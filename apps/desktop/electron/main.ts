@@ -39,6 +39,9 @@ import {
   markdownToHtml,
   GeminiClient,
   TavilyService,
+  runAutoPilot, // 추가
+  TopicExpanderService,
+  KeywordScoutService,
 } from "@blog-automation/core";
 
 // ==========================================
@@ -446,6 +449,321 @@ function registerIpcHandlers() {
       globalAbortController = null;
     }
   });
+
+    // ----------------------------------------
+
+    // [v2.0] 오토파일럿 1단계: 키워드 후보 분석
+
+    // ----------------------------------------
+
+    ipcMain.handle("fetch-keyword-candidates", async (event, { broadTopic, modelType }) => {
+
+      try {
+
+        const credentials: any = store.get("user-credentials");
+
+        const { geminiKey, subGemini } = credentials || {};
+
+        const apiKey = geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+
+        if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
+
+  
+
+        const modelName = modelType === "fast"
+
+          ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+
+          : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+  
+
+        const geminiClient = new GeminiClient(apiKey, modelName);
+
+        const scoutConfig = {
+
+          searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+
+          searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+
+          adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
+
+          adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
+
+          adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+
+        };
+
+  
+
+        // 1. 키워드 확장
+
+        const expander = new TopicExpanderService(geminiClient);
+
+        const candidates = await expander.expandTopic(broadTopic);
+
+  
+
+        // 2. 각 키워드 정밀 분석 (429 에러 방지를 위해 순차 처리 및 딜레이 고려)
+
+        const scout = new KeywordScoutService(scoutConfig);
+
+        const analyzed = [];
+
+              for (const c of candidates) {
+
+                const analysis = await scout.analyzeKeyword(c.keyword);
+
+                analyzed.push({ ...c, ...analysis });
+
+                await new Promise(res => setTimeout(res, 500)); // 0.5초 딜레이
+
+              }
+
+        
+
+  
+
+        return { success: true, data: analyzed };
+
+      } catch (error: any) {
+
+        return { success: false, error: error.message };
+
+      }
+
+    });
+
+  
+
+    // ----------------------------------------
+
+    // [v2.0] 오토파일럿 2단계: 선택된 키워드로 실행
+
+    // ----------------------------------------
+
+    ipcMain.handle("run-autopilot-step2", async (event, { analysis, modelType, headless }) => {
+
+      globalAbortController = new AbortController();
+
+      try {
+
+        return await runWithAbort(async () => {
+
+          const credentials: any = store.get("user-credentials");
+
+          const { geminiKey, subGemini, naverId, naverPw, tistoryId, tistoryPw, enableNaver, enableTistory } = credentials || {};
+
+          const userDataPath = app.getPath("userData");
+
+  
+
+          const apiKey = geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+
+          const modelName = modelType === "fast"
+
+            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+
+            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+  
+
+          const geminiClient = new GeminiClient(apiKey, modelName);
+
+  
+
+          // 이미 분석된 데이터를 가지고 바로 생성/발행 단계 수행하는 별도 함수 혹은 runAutoPilot 수정 필요
+
+          // 여기서는 기존 runAutoPilot이 처음부터 다 하는 구조이므로, 
+
+          // 선택된 키워드 하나로 runAutoPilot을 속여서 호출하거나 로직을 분리해야 함.
+
+          // 일단은 기존 runAutoPilot을 'keyword' 모드로 동작하게 살짝 수정해서 사용.
+
+          
+
+          const publishPlatforms: ("naver" | "tistory")[] = [];
+
+          if (enableNaver) publishPlatforms.push("naver");
+
+          if (enableTistory) publishPlatforms.push("tistory");
+
+  
+
+          // 분석된 데이터를 옵션으로 넘겨주는 방식으로 진행 (추후 core 수정 필요)
+
+          // 현재는 broadTopic 자리에 선택된 키워드를 넣으면 다시 분석하지만 점수는 동일할 것임.
+
+          return await runAutoPilot({
+
+            broadTopic: analysis.keyword, 
+
+            config: {
+
+              searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+
+              searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+
+              adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
+
+              adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
+
+              adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+
+            },
+
+            userDataPath,
+
+            geminiClient,
+
+            publishPlatforms,
+
+            credentials: {
+
+              naver: { id: naverId, pw: naverPw },
+
+              tistory: { id: tistoryId, pw: tistoryPw },
+
+            },
+
+            headless,
+
+            onProgress: (message: string) => {
+
+              if (mainWindow && !mainWindow.isDestroyed()) {
+
+                mainWindow.webContents.send("process-log", message);
+
+              }
+
+            },
+
+          });
+
+        }, globalAbortController);
+
+      } catch (error: any) {
+
+        return { success: false, error: error.message };
+
+      } finally {
+
+        globalAbortController = null;
+
+      }
+
+    });
+
+  
+
+    // ----------------------------------------
+
+    // [v2.0] 오토파일럿 실행 (분석 -> 생성 -> 발행)
+
+  
+
+  // ----------------------------------------
+
+  ipcMain.handle(
+    "run-autopilot",
+    async (event, { keyword, modelType, headless }) => {
+      globalAbortController = new AbortController();
+
+      try {
+        return await runWithAbort(async () => {
+          const credentials: any = store.get("user-credentials");
+
+          const {
+            geminiKey,
+            subGemini,
+            naverId,
+            naverPw,
+            tistoryId,
+            tistoryPw,
+            enableNaver,
+            enableTistory,
+          } = credentials || {};
+
+          const userDataPath = app.getPath("userData");
+
+          // 1. Gemini 클라이언트 준비
+
+          const apiKey =
+            geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+
+          if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
+
+          const modelName =
+            modelType === "fast"
+              ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+              : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+
+          const geminiClient = new GeminiClient(apiKey, modelName);
+
+          // 2. 스카우트 설정 준비
+
+          const scoutConfig = {
+            searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+
+            searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+
+            adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
+
+            adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
+
+            adCustomerId:
+              process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+          };
+
+          // 3. 발행 플랫폼 설정
+
+          const publishPlatforms: ("naver" | "tistory")[] = [];
+
+          if (enableNaver) publishPlatforms.push("naver");
+
+          if (enableTistory) publishPlatforms.push("tistory");
+
+          if (publishPlatforms.length === 0)
+            throw new Error("발행할 플랫폼이 선택되지 않았습니다.");
+
+          // 4. 파이프라인 실행
+
+          return await runAutoPilot({
+            broadTopic: keyword, // keyword를 broadTopic으로 매핑
+
+            config: scoutConfig,
+
+            userDataPath,
+
+            geminiClient,
+
+            publishPlatforms,
+
+            credentials: {
+              naver: { id: naverId, pw: naverPw },
+
+              tistory: { id: tistoryId, pw: tistoryPw },
+            },
+
+            headless,
+
+            onProgress: (message: string) => {
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send("process-log", message);
+              }
+            },
+          });
+        }, globalAbortController);
+      } catch (error: any) {
+        if (error.message === "AbortError")
+          return { success: false, error: "AbortError" };
+
+        return { success: false, error: error.message };
+      } finally {
+        globalAbortController = null;
+      }
+    },
+  );
 
   // ----------------------------------------
 
