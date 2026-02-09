@@ -92,6 +92,8 @@ export interface AiGeneratedPost {
 export interface Publication extends AiGeneratedPost {
   category: string;
   createdAt: string;
+  persona: Persona;
+  tone: Tone;
 }
 
 export interface GeneratePostInput {

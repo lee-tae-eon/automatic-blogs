@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
       "get-store-data",
       "update-task",
       "fetch-hollywood-trends",
+      "fetch-korea-trends",
+      "run-autopilot",
+      "fetch-keyword-candidates",
+      "run-autopilot-step2",
     ];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, ...args);

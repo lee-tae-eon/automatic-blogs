@@ -111,18 +111,21 @@ export async function generatePost({
         inputParams.latestNews = `[기존 저장된 정보 활용]\n${cachedNews.content}`;
       } else {
         const topicIntent = analyzeTopicIntent(task.topic);
-        let searchQuery = task.topic;
+        
+        // 🔍 검색어 정제: task.topic에 지시사항이 섞여 있을 수 있으므로 첫 줄(키워드)만 추출
+        let cleanTopic = task.topic.split("\n")[0].trim();
+        let searchQuery = cleanTopic;
         
         // 장소 관련 주제인 경우 검색어 보강 (환각 방지)
         if (topicIntent.isPlace) {
-          searchQuery = `${task.topic} 정확한 위치 상호명 메뉴 가격 정보`;
-          onProgress?.(`장소 데이터 정밀 검색 중: ${task.topic}`);
+          searchQuery = `${cleanTopic} 정확한 위치 상호명 메뉴 가격 정보`;
+          onProgress?.(`장소 데이터 정밀 검색 중: ${cleanTopic}`);
         } else if (task.persona === "hollywood-reporter") {
           // 헐리우드 특파원인 경우 영어 소스 검색 강화
-          searchQuery = `${task.topic} latest news gossip tmz people dailymail`;
-          onProgress?.(`🎬 헐리우드 현지 뉴스 검색 중: ${task.topic}`);
+          searchQuery = `${cleanTopic} latest news gossip tmz people dailymail`;
+          onProgress?.(`🎬 헐리우드 현지 뉴스 검색 중: ${cleanTopic}`);
         } else {
-          onProgress?.(`실시간 정보 검색 중: ${task.topic}`);
+          onProgress?.(`실시간 정보 검색 중: ${cleanTopic}`);
         }
 
         const tavily = new TavilyService();
@@ -167,6 +170,8 @@ export async function generatePost({
       const rawPublication: Publication = {
         ...aiPost,
         category: task.category,
+        persona: task.persona,
+        tone: task.tone,
         createdAt: new Date().toISOString(),
       };
       
@@ -185,6 +190,16 @@ export async function generatePost({
     } catch (error: any) {
       console.error(`[GeneratePost] Error:`, error);
       lastError = error;
+
+      // 🚨 에러 발생 시 뉴스 캐시 무효화 (다음 시도 시 깨끗한 상태로 검색)
+      try {
+        const dbPath = projectRoot || process.cwd();
+        const db = new DbService(dbPath);
+        console.warn(`⚠️ [GeneratePost] 에러 발생으로 인해 '${task.topic}'의 뉴스 캐시를 삭제합니다.`);
+        db.deleteNews(task.topic);
+      } catch (dbError) {
+        console.error("❌ 뉴스 캐시 삭제 실패:", dbError);
+      }
 
       // 429 에러(Quota Exceeded)인 경우 재시도하지 않고 즉시 상위로 던져서 모델 변경을 유도함
       const errorMsg = error instanceof Error ? error.message : String(error);

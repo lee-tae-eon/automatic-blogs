@@ -21,12 +21,13 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   const [trends, setTrends] = useState<TrendTopic[]>([]);
   const [trendQuery, setTrendQuery] = useState("");
   const [isFetchingTrends, setIsFetchingTrends] = useState(false);
+  const [trendType, setTrendType] = useState<"hollywood" | "korea">("hollywood");
 
   const fetchTrends = async () => {
     setIsFetchingTrends(true);
-    // 잦은 호출 방지를 위해 로딩 중엔 버튼 클릭만 막고 리스트는 유지하거나 교체
     try {
-      const result = await window.ipcRenderer.invoke("fetch-hollywood-trends", trendQuery);
+      const channel = trendType === "hollywood" ? "fetch-hollywood-trends" : "fetch-korea-trends";
+      const result = await window.ipcRenderer.invoke(channel, trendQuery);
       if (result && result.success) {
         setTrends(result.data);
       } else {
@@ -43,10 +44,16 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   const selectTrend = (trend: TrendTopic) => {
     setTopic(trend.topic);
     setKeywords(trend.keywords.join(", "));
-    setCategory("해외연예");
-    setPersona("hollywood-reporter");
-    setTone("witty");
-    // 선택 후 리스트를 바로 없애지 않음 (사용자 요청)
+    
+    if (trendType === "hollywood") {
+      setCategory("해외연예");
+      setPersona("hollywood-reporter");
+      setTone("witty");
+    } else {
+      setCategory("일상정보");
+      setPersona("informative");
+      setTone("professional");
+    }
   };
 
   const clearTrends = () => {
@@ -98,14 +105,54 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
       marginBottom: "20px",
       boxShadow: "0 4px 6px rgba(0,0,0,0.02)"
     }}>
-      {/* 왼쪽: 헐리우드 트렌드 탐색 */}
+      {/* 왼쪽: 트렌드 탐색 */}
       <div className="trends-section" style={{ borderRight: "1px solid #f1f3f5", paddingRight: "20px" }}>
+        {/* 탭 전환 */}
+        <div style={{ display: "flex", marginBottom: "15px", backgroundColor: "#f1f3f5", borderRadius: "8px", padding: "4px" }}>
+          <button 
+            onClick={() => { setTrendType("hollywood"); setTrends([]); }}
+            style={{ 
+              flex: 1, 
+              padding: "6px", 
+              fontSize: "0.8rem", 
+              border: "none", 
+              borderRadius: "6px", 
+              backgroundColor: trendType === "hollywood" ? "#fff" : "transparent",
+              color: trendType === "hollywood" ? "#ff4757" : "#868e96",
+              fontWeight: "bold",
+              cursor: "pointer",
+              boxShadow: trendType === "hollywood" ? "0 2px 4px rgba(0,0,0,0.05)" : "none"
+            }}
+          >
+            🎬 헐리우드
+          </button>
+          <button 
+            onClick={() => { setTrendType("korea"); setTrends([]); }}
+            style={{ 
+              flex: 1, 
+              padding: "6px", 
+              fontSize: "0.8rem", 
+              border: "none", 
+              borderRadius: "6px", 
+              backgroundColor: trendType === "korea" ? "#fff" : "transparent",
+              color: trendType === "korea" ? "#03c75a" : "#868e96",
+              fontWeight: "bold",
+              cursor: "pointer",
+              boxShadow: trendType === "korea" ? "0 2px 4px rgba(0,0,0,0.05)" : "none"
+            }}
+          >
+            🇰🇷 한국 트렌드
+          </button>
+        </div>
+
         <div style={{ marginBottom: "15px" }}>
-          <h3 style={{ margin: "0 0 10px 0", fontSize: "1rem", color: "#212529" }}>🔥 헐리우드 핫이슈</h3>
+          <h3 style={{ margin: "0 0 10px 0", fontSize: "1rem", color: "#212529" }}>
+            {trendType === "hollywood" ? "🔥 헐리우드 핫이슈" : "📈 실시간 한국 트렌드"}
+          </h3>
           <div style={{ display: "flex", gap: "5px" }}>
             <input 
               type="text" 
-              placeholder="배우/주제 검색..." 
+              placeholder={trendType === "hollywood" ? "배우/주제 검색..." : "이슈/키워드 검색..."}
               value={trendQuery}
               onChange={(e) => setTrendQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchTrends()}
@@ -124,7 +171,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               style={{ 
                 padding: "8px 15px", 
                 fontSize: "0.85rem", 
-                backgroundColor: "#ff4757", 
+                backgroundColor: trendType === "hollywood" ? "#ff4757" : "#03c75a", 
                 color: "#fff", 
                 border: "none", 
                 borderRadius: "6px",
@@ -138,7 +185,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
         </div>
 
         <div style={{ 
-          height: "300px", 
+          height: "262px", 
           overflowY: "auto",
           paddingRight: "5px",
           position: "relative"
@@ -163,11 +210,11 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
                 width: "30px",
                 height: "30px",
                 border: "3px solid #f3f3f3",
-                borderTop: "3px solid #ff4757",
+                borderTop: `3px solid ${trendType === "hollywood" ? "#ff4757" : "#03c75a"}`,
                 borderRadius: "50%",
                 animation: "spin 1s linear infinite"
               }}></div>
-              <span style={{ fontSize: "0.85rem", color: "#ff4757", fontWeight: "bold" }}>하이브리드 엔진 검색 중...</span>
+              <span style={{ fontSize: "0.85rem", color: trendType === "hollywood" ? "#ff4757" : "#03c75a", fontWeight: "bold" }}>하이브리드 엔진 검색 중...</span>
             </div>
           )}
 
@@ -190,8 +237,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
                     transition: "all 0.2s"
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = "#fff5f5";
-                    e.currentTarget.style.borderColor = "#feb2b2";
+                    e.currentTarget.style.backgroundColor = trendType === "hollywood" ? "#fff5f5" : "#f0fff4";
+                    e.currentTarget.style.borderColor = trendType === "hollywood" ? "#feb2b2" : "#9ae6b4";
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.backgroundColor = "#f8f9fa";
@@ -224,15 +271,22 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
       {/* 오른쪽: 직접 입력 폼 */}
       <div className="form-section">
         <h3 style={{ margin: "0 0 20px 0", fontSize: "1rem", color: "#212529" }}>📝 작업 상세 정보</h3>
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+        <form onSubmit={handleSubmit} style={{ 
+          display: "grid", 
+          gridTemplateColumns: "1fr 1fr", 
+          gap: "20px",
+          width: "100%"
+        }}>
           <div className="form-group" style={{ gridColumn: "span 2" }}>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>포스팅 주제</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              포스팅 주제 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <input
               type="text"
               placeholder="블로그 포스트 주제를 입력하거나 왼쪽 이슈를 클릭하세요"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
           
@@ -243,26 +297,30 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               placeholder="쉼표로 구분"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>카테고리</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              카테고리 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <input
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>페르소나</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              페르소나 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <select 
               value={persona} 
               onChange={(e) => setPersona(e.target.value as Persona)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
               <option value="informative">정보형</option>
               <option value="empathetic">공감형</option>
@@ -275,11 +333,13 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
           </div>
 
           <div className="form-group">
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>톤앤매너</label>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "#495057", marginBottom: "6px", fontWeight: "600" }}>
+              톤앤매너 <span style={{ color: "#ff4757" }}>*</span>
+            </label>
             <select 
               value={tone} 
               onChange={(e) => setTone(e.target.value as Tone)}
-              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff" }}
+              style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
               <option value="professional">전문적인</option>
               <option value="witty">재치있는</option>

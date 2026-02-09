@@ -6,6 +6,7 @@ export const useAppViewModel = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<any[]>([]); // 키워드 후보 상태 추가
   const shouldStopRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [isStoreLoaded, setIsStoreLoaded] = useState(false);
@@ -18,9 +19,14 @@ export const useAppViewModel = () => {
   const [credentials, setCredentials] = useState({
     naverId: "",
     naverPw: "",
+    tistoryId: "",
+    tistoryPw: "",
     geminiKey: "",
     subGemini: "",
     headless: false,
+    modelType: "normal" as "fast" | "normal",
+    enableNaver: true,
+    enableTistory: false,
   });
 
   // 1. 초기 로드
@@ -31,10 +37,14 @@ export const useAppViewModel = () => {
         "user-credentials",
       );
       if (storedCreds) {
-        setCredentials((prev) => ({ 
-          ...prev, 
+        setCredentials((prev) => ({
+          ...prev,
           ...storedCreds,
-          headless: storedCreds.headless ?? false 
+          headless: storedCreds.headless ?? false,
+          modelType: storedCreds.modelType ?? "normal",
+          enableNaver: storedCreds.enableNaver ?? true,
+          enableTistory: storedCreds.enableTistory ?? false,
+          tistoryPw: storedCreds.tistoryPw || storedCreds.tistoryToken || "", // 마이그레이션 호환성
         }));
       }
       setIsStoreLoaded(true);
@@ -67,11 +77,15 @@ export const useAppViewModel = () => {
   }, []);
 
   // 4. 핸들러들
-  const handleCredentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setCredentials((prev) => ({ 
-      ...prev, 
-      [name]: type === "checkbox" ? checked : value 
+  const handleCredentialChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    setCredentials((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -184,6 +198,105 @@ export const useAppViewModel = () => {
     addLog("중단 요청을 보냈습니다. 현재 작업이 마무리되는 대로 중단됩니다.");
   };
 
+  /**
+   * v2.0 Auto-Pilot 실행 핸들러
+   */
+  const handleAutoPilot = async (keyword: string) => {
+    if (isProcessing || !keyword.trim()) return;
+
+    setIsProcessing(true);
+    shouldStopRef.current = false;
+    abortControllerRef.current = new AbortController();
+    setLogs([]);
+    addLog(`🚀 [Auto-Pilot] 키워드 '${keyword}' 분석 및 발행 시작`);
+
+    try {
+      const result = await window.ipcRenderer.invoke("run-autopilot", {
+        keyword,
+        modelType: credentials.modelType,
+        headless: credentials.headless,
+      });
+
+      if (result.success) {
+        addLog(`✨ [Auto-Pilot] 성공적으로 완료되었습니다! (점수: ${result.analysis.score})`);
+        alert(`발행 성공! (키워드 점수: ${result.analysis.score})`);
+      } else {
+        if (result.error === "AbortError") {
+          addLog("🛑 사용자에 의해 중단되었습니다.");
+        } else {
+          addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
+          alert(`실패: ${result.error}`);
+        }
+      }
+    } catch (error: any) {
+      addLog(`❌ [Auto-Pilot] 시스템 오류: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  /**
+   * v2.0 오토파일럿 1단계: 키워드 후보 분석
+   */
+  const handleFetchCandidates = async (broadTopic: string) => {
+    if (isProcessing || !broadTopic.trim()) return;
+
+    setIsProcessing(true);
+    setCandidates([]);
+    addLog(`🔍 [Auto-Pilot] 주제 '${broadTopic}' 분석 중...`);
+
+    try {
+      const result = await window.ipcRenderer.invoke("fetch-keyword-candidates", {
+        broadTopic,
+        modelType: credentials.modelType,
+      });
+
+      if (result.success) {
+        setCandidates(result.data);
+        addLog(`✅ [Auto-Pilot] ${result.data.length}개의 키워드 후보를 찾았습니다.`);
+      } else {
+        addLog(`❌ [Auto-Pilot] 분석 실패: ${result.error}`);
+        alert(`분석 실패: ${result.error}`);
+      }
+    } catch (error: any) {
+      addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  /**
+   * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
+   */
+  const handleStartWithKeyword = async (analysis: any, category: string) => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${category}) 발행 시작`);
+
+    try {
+      const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
+        analysis,
+        category, // 카테고리 전달
+        modelType: credentials.modelType,
+        headless: credentials.headless,
+      });
+
+      if (result.success) {
+        addLog(`✨ [Auto-Pilot] 성공: ${analysis.keyword}`);
+        alert("발행 성공!");
+      } else {
+        addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
+        alert(`실패: ${result.error}`);
+      }
+    } catch (error: any) {
+      addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handlePublishAll = async () => {
     if (isProcessing || tasks.length === 0) return;
     if (!confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
@@ -201,7 +314,7 @@ export const useAppViewModel = () => {
       }
 
       if (task.status === "완료") {
-        addLog(`[${i + 1}] 이미 완료된 항목입니다: ${task.keyword}`);
+        addLog(`[${i + 1}] 이미 완료된 항목입니다: ${task.topic}`);
         continue;
       }
 
@@ -211,12 +324,15 @@ export const useAppViewModel = () => {
 
       try {
         // 생성
-        const genResult = await window.ipcRenderer.invoke(
-          "generate-post",
-          tasks[i],
-        );
+        const genResult = await window.ipcRenderer.invoke("generate-post", {
+          ...tasks[i],
+          modelType: credentials.modelType, // 글로벌 설정값 적용
+        });
 
-        if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
+        if (
+          shouldStopRef.current ||
+          abortControllerRef.current?.signal.aborted
+        ) {
           addLog(`[${i + 1}] 중단됨: ${task.topic}`);
           await updateTaskState(i, { status: "대기" });
           break;
@@ -225,14 +341,38 @@ export const useAppViewModel = () => {
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
         // 발행
-        const pubResult = await window.ipcRenderer.invoke(
-          "publish-post",
-          {
-            ...genResult.data,
-            headless: credentials.headless
-          }
-        );
-        if (!pubResult.success) throw new Error(pubResult.error || "발행 실패");
+        const publishTasks: Promise<any>[] = [];
+
+        if (credentials.enableNaver) {
+          publishTasks.push(
+            window.ipcRenderer.invoke("publish-post", {
+              ...genResult.data,
+              platform: "naver",
+              blogId: credentials.naverId,
+              password: credentials.naverPw,
+              headless: credentials.headless,
+            }),
+          );
+        }
+
+        if (credentials.enableTistory) {
+          publishTasks.push(
+            window.ipcRenderer.invoke("publish-post", {
+              ...genResult.data,
+              platform: "tistory",
+              blogId: credentials.tistoryId,
+              password: credentials.tistoryPw,
+            }),
+          );
+        }
+
+        if (publishTasks.length === 0) {
+          throw new Error("발행할 플랫폼이 선택되지 않았습니다.");
+        }
+
+        const pubResults = await Promise.all(publishTasks);
+        const failedPub = pubResults.find((r) => !r.success);
+        if (failedPub) throw new Error(failedPub.error || "발행 실패");
 
         addLog(`[${i + 1}] 완료: ${task.topic}`);
         // 2. 완료 상태 반영
@@ -262,7 +402,7 @@ export const useAppViewModel = () => {
   };
 
   return {
-    state: { tasks, isProcessing, credentials, logs },
+    state: { tasks, isProcessing, credentials, logs, candidates },
     actions: {
       handleCredentialChange,
       handleAddTask, // 추가
@@ -272,6 +412,9 @@ export const useAppViewModel = () => {
       handlePublishAll,
       handlePersonaChange,
       handleToneChange,
+      handleAutoPilot,
+      handleFetchCandidates,
+      handleStartWithKeyword,
     },
   };
 };

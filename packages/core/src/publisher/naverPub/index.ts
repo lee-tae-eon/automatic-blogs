@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 import { chromium, Page, BrowserContext } from "playwright";
 import path from "path";
 import fs from "fs";
@@ -6,9 +5,11 @@ import { findProjectRoot } from "../../util/findProjectRoot";
 import { NaverAuthenticator } from "./NaverAuthenticator";
 import { NaverEditor } from "./NaverEditor";
 import { NaverPublicationManager } from "./NaverPublicationManager";
+import { IBlogPublisher, PublishOptions } from "../interface";
+import { Persona, Publication, Tone } from "../../types/blog";
 
 /**
- * 네이버 블로그 발행을 위한 입력 데이터 인터페이스
+ * 네이버 블로그 발행을 위한 입력 데이터 인터페이스 (Legacy Support)
  */
 export interface NaverPostInput {
   blogId: string;
@@ -16,10 +17,10 @@ export interface NaverPostInput {
   htmlContent: string;
   password?: string;
   tags?: string[];
-  category?: string;
+  category: string;
   references?: { name: string; url: string }[];
-  persona?: string;
-  tone?: string;
+  persona: Persona;
+  tone: Tone;
   onProgress?: (message: string) => void;
   headless?: boolean;
 }
@@ -28,7 +29,7 @@ export interface NaverPostInput {
  * NaverPublisher
  * 네이버 블로그 자동 발행을 총괄하는 오케스트레이터 클래스입니다.
  */
-export class NaverPublisher {
+export class NaverPublisher implements IBlogPublisher {
   private userDataDir: string;
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
@@ -40,15 +41,21 @@ export class NaverPublisher {
     this.ensureAuthDirectory();
   }
 
+  // ... (private methods remain unchanged)
+
   /**
    * 인증 정보가 저장될 디렉토리를 확인하고 없으면 생성합니다.
    */
   private ensureAuthDirectory() {
     if (!fs.existsSync(this.userDataDir)) {
       fs.mkdirSync(this.userDataDir, { recursive: true });
-      console.log(`📂 [NaverPublisher] 인증 디렉토리 생성: ${this.userDataDir}`);
+      console.log(
+        `📂 [NaverPublisher] 인증 디렉토리 생성: ${this.userDataDir}`,
+      );
     } else {
-      console.log(`📂 [NaverPublisher] 기존 인증 디렉토리 사용: ${this.userDataDir}`);
+      console.log(
+        `📂 [NaverPublisher] 기존 인증 디렉토리 사용: ${this.userDataDir}`,
+      );
     }
   }
 
@@ -71,8 +78,10 @@ export class NaverPublisher {
     references?: { name: string; url: string }[],
   ): string {
     // 유효한 출처만 필터링 (이름과 URL이 모두 있어야 함)
-    const validRefs = (references || []).filter(ref => ref && ref.name?.trim() && ref.url?.trim());
-    
+    const validRefs = (references || []).filter(
+      (ref) => ref && ref.name?.trim() && ref.url?.trim(),
+    );
+
     if (validRefs.length === 0) return html;
 
     const refHtml = `
@@ -98,7 +107,9 @@ export class NaverPublisher {
     if (!browserRoot) return undefined;
 
     try {
-      const chromiumFolders = fs.readdirSync(browserRoot).filter((f) => f.startsWith("chromium-"));
+      const chromiumFolders = fs
+        .readdirSync(browserRoot)
+        .filter((f) => f.startsWith("chromium-"));
       if (chromiumFolders.length === 0) return undefined;
 
       let relativePath = "";
@@ -139,7 +150,8 @@ export class NaverPublisher {
         "--disable-setuid-sandbox",
       ],
       permissions: ["clipboard-read", "clipboard-write"],
-      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 800 },
     };
 
@@ -149,7 +161,10 @@ export class NaverPublisher {
       console.log(`🚀 커스텀 브라우저 실행 경로 사용: ${customPath}`);
     }
 
-    this.currentContext = await chromium.launchPersistentContext(this.userDataDir, launchOptions);
+    this.currentContext = await chromium.launchPersistentContext(
+      this.userDataDir,
+      launchOptions,
+    );
     const page = await this.currentContext.newPage();
 
     // 다이얼로그(Alert 등) 자동 승인 설정
@@ -164,7 +179,12 @@ export class NaverPublisher {
   /**
    * 네이버 로그인을 처리합니다. 이미 세션이 있는 경우 건너뜁니다.
    */
-  private async handleLogin(page: Page, blogId: string, password?: string, onProgress?: (msg: string) => void) {
+  private async handleLogin(
+    page: Page,
+    blogId: string,
+    password?: string,
+    onProgress?: (msg: string) => void,
+  ) {
     onProgress?.("네이버 블로그 접속 중...");
     await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
       waitUntil: "domcontentloaded",
@@ -177,19 +197,27 @@ export class NaverPublisher {
       onProgress?.("네이버 로그인 진행 중...");
       if (password) {
         const authenticator = new NaverAuthenticator(page);
-        await authenticator.login(blogId, password);
+        try {
+          await authenticator.login(blogId, password);
+        } catch (e) {
+          onProgress?.("자동 로그인 실패. 수동 로그인을 시도해 주세요 (2분 대기).");
+        }
       } else {
         onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
-        console.log("👉 로그인이 필요합니다. 브라우저에서 로그인을 완료해 주세요 (2분 대기).");
       }
+
+      console.log(
+        "👉 로그인이 필요합니다. 브라우저 창에서 로그인을 완료해 주세요 (2분 대기).",
+      );
       
+      // 로그인 완료 후 블로그 페이지로 이동할 때까지 충분히 대기 (최대 2분)
       await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
-      onProgress?.("로그인 완료 (세션 저장 중...)");
+      onProgress?.("로그인 확인 완료 (세션 저장 중...)");
       await page.waitForTimeout(3000);
 
       await page.goto(`https://blog.naver.com/${blogId}/postwrite`, {
         waitUntil: "domcontentloaded",
-        timeout: 20000,
+        timeout: 30000,
       });
     }
   }
@@ -210,10 +238,44 @@ export class NaverPublisher {
   }
 
   /**
-   * [Public API] 블로그에 포스트를 작성하고 발행합니다.
+   * [Legacy] 호환성을 위해 유지 (곧 Deprecated 예정)
    */
   async postToBlog(input: NaverPostInput) {
-    const { blogId, title, htmlContent, password, tags = [], category, references, persona, onProgress, headless = false } = input;
+    // Legacy support wrapper
+    const { blogId, password, headless, onProgress, ...rest } = input;
+
+    // Publication 객체로 변환
+    const post: Publication = {
+      ...rest,
+      content: rest.htmlContent, // htmlContent를 content로 매핑
+      createdAt: new Date().toISOString(),
+      persona: rest.persona,
+      tone: rest.tone,
+      category: rest.category,
+      outline: [],
+      metaDescription: "",
+      metaTitle: "",
+      focusKeywords: rest.tags || [],
+      internalLinkSuggestions: [],
+    };
+
+    return this.publish({ blogId, password, headless, onProgress }, post);
+  }
+
+  /**
+   * [Interface Implementation] IBlogPublisher.publish 구현
+   */
+  async publish(options: PublishOptions, post: Publication): Promise<void> {
+    const { blogId, password, onProgress, headless = false } = options;
+    const { title, content, tags = [], category, references, persona } = post;
+
+    // 마크다운을 HTML로 변환하는 작업은 외부에서 수행되었다고 가정하거나 여기서 수행
+    // NaverPublisher는 이미 HTML을 받는 것으로 설계되었으므로, content가 HTML이어야 함을 주의
+    // 하지만 Publication 타입의 content는 마크다운일 수도 있음.
+    // 기존 로직에서는 markdownToHtml이 호출된 상태로 넘어왔음.
+    // 여기서는 content를 그대로 HTML로 간주하고 진행 (호출측 책임)
+    const htmlContent = content;
+
     let page: Page | null = null;
 
     try {
@@ -224,7 +286,13 @@ export class NaverPublisher {
       await this.handleLogin(page, blogId, password, onProgress);
 
       // 2. 에디터 진입 및 초기화
-      const editor = new NaverEditor(page, this.projectRoot, title, tags, persona);
+      const editor = new NaverEditor(
+        page,
+        this.projectRoot,
+        title,
+        tags,
+        persona,
+      );
       onProgress?.("에디터 초기화 중...");
       await editor.clearPopups();
       await page.waitForTimeout(2000);
@@ -236,10 +304,12 @@ export class NaverPublisher {
       // 4. 본문 구성 (페르소나 기반 출처 필터링 적용)
       const excludedPersonas = ["friendly", "storytelling", "experiential"];
       const shouldExcludeRef = persona && excludedPersonas.includes(persona);
-      
+
       let finalHtml = htmlContent;
       if (shouldExcludeRef) {
-        console.log(`ℹ️ [NaverPublisher] '${persona}' 페르소나는 출처 기재를 일괄 제외합니다.`);
+        console.log(
+          `ℹ️ [NaverPublisher] '${persona}' 페르소나는 출처 기재를 일괄 제외합니다.`,
+        );
       } else {
         finalHtml = this.appendReferences(htmlContent, references);
       }
@@ -255,7 +325,6 @@ export class NaverPublisher {
 
       onProgress?.("블로그 발행 완료");
       console.log("✅ 작성 및 발행 완료!");
-      
     } catch (error: any) {
       console.error("❌ 네이버 발행 오류:", error);
       if (page) this.logError(title, error, page.url());
