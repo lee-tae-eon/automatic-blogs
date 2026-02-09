@@ -43,9 +43,8 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
-  // 4. [v3.4] 최신성 검수 (Year Correction)
-  // AI가 과거 연도를 언급할 경우 현재 연도로 보정
-  const currentYear = new Date().getFullYear().toString(); // 2026
+  // 4. [v3.4] 최신성 검수
+  const currentYear = new Date().getFullYear().toString();
   const outdatedYearsRegex = /202[3-5]년/g;
   if (outdatedYearsRegex.test(content) || outdatedYearsRegex.test(title)) {
     console.warn(`🕒 [Sanitizer] 과거 연도 감지됨. 2026년으로 수정을 시도합니다.`);
@@ -56,44 +55,26 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
 
   const oldContent = content;
 
-  // 4. [v3.1] 모바일 가독성 강제 줄바꿈 (Smart Spacing)
-  const enforceMobileSpacing = (text: string): string => {
+  // 5. [v3.5] 모바일 가독성 가공 (Pure Paragraphing)
+  // 기계적인 폭 조절 대신, 문단 사이의 '확실한 여백'만 확보합니다.
+  const refineSpacing = (text: string): string => {
     return text.split("\n").map(line => {
-      if (line.match(/^(\s*[-*>]|\s*\d+\.|\||#)/)) return line;
-      if (line.trim().length === 0) return line;
+      // 이미 빈 줄이거나 특수 포맷 라인은 그대로 유지
+      if (line.trim().length === 0 || line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
+
+      // 마침표 뒤에 공백이 있고 바로 문장이 이어지면, AI가 줄바꿈을 놓친 것으로 보고 분리
+      // 예: "했습니다. 그런데" -> "했습니다.\n\n그런데"
       return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
     }).join("\n");
   };
 
-  // 5. [v3.2] 리얼 모바일 핏 (Real Mobile Fit) - 폭 좁게 쓰기
-  const formatForMobile = (text: string): string => {
-    return text.split("\n").map(line => {
-      if (line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
-      if (line.trim().length < 28) return line;
-
-      const words = line.split(" ");
-      let currentLine = "";
-      let result = "";
-
-      for (const word of words) {
-        if ((currentLine + word).length > 28) {
-          result += currentLine.trim() + "\n";
-          currentLine = word + " ";
-        } else {
-          currentLine += word + " ";
-        }
-      }
-      result += currentLine.trim();
-      return result;
-    }).join("\n");
-  };
-
-  content = formatForMobile(content);
-  content = enforceMobileSpacing(content); 
-  content = content.replace(/\n{3,}/g, "\n\n");
+  content = refineSpacing(content);
+  
+  // 💡 핵심: 문단 사이 여백을 2줄로 확실히 벌려 모바일 가독성 극대화
+  content = content.replace(/\n\n/g, "\n\n\n"); 
 
   if (content !== oldContent) {
-    console.log("📱 [Mobile] 모바일 화면 폭에 맞춰 줄바꿈을 재배열했습니다.");
+    console.log("📱 [Mobile] 문단 간격을 넓혀 가독성을 최적화했습니다.");
     isModified = true;
   }
 
