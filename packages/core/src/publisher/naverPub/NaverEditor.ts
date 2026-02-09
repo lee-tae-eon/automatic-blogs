@@ -131,10 +131,10 @@ export class NaverEditor {
             break;
 
           case "blockquote-paragraph":
-            // 이미 <p> 태그를 포함하고 있을 경우 중복 방지
+            // 이미 <p> 태그를 포함하고 있을 경우 중복 방지 및 중앙 정렬 적용
             const bqContent = block.html.startsWith("<p") 
-              ? block.html 
-              : `<p>${block.html}</p>`;
+              ? block.html.replace("<p", '<p style="text-align: center;"') 
+              : `<p style="text-align: center;">${block.html}</p>`;
             await this.pasteHtml(`<blockquote>${bqContent}</blockquote>`);
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
@@ -147,22 +147,24 @@ export class NaverEditor {
                 : block.prefix === "▶ "
                   ? "h2"
                   : "h3";
-            await this.pasteHtml(`<${tag}>${block.text}</${tag}>`);
+            await this.pasteHtml(`<${tag} style="text-align: center;">${block.text}</${tag}>`);
             await this.page.keyboard.press("Enter");
             break;
 
           case "table":
-            await this.pasteHtml(block.html);
+            await this.pasteHtml(block.html); // 표는 중앙 정렬 스타일이 복잡하므로 유지
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
 
           case "list":
-            await this.pasteHtml(`<ul><li>${block.html}</li></ul>`);
+            // 리스트도 가독성을 위해 중앙 정렬된 문단 내부에 배치
+            await this.pasteHtml(`<div style="text-align: center;"><ul style="display: inline-block; text-align: left;"><li>${block.html}</li></ul></div>`);
             await this.page.keyboard.press("Enter");
             break;
 
           case "image":
+            // ... (이미지 로직 생략)
             // ✅ 헐리우드 특파원 페르소나는 이미지 검색 생략 (스톡 이미지 부적절)
             if (this.persona === "hollywood-reporter") {
               console.log("ℹ️ [NaverEditor] 'hollywood-reporter' 페르소나는 Pexels 이미지 검색을 생략합니다.");
@@ -224,8 +226,8 @@ export class NaverEditor {
 
           case "paragraph":
           default:
-            // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지
-            await this.pasteHtml(`<p>${block.html}</p>`);
+            // ✅ 핵심: 일반 문단과 리스트도 HTML로 붙여넣어 강조(**) 유지 및 중앙 정렬 적용
+            await this.pasteHtml(`<p style="text-align: center;">${block.html}</p>`);
             await this.page.keyboard.press("Enter");
             break;
         }

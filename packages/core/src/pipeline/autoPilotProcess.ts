@@ -77,6 +77,11 @@ export async function runAutoPilot(options: AutoPilotOptions) {
 
     // 프롬프트에 경쟁사 분석 전략 주입 (task에 추가 정보를 담아 전달)
     const customInstruction = `
+      [🚨 시점 및 최신성 지시 (CRITICAL)]
+      - 현재는 **2026년 2월**입니다. 모든 정보와 데이터는 **2026년 기준**으로 작성하세요.
+      - 2024년, 2025년과 같은 과거 연도 언급을 절대 금지합니다.
+      - 만약 뉴스 데이터에 과거 연도가 있더라도, 본문에는 2026년 현재 시점의 가이드로 변환해서 쓰세요.
+
       [전략적 지시사항 (차별화 포인트)]
       ${strategy.differentiationStrategy}
 

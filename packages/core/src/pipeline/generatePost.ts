@@ -18,24 +18,86 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
   let { title, content } = publication;
   let isModified = false;
 
-  // 2. 제목 강제 순화 (AI가 프롬프트를 무시했을 경우 대비)
+  // 2. 제목 강제 순화
   if (/자살/g.test(title) || /극단적 선택/g.test(title)) {
     console.warn("🛡️ [Safety] 제목의 금지어를 순화합니다.");
     title = title
       .replace(/자살/g, "사망")
       .replace(/극단적 선택/g, "비극적 사건")
-      .replace(/충격/g, "속보"); // 자극적 단어 제외
+      .replace(/충격/g, "속보");
     isModified = true;
   }
 
-  // 3. 본문 강제 순화
+  // 3. 본문 강제 순화 및 뉴스 마커 정밀 제거 (Safe Mode)
+  // [뉴스 1], (출처: BBC) 처럼 명확한 출처 표기만 제거하고, [1단계] 같은 건 유지
+  const safeReferenceRegex = /(\[(뉴스|출처|Reference)\s*\d*\]|\((출처|Source):.*?\))/gi;
+  if (safeReferenceRegex.test(content)) {
+    console.log("🧹 [Sanitizer] 본문 내 뉴스 참조 마커 정밀 제거");
+    content = content.replace(safeReferenceRegex, "");
+    isModified = true;
+  }
+
   if (/자살/g.test(content)) {
     console.warn("🛡️ [Safety] 본문의 금지어를 순화합니다.");
     content = content.replace(/자살/g, "사망");
     isModified = true;
   }
 
-  // 4. 상담 전화번호 강제 주입 (민감 주제인데 109 번호가 없을 경우)
+  // 4. [v3.4] 최신성 검수 (Year Correction)
+  // AI가 과거 연도를 언급할 경우 현재 연도로 보정
+  const currentYear = new Date().getFullYear().toString(); // 2026
+  const outdatedYearsRegex = /202[3-5]년/g;
+  if (outdatedYearsRegex.test(content) || outdatedYearsRegex.test(title)) {
+    console.warn(`🕒 [Sanitizer] 과거 연도 감지됨. 2026년으로 수정을 시도합니다.`);
+    title = title.replace(outdatedYearsRegex, `${currentYear}년`);
+    content = content.replace(outdatedYearsRegex, `${currentYear}년`);
+    isModified = true;
+  }
+
+  const oldContent = content;
+
+  // 4. [v3.1] 모바일 가독성 강제 줄바꿈 (Smart Spacing)
+  const enforceMobileSpacing = (text: string): string => {
+    return text.split("\n").map(line => {
+      if (line.match(/^(\s*[-*>]|\s*\d+\.|\||#)/)) return line;
+      if (line.trim().length === 0) return line;
+      return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
+    }).join("\n");
+  };
+
+  // 5. [v3.2] 리얼 모바일 핏 (Real Mobile Fit) - 폭 좁게 쓰기
+  const formatForMobile = (text: string): string => {
+    return text.split("\n").map(line => {
+      if (line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
+      if (line.trim().length < 28) return line;
+
+      const words = line.split(" ");
+      let currentLine = "";
+      let result = "";
+
+      for (const word of words) {
+        if ((currentLine + word).length > 28) {
+          result += currentLine.trim() + "\n";
+          currentLine = word + " ";
+        } else {
+          currentLine += word + " ";
+        }
+      }
+      result += currentLine.trim();
+      return result;
+    }).join("\n");
+  };
+
+  content = formatForMobile(content);
+  content = enforceMobileSpacing(content); 
+  content = content.replace(/\n{3,}/g, "\n\n");
+
+  if (content !== oldContent) {
+    console.log("📱 [Mobile] 모바일 화면 폭에 맞춰 줄바꿈을 재배열했습니다.");
+    isModified = true;
+  }
+
+  // 6. 상담 전화번호 강제 주입
   const safetyFooter = `
 <br/>
 <hr/>
@@ -112,11 +174,11 @@ export async function generatePost({
       } else {
         const topicIntent = analyzeTopicIntent(task.topic);
         
-        // 🔍 검색어 정제: task.topic에 지시사항이 섞여 있을 수 있으므로 첫 줄(키워드)만 추출
+        // 🔍 검색어 정제 및 2026년 최신성 강제
         let cleanTopic = task.topic.split("\n")[0].trim();
-        let searchQuery = cleanTopic;
+        let searchQuery = `${cleanTopic} 2026년 최신 정보`; // 현재 연도 명시
         
-        // 장소 관련 주제인 경우 검색어 보강 (환각 방지)
+        // 장소 관련 주제인 경우 검색어 보강
         if (topicIntent.isPlace) {
           searchQuery = `${cleanTopic} 정확한 위치 상호명 메뉴 가격 정보`;
           onProgress?.(`장소 데이터 정밀 검색 중: ${cleanTopic}`);
