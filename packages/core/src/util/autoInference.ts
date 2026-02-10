@@ -61,7 +61,6 @@ export function inferTargetAudience(topic: string, persona: Persona): string {
     informative: "정보를 찾는 사람들",
     empathetic: "고민이 있는 사람들",
     storytelling: "이야기를 좋아하는 독자",
-    friendly: "가볍게 읽고 싶은 사람들",
     experiential: "실제 경험담을 원하는 사람들",
     travelLog: "여행지의 생생한 분위기를 느끼고 싶은 사람들",
     "hollywood-reporter": "헐리우드 스타와 영화 소식에 관심 있는 사람들",
@@ -81,7 +80,6 @@ export function inferContentGoal(
       informative: "informative", // 정보 전달
       empathetic: "engagement", // 감정적 연결
       storytelling: "engagement", // 독자 몰입
-      friendly: "engagement", // 친근한 소통
       experiential: "conversion", // 구매/행동 유도
       travelLog: "engagement", // 여행지 공감 및 소통
       "hollywood-reporter": "engagement", // 연예 소식 공유 및 소통
@@ -105,7 +103,9 @@ export function analyzeTopicIntent(topic: string): {
   const lower = topic.toLowerCase();
 
   const needsCurrentInfo =
-    /오늘|최근|2026|현재|지금|이번|트렌드|뉴스|사건|속보|발언|논란|상황|공개|발표/.test(topic);
+    /오늘|최근|2026|현재|지금|이번|트렌드|뉴스|사건|속보|발언|논란|상황|공개|발표/.test(
+      topic,
+    );
 
   return {
     isReview: /후기|리뷰|사용|써본|개월|년/.test(lower),
