@@ -304,7 +304,7 @@ export class NaverPublisher implements IBlogPublisher {
       await page.waitForTimeout(1000);
 
       // 4. 본문 구성 (페르소나 기반 출처 필터링 적용)
-      const excludedPersonas = ["friendly", "storytelling", "experiential"];
+      const excludedPersonas = ["storytelling", "experiential"];
       const shouldExcludeRef = persona && excludedPersonas.includes(persona);
 
       let finalHtml = htmlContent;
