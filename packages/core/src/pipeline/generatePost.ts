@@ -38,15 +38,6 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
-  const currentYear = new Date().getFullYear().toString();
-  const outdatedYearsRegex = /202[3-5]년/g;
-  if (outdatedYearsRegex.test(content) || outdatedYearsRegex.test(title)) {
-    console.warn(`🕒 [Sanitizer] 과거 연도 감지됨. 2026년으로 수정을 시도합니다.`);
-    title = title.replace(outdatedYearsRegex, `${currentYear}년`);
-    content = content.replace(outdatedYearsRegex, `${currentYear}년`);
-    isModified = true;
-  }
-
   const oldContent = content;
 
   const refineSpacing = (text: string): string => {
