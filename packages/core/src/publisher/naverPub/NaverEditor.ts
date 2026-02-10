@@ -5,6 +5,20 @@ import fs from "fs";
 import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
 
+/**
+ * 🎨 스타일 상수 (기존 로직 외부 유지)
+ */
+const CONTENT_LAYOUT_STYLE =
+  `max-width: 720px; margin: 0 auto; padding: 0 20px; line-height: 1.8; word-break: keep-all;`.replace(
+    /\n/g,
+    "",
+  );
+const CUSTOM_QUOTE_STYLE =
+  `border-left: 4px solid #666; padding-left: 15px; margin: 25px 0; color: #555; font-style: normal; background-color: #f9f9f9; padding-top: 12px; padding-bottom: 12px;`.replace(
+    /\n/g,
+    "",
+  );
+
 export class NaverEditor {
   private pexelsService = new PexelsService();
   private tempDir: string;
@@ -17,7 +31,7 @@ export class NaverEditor {
     projectRoot: string,
     topic: string,
     tags: string[] = [],
-    persona: string = "informative"
+    persona: string = "informative",
   ) {
     this.tempDir = path.join(projectRoot, "temp_images");
     if (!fs.existsSync(this.tempDir)) {
@@ -33,21 +47,24 @@ export class NaverEditor {
    * (이미지 태그는 이제 처리하므로 삭제하지 않음)
    */
   private cleanContent(content: string): string {
-    const garbageRegex =
-      /(\(Image suggestion.*?\)|image suggestion:.*?\n?)/gi;
+    const garbageRegex = /(\(Image suggestion.*?\)|image suggestion:.*?\n?)/gi;
     return content.replace(garbageRegex, "").trim();
   }
 
   /**
    * 클립보드를 통해 HTML을 에디터에 붙여넣는 공통 함수
+   * ✅ 폭 720px 및 인용구 스타일 래핑 적용
    */
-  private async pasteHtml(html: string) {
-    await this.page.evaluate((htmlContent) => {
+  private async pasteHtml(htmlContent: string, isQuote: boolean = false) {
+    const style = isQuote ? CUSTOM_QUOTE_STYLE : CONTENT_LAYOUT_STYLE;
+    const finalHtml = `<div style="${style}">${htmlContent}</div>`;
+
+    await this.page.evaluate((html) => {
       const type = "text/html";
-      const blob = new Blob([htmlContent], { type });
+      const blob = new Blob([html], { type });
       const data = [new ClipboardItem({ [type]: blob })];
       return navigator.clipboard.write(data);
-    }, html);
+    }, finalHtml);
 
     const isMac = process.platform === "darwin";
     const modifier = isMac ? "Meta" : "Control";
@@ -124,21 +141,29 @@ export class NaverEditor {
 
           case "blockquote-heading":
             // markdownToHtml에서 이미 스타일링된 block.html 사용
-            await this.pasteHtml(`<blockquote>${block.html}</blockquote>`);
+            await this.pasteHtml(
+              `<blockquote>${block.html}</blockquote>`,
+              true,
+            );
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
 
           case "blockquote-paragraph":
             // markdownToHtml에서 이미 스타일링된 block.html 사용
-            await this.pasteHtml(`<blockquote>${block.html}</blockquote>`);
+            await this.pasteHtml(
+              `<blockquote>${block.html}</blockquote>`,
+              true,
+            );
             await this.page.keyboard.press("ArrowDown");
             await this.page.keyboard.press("Enter");
             break;
 
           case "heading":
             // 이미 <h1>~<h3> 태그와 스타일이 포함된 html 사용
-            const headingHtml = block.html.startsWith("<h") ? block.html : `<h3>${block.html}</h3>`;
+            const headingHtml = block.html.startsWith("<h")
+              ? block.html
+              : `<h3>${block.html}</h3>`;
             await this.pasteHtml(headingHtml);
             await this.page.keyboard.press("Enter");
             break;
@@ -157,10 +182,11 @@ export class NaverEditor {
 
           case "image":
             // ... (기존 이미지 로직 유지)
-            // ... (이미지 로직 생략)
             // ✅ 헐리우드 특파원 페르소나는 이미지 검색 생략 (스톡 이미지 부적절)
             if (this.persona === "hollywood-reporter") {
-              console.log("ℹ️ [NaverEditor] 'hollywood-reporter' 페르소나는 Pexels 이미지 검색을 생략합니다.");
+              console.log(
+                "ℹ️ [NaverEditor] 'hollywood-reporter' 페르소나는 Pexels 이미지 검색을 생략합니다.",
+              );
               break;
             }
 
@@ -185,8 +211,8 @@ export class NaverEditor {
               .join(" ");
 
             if (!cleanKeyword || cleanKeyword.length < 2) {
-                // 키워드가 너무 짧거나 없으면 토픽과 결합
-                cleanKeyword = `${this.topic} ${cleanKeyword}`;
+              // 키워드가 너무 짧거나 없으면 토픽과 결합
+              cleanKeyword = `${this.topic} ${cleanKeyword}`;
             }
 
             if (usedKeywords.has(cleanKeyword)) {
@@ -194,8 +220,10 @@ export class NaverEditor {
               break;
             }
 
-            console.log(`🖼️ 이미지 검색 시도 (${imageCount + 1}/${MAX_IMAGES}): "${cleanKeyword}"`);
-            
+            console.log(
+              `🖼️ 이미지 검색 시도 (${imageCount + 1}/${MAX_IMAGES}): "${cleanKeyword}"`,
+            );
+
             try {
               const imagePath = await this.pexelsService.downloadImage(
                 cleanKeyword,
@@ -210,7 +238,9 @@ export class NaverEditor {
                 imageCount++;
                 usedKeywords.add(cleanKeyword);
               } else {
-                console.warn(`⚠️ 적절한 이미지를 찾지 못해 건너뜀: ${cleanKeyword}`);
+                console.warn(
+                  `⚠️ 적절한 이미지를 찾지 못해 건너뜀: ${cleanKeyword}`,
+                );
               }
             } catch (e) {
               console.error("❌ 이미지 처리 중 오류:", e);
@@ -236,87 +266,86 @@ export class NaverEditor {
     const $ = cheerio.load(html);
 
     // v3.25: .post-content 래퍼가 있으면 그 내부를, 없으면 body 전체를 탐색
-    const $root = $(".post-content").length > 0 ? $(".post-content") : $("body");
+    const $root =
+      $(".post-content").length > 0 ? $(".post-content") : $("body");
 
-    $root
-      .children()
-      .each((_, element) => {
-        const $el = $(element);
-        const tagName = element.tagName?.toLowerCase();
-        const rawHtml = $el.html() || "";
-        const textContent = $el.text().trim();
+    $root.children().each((_, element) => {
+      const $el = $(element);
+      const tagName = element.tagName?.toLowerCase();
+      const rawHtml = $el.html() || "";
+      const textContent = $el.text().trim();
 
-        // ✅ 이미지 태그 감지 로직 (블록 전체가 이미지 태그인 경우)
-        // 예: [이미지: 키워드] 또는 > [이미지: 키워드]
-        const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
-        const imageMatch = textContent.match(imageRegex);
+      // ✅ 이미지 태그 감지 로직 (블록 전체가 이미지 태그인 경우)
+      // 예: [이미지: 키워드] 또는 > [이미지: 키워드]
+      const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
+      const imageMatch = textContent.match(imageRegex);
 
-        if (imageMatch) {
+      if (imageMatch) {
+        blocks.push({
+          type: "image",
+          keyword: imageMatch[1].trim(),
+        });
+        return; // 이미지 블록으로 처리하고 다음 루프로
+      }
+
+      if (tagName === "hr") {
+        blocks.push({ type: "separator", text: "" });
+      } else if (tagName === "blockquote") {
+        // 인용구 내부에서도 이미지 태그가 있을 수 있음
+        $el.children().each((_, child) => {
+          const $child = $(child);
+          const childTagName = child.tagName?.toLowerCase();
+          const cText = $child.text().trim();
+          const cMatch = cText.match(imageRegex);
+
+          if (cMatch) {
             blocks.push({
-                type: "image",
-                keyword: imageMatch[1].trim()
+              type: "image",
+              keyword: cMatch[1].trim(),
             });
-            return; // 이미지 블록으로 처리하고 다음 루프로
-        }
-
-        if (tagName === "hr") {
-          blocks.push({ type: "separator", text: "" });
-        } else if (tagName === "blockquote") {
-          // 인용구 내부에서도 이미지 태그가 있을 수 있음
-          $el.children().each((_, child) => {
-            const $child = $(child);
-            const childTagName = child.tagName?.toLowerCase();
-            const cText = $child.text().trim();
-            const cMatch = cText.match(imageRegex);
-            
-            if (cMatch) {
-                 blocks.push({
-                    type: "image",
-                    keyword: cMatch[1].trim()
-                });
+          } else {
+            if (childTagName?.match(/^h[1-6]$/)) {
+              blocks.push({
+                type: "blockquote-heading",
+                text: cText,
+                html: $child.html(),
+              });
             } else {
-                if (childTagName?.match(/^h[1-6]$/)) {
-                  blocks.push({
-                    type: "blockquote-heading",
-                    text: cText,
-                    html: $child.html(),
-                  });
-                } else {
-                  // ✅ 핵심: $.html($child)를 사용하여 태그 자체를 포함한 HTML을 보존 (링크 유실 방지)
-                  blocks.push({
-                    type: "blockquote-paragraph",
-                    text: cText,
-                    html: $.html($child), 
-                  });
-                }
+              // ✅ 핵심: $.html($child)를 사용하여 태그 자체를 포함한 HTML을 보존 (링크 유실 방지)
+              blocks.push({
+                type: "blockquote-paragraph",
+                text: cText,
+                html: $.html($child),
+              });
             }
-          });
-        } else if (tagName?.match(/^h[1-6]$/)) {
-          let prefix = tagName === "h1" ? "■ " : tagName === "h2" ? "▶ " : "• ";
+          }
+        });
+      } else if (tagName?.match(/^h[1-6]$/)) {
+        let prefix = tagName === "h1" ? "■ " : tagName === "h2" ? "▶ " : "• ";
+        blocks.push({
+          type: "heading",
+          text: textContent,
+          prefix,
+          html: rawHtml,
+        });
+      } else if (tagName === "ul" || tagName === "ol") {
+        $el.find("li").each((_, li) => {
           blocks.push({
-            type: "heading",
-            text: textContent,
-            prefix,
-            html: rawHtml,
+            type: "list",
+            text: $(li).text().trim(),
+            html: $(li).html(),
           });
-        } else if (tagName === "ul" || tagName === "ol") {
-          $el.find("li").each((_, li) => {
-            blocks.push({
-              type: "list",
-              text: $(li).text().trim(),
-              html: $(li).html(),
-            });
-          });
-        } else if (tagName === "table") {
-          blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
-        } else {
-          blocks.push({
-            type: "paragraph",
-            text: textContent,
-            html: rawHtml,
-          });
-        }
-      });
+        });
+      } else if (tagName === "table") {
+        blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
+      } else {
+        blocks.push({
+          type: "paragraph",
+          text: textContent,
+          html: rawHtml,
+        });
+      }
+    });
     return blocks;
   }
   // 이미지 업로드
