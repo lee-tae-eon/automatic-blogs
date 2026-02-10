@@ -17,7 +17,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
   },
 
   empathetic: {
-    targetLength: [1500, 2500],
+    targetLength: [1700, 2800],
     headingCount: 5,
     paragraphMaxLength: 150, // 짧은 문단으로 가독성 확보
     sentenceMaxLength: 60,
@@ -38,17 +38,6 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     keywordDensity: [1.0, 2.0],
   },
 
-  friendly: {
-    targetLength: [1200, 2200], // 가볍게 읽히도록 짧게
-    headingCount: 5,
-    paragraphMaxLength: 120, // 매우 짧은 문단
-    sentenceMaxLength: 50,
-    emojiUsage: "heavy", // 이모지 활발히 사용
-    tableRequired: false,
-    imageCount: 3,
-    keywordDensity: [1.0, 1.8],
-  },
-
   experiential: {
     targetLength: [1800, 3000],
     headingCount: 5,
@@ -61,7 +50,7 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
   },
 
   travelLog: {
-    targetLength: [1500, 2800],
+    targetLength: [2000, 3500],
     headingCount: 5,
     paragraphMaxLength: 130, // 호흡을 짧게 해서 감성 유지
     sentenceMaxLength: 60,

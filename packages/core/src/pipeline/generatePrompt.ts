@@ -1,4 +1,4 @@
-import { getToneInstruction, TONE_CONFIG } from "../tone/tone_config";
+import { getToneInstruction } from "../tone/tone_config";
 import { getPersonaDetail } from "../persona/persona.config";
 import { getPersonaExamples } from "../persona/persona.example";
 import { getQualityMetrics, SEO_RULES } from "../persona/quality-metrics";
@@ -79,6 +79,10 @@ ${toneInstruction}
 
 ## 🗣️ 2. 페르소나 역할: [${personaDetail.role}]
 당신은 **${personaDetail.role}**입니다. 기본 톤을 유지하되, 아래 화법을 섞으세요.
+
+### 🚫 [CRITICAL] 절대 금지 표현 (Prohibited)
+아래 리스트에 포함된 표현이나 말투를 단 하나라도 사용할 경우, 글의 신뢰도가 무너집니다. **절대로 사용하지 마세요.**
+${personaDetail.forbidden.map((f) => `- **${f}**`).join("\n")}
 
 ### ✅ 권장 문장 (Persona Examples)
 ${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}
