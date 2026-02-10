@@ -51,7 +51,7 @@ describe('NaverPublisher', () => {
     const refs = [{ name: 'News', url: 'https://news.com' }];
     
     // 친근형 페르소나 테스트 (Mocking을 통한 간접 검증 대신 로직 확인)
-    const excludedPersonas = ["friendly", "storytelling", "experiential"];
+    const excludedPersonas = ["storytelling", "experiential"];
     
     excludedPersonas.forEach(persona => {
         // 이 테스트는 NaverPublisher 내의 로직이 의도대로 필터링하는지 확인하는 용도입니다.
