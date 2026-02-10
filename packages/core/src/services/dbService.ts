@@ -20,8 +20,8 @@ export class DbService implements IStorage {
     this.storage.init();
   }
 
-  saveNews(topic: string, content: string, urls: string[] = []): void {
-    this.storage.saveNews(topic, content, urls);
+  saveNews(topic: string, content: string, references: { name: string; url: string }[] = []): void {
+    this.storage.saveNews(topic, content, references);
   }
 
   getRecentNews(topic: string): NewsCache | null {

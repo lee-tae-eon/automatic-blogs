@@ -245,16 +245,17 @@ function registerIpcHandlers() {
   // ----------------------------------------
   // [Abort] 프로세스 중단
   // ----------------------------------------
-  ipcMain.on("abort-process", async () => {
-    console.log("🛑 중단 요청 수신: 작업 강제 종료 시도");
+  ipcMain.on("abort-process", async (event, type?: "manual" | "auto") => {
+    console.log(`🛑 중단 요청 수신 (${type || "전체"}): 작업 강제 종료 시도`);
 
-    // 1. 대기 중인 Promise 강제 reject
+    // 1. 대기 중인 Promise 강제 reject (현재는 공용 컨트롤러 사용)
     if (globalAbortController) {
       globalAbortController.abort();
     }
 
     // 2. Playwright 브라우저 물리적 종료
     if (currentPublisher) {
+      console.log("   🖱️ 브라우저 엔진 강제 종료");
       await currentPublisher.stop();
       currentPublisher = null;
     }

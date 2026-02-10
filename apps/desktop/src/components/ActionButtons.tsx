@@ -89,7 +89,25 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         
         {hasTasks && (
           <>
-            {isProcessing ? (
+            <button
+              onClick={onPublish}
+              disabled={isProcessing}
+              style={{ 
+                padding: "8px 18px", 
+                fontSize: "0.85rem", 
+                backgroundColor: isProcessing ? "#adb5bd" : "#03c75a", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "6px", 
+                cursor: isProcessing ? "default" : "pointer", 
+                fontWeight: "bold",
+                boxShadow: isProcessing ? "none" : "0 2px 4px rgba(3, 199, 90, 0.2)"
+              }}
+            >
+              🚀 {isProcessing ? "발행 중..." : "일괄 발행 시작"}
+            </button>
+
+            {isProcessing && (
               <button 
                 onClick={onStop}
                 style={{ 
@@ -104,25 +122,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
                   boxShadow: "0 2px 4px rgba(250, 82, 82, 0.2)"
                 }}
               >
-                ⛔ 작업 중지
-              </button>
-            ) : (
-              <button
-                onClick={onPublish}
-                disabled={isProcessing}
-                style={{ 
-                  padding: "8px 18px", 
-                  fontSize: "0.85rem", 
-                  backgroundColor: "#03c75a", 
-                  color: "#fff", 
-                  border: "none", 
-                  borderRadius: "6px", 
-                  cursor: "pointer", 
-                  fontWeight: "bold",
-                  boxShadow: "0 2px 4px rgba(3, 199, 90, 0.2)"
-                }}
-              >
-                일괄 발행 시작
+                🛑 일괄 발행 중단
               </button>
             )}
           </>

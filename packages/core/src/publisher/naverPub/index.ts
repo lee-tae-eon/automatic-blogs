@@ -86,12 +86,14 @@ export class NaverPublisher implements IBlogPublisher {
 
     const refHtml = `
       <br><hr><br>
-      <p style="font-size: 0.95rem; color: #666;"><strong>🔗 참고 자료 및 뉴스 출처</strong></p>
-      <ul style="list-style: none; padding-left: 0; margin-top: 10px;">
+      <p style="font-size: 0.95rem; color: #666; margin-bottom: 15px;"><strong>🔗 참고 자료 및 뉴스 출처</strong></p>
+      <ul style="list-style: none; padding-left: 0;">
         ${validRefs
           .map(
             (ref) =>
-              `<li style="margin-bottom: 5px; font-size: 0.9rem;">• <a href="${ref.url}" target="_blank" rel="noopener noreferrer" style="color: #03c75a; text-decoration: underline;">${ref.name}</a></li>`,
+              `<li style="margin-bottom: 8px; font-size: 0.9rem; line-height: 1.5;">
+                • <a href="${ref.url}" target="_blank" rel="noopener noreferrer" style="color: #03c75a; text-decoration: underline; font-weight: 500;">${ref.name}</a>
+              </li>`,
           )
           .join("")}
       </ul>

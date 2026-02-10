@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 interface AutoPilotControlProps {
-  isProcessing: boolean;
+  isSearching: boolean;
+  isPublishing: boolean;
   candidates: any[];
   onFetch: (topic: string) => void;
   onStop: () => void;
@@ -9,7 +10,8 @@ interface AutoPilotControlProps {
 }
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
-  isProcessing,
+  isSearching,
+  isPublishing,
   candidates,
   onFetch,
   onStop,
@@ -22,7 +24,8 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
 
-  const isAnalyzing = isProcessing && candidates.length === 0;
+  const isAnalyzing = isSearching && candidates.length === 0;
+  const isProcessing = isSearching || isPublishing;
 
   // 로딩 메시지 순환 효과
   useEffect(() => {

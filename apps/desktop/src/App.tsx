@@ -10,7 +10,7 @@ import { AutoPilotControl } from "./components/AutoPilotControl"; // 추가
 
 export const App: React.FC = () => {
   const { state, actions } = useAppViewModel();
-  const { tasks, isProcessing, credentials, logs } = state;
+  const { tasks, isManualProcessing, isAutoSearching, isAutoPublishing, credentials, logs } = state;
 
   return (
     <div className="container" style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
@@ -21,7 +21,8 @@ export const App: React.FC = () => {
 
       {/* v2.0 Auto-Pilot 영역 */}
       <AutoPilotControl 
-        isProcessing={isProcessing} 
+        isSearching={isAutoSearching}
+        isPublishing={isAutoPublishing}
         candidates={state.candidates}
         onFetch={actions.handleFetchCandidates}
         onStop={actions.handleStopAutoPilot}
@@ -34,7 +35,7 @@ export const App: React.FC = () => {
       {/* 제어 영역: 엑셀 업로드 및 실행 버튼 */}
       <ActionButtons
         hasTasks={tasks.length > 0}
-        isProcessing={isProcessing}
+        isProcessing={isManualProcessing}
         logs={logs}
         onClear={actions.handleClearAll}
         onStop={actions.handleStop}

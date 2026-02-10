@@ -235,7 +235,10 @@ export class NaverEditor {
     const blocks: any[] = [];
     const $ = cheerio.load(html);
 
-    $("body")
+    // v3.25: .post-content 래퍼가 있으면 그 내부를, 없으면 body 전체를 탐색
+    const $root = $(".post-content").length > 0 ? $(".post-content") : $("body");
+
+    $root
       .children()
       .each((_, element) => {
         const $el = $(element);

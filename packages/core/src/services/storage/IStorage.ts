@@ -1,7 +1,7 @@
 export interface NewsCache {
   topic: string;
   content: string;
-  urls: string[];
+  references: { name: string; url: string }[]; // v3.20: 제목과 URL 정보 포함
   created_at: string;
 }
 
@@ -14,7 +14,7 @@ export interface IStorage {
   /**
    * 뉴스 데이터 저장
    */
-  saveNews(topic: string, content: string, urls: string[]): void;
+  saveNews(topic: string, content: string, references: { name: string; url: string }[]): void;
 
   /**
    * 최근 뉴스 데이터 조회

@@ -9,7 +9,8 @@ export interface KeywordAnalysis {
   totalSearchCnt: number; // 총 검색량
   competitionIndex: number; // 경쟁률 (발행량 / 검색량)
   topTitles: string[]; // 상위 블로그 제목들
-  topSnippets: string[]; // 상위 블로그 요약문들 (추가)
+  topSnippets: string[]; // 상위 블로그 요약문들
+  relatedKeywords: string[]; // v3.29: 세만틱 SEO를 위한 연관 키워드
   score: number; // 최종 점수
   recommendation: string; // 추천 등급
 }
@@ -42,9 +43,9 @@ export class KeywordScoutService {
   }
 
   /**
-   * 1. 월간 검색량 조회 (검색광고 API)
+   * 1. 월간 검색량 및 연관 키워드 조회 (검색광고 API)
    */
-  async getMonthlySearchVolume(keyword: string): Promise<{ pc: number; mobile: number }> {
+  async getMonthlySearchVolume(keyword: string): Promise<{ pc: number; mobile: number; related: string[] }> {
     try {
       const timestamp = Date.now().toString();
       const method = "GET";
@@ -68,8 +69,8 @@ export class KeywordScoutService {
       const list = response.data.keywordList || [];
       const strippedKeyword = keyword.replace(/\s+/g, "");
       const data = list.find((item: any) => item.relKeyword === strippedKeyword) || list[0];
-
-      if (!data) return { pc: 0, mobile: 0 };
+      
+      if (!data) return { pc: 0, mobile: 0, related: [] };
 
       const parseCnt = (val: any) => {
         if (val === undefined || val === null) return 0;
@@ -79,13 +80,20 @@ export class KeywordScoutService {
         return parseInt(strVal.replace(/,/g, ""), 10) || 0;
       };
 
+      // 상위 10개 연관 키워드 추출 (본인 제외)
+      const related = list
+        .filter((item: any) => item.relKeyword !== strippedKeyword)
+        .slice(0, 10)
+        .map((item: any) => item.relKeyword);
+
       return {
         pc: parseCnt(data.monthlyPcQcCnt),
         mobile: parseCnt(data.monthlyMobileQcCnt),
+        related
       };
     } catch (error) {
       console.error("Search AD API Error:", error);
-      return { pc: 0, mobile: 0 };
+      return { pc: 0, mobile: 0, related: [] };
     }
   }
 
@@ -186,7 +194,8 @@ export class KeywordScoutService {
       totalSearchCnt,
       competitionIndex,
       topTitles: competition.titles,
-      topSnippets: competition.snippets, // 추가
+      topSnippets: competition.snippets, 
+      relatedKeywords: volume.related, // 추가
     };
 
     const score = this.calculateScore(baseAnalysis);

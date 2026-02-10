@@ -46,11 +46,11 @@ export class JsonFileStorage implements IStorage {
     // JSON 파일은 별도 스키마 초기화 필요 없음
   }
 
-  saveNews(topic: string, content: string, urls: string[]): void {
+  saveNews(topic: string, content: string, references: { name: string; url: string }[]): void {
     this.data.news[topic] = {
       topic,
       content,
-      urls,
+      references, // v3.20
       created_at: new Date().toISOString(),
     };
     this.save();

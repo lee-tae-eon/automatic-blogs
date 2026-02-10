@@ -80,7 +80,7 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       tone: "professional",
       status: "진행",
       category: "정보/리뷰", 
-      keywords: [bestTarget.keyword, ...bestTarget.topTitles.slice(0, 3)],
+      keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], // 세만틱 키워드 주입
       mode: "auto",
       strategy: {
         headings: strategy.headings,

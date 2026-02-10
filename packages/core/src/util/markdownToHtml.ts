@@ -27,18 +27,22 @@ export async function markdownToHtml(markdown: string): Promise<string> {
 
   // 3. [핵심] 가독성 스타일 전역 주입 (Global Style Injection)
   const baseStyle = "line-height: 1.8; word-break: keep-all; margin-bottom: 15px;";
-  const headingStyle = "line-height: 1.6; word-break: keep-all; margin-top: 30px; margin-bottom: 15px; font-weight: bold;";
-  const blockquoteStyle = "border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #555; font-style: italic; background-color: #f9f9f9; padding-top: 10px; padding-bottom: 10px;";
+  const headingStyle = "line-height: 1.6; word-break: keep-all; margin-top: 30px; margin-bottom: 15px; font-weight: bold; color: #333;";
+  const blockquoteStyle = "border-left: 4px solid #666; padding-left: 15px; margin: 30px 0; color: #555; font-style: italic; background-color: transparent;";
 
   html = html
     .replace(/<p>/g, `<p style="${baseStyle}">`)
     .replace(/<h1>/g, `<h1 style="${headingStyle} font-size: 1.6rem;">`)
     .replace(/<h2>/g, `<h2 style="${headingStyle} font-size: 1.4rem;">`)
     .replace(/<h3>/g, `<h3 style="${headingStyle} font-size: 1.2rem;">`)
-    .replace(/<blockquote>/g, `<blockquote style="${blockquoteStyle}">`)
+    .replace(/<blockquote[^>]*>/g, `<blockquote style="${blockquoteStyle}">`) // 정규식 강화
     .replace(/<strong>/g, '<strong style="font-weight: bold;">')
     .replace(/<ul>/g, '<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">')
-    .replace(/<li>/g, `<li style="${baseStyle} margin-bottom: 5px;">`);
-
-  return html;
-}
+        .replace(/<li>/g, `<li style="${baseStyle} margin-bottom: 5px;">`);
+    
+      // 4. [v3.23] 전체 본문 컨테이너 스타일 적용 (Post-Content Wrapper)
+      const containerStyle = "max-width: 720px; margin: 0 auto; padding: 0 20px; line-height: 1.8; word-break: keep-all;";
+      
+      return `<div class="post-content" style="${containerStyle}">${html}</div>`;
+    }
+    
