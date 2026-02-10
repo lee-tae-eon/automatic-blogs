@@ -17,20 +17,32 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     .use(remarkGfm)
     .use(remarkHtml, { sanitize: false })
     .process(content);
-  
+
   let html = result.toString();
 
   // 3. [v3.32 핵심] HTML 결과물에 대한 컬러 문법 후처리
   // 텍스트와 HTML 태그가 섞인 상태에서도 정확히 기호만 찾아 치환합니다.
   html = html
-    .replace(/!!\s*(.*?)\s*!!/g, '<span style="color: #e53e3e; font-weight: bold;">$1</span>') // 빨강
-    .replace(/\+\+\s*(.*?)\s*\+\+/g, '<span style="color: #16a34a; font-weight: bold;">$1</span>') // 초록
-    .replace(/\?\?\s*(.*?)\s*\?\?/g, '<span style="color: #d97706; font-weight: bold;">$1</span>'); // 주황
+    .replace(
+      /!!\s*(.*?)\s*!!/g,
+      '<span style="color: #e53e3e; font-weight: bold;">$1</span>',
+    ) // 빨강
+    .replace(
+      /\+\+\s*(.*?)\s*\+\+/g,
+      '<span style="color: #16a34a; font-weight: bold;">$1</span>',
+    ) // 초록
+    .replace(
+      /\?\?\s*(.*?)\s*\?\?/g,
+      '<span style="color: #d97706; font-weight: bold;">$1</span>',
+    ); // 주황
 
   // 4. 네이버 에디터 가독성 스타일 보정
-  const baseStyle = "line-height: 1.8; word-break: keep-all; margin-bottom: 15px;";
-  const headingStyle = "line-height: 1.6; word-break: keep-all; margin-top: 30px; margin-bottom: 15px; font-weight: bold; color: #333;";
-  const blockquoteStyle = "border-left: 4px solid #666; padding-left: 15px; margin: 25px 0; color: #555; font-style: italic; background-color: transparent;";
+  const baseStyle =
+    "line-height: 1.8; word-break: keep-all; margin-bottom: 30px;";
+  const headingStyle =
+    "line-height: 1.6; word-break: keep-all; margin-top: 30px; margin-bottom: 15px; font-weight: bold; color: #333;";
+  const blockquoteStyle =
+    "border-left: 4px solid #666; padding-left: 15px; margin: 25px 0; color: #555; font-style: italic; background-color: transparent;";
 
   html = html
     .replace(/<p>/g, `<p style="${baseStyle}">`)
@@ -39,9 +51,13 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     .replace(/<h3>/g, `<h3 style="${headingStyle} font-size: 1.2rem;">`)
     .replace(/<blockquote[^>]*>/g, `<blockquote style="${blockquoteStyle}">`)
     .replace(/<strong>/g, '<strong style="font-weight: bold;">')
-    .replace(/<ul>/g, '<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">')
+    .replace(
+      /<ul>/g,
+      '<ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 15px;">',
+    )
     .replace(/<li>/g, `<li style="${baseStyle} margin-bottom: 5px;">`);
 
-  const containerStyle = "max-width: 720px; margin: 0 auto; padding: 0 20px; line-height: 1.8; word-break: keep-all;";
+  const containerStyle =
+    "max-width: 520px; margin: 0 auto; padding: 0 20px; line-height: 1.8; word-break: keep-all;";
   return `<div class="post-content" style="${containerStyle}">${html}</div>`;
 }

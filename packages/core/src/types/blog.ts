@@ -33,6 +33,7 @@ export interface PersonaDetail {
   transitions: string[]; // 문단 연결어 스타일
   closingStyle: string; // 마무리 방식
   forbidden: string[]; // 금지 표현 리스트
+  writingTips?: string[]; // [v3.5] 가독성을 높이는 작문 팁
 }
 
 export interface PersonaExamples {
