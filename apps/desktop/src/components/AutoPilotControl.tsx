@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 
 interface AutoPilotControlProps {
-  isProcessing: boolean;
+  isSearching: boolean;
+  isPublishing: boolean;
   candidates: any[];
   onFetch: (topic: string) => void;
-  onStart: (analysis: any, category: string) => void; // 카테고리 인자 추가
+  onStop: () => void;
+  onStart: (analysis: any, category: string) => void;
 }
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
-  isProcessing,
+  isSearching,
+  isPublishing,
   candidates,
   onFetch,
+  onStop,
   onStart,
 }) => {
   const [topic, setTopic] = useState("");
@@ -20,10 +24,13 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
 
+  const isAnalyzing = isSearching && candidates.length === 0;
+  const isProcessing = isSearching || isPublishing;
+
   // 로딩 메시지 순환 효과
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isProcessing && candidates.length === 0) {
+    if (isAnalyzing) {
       const messages = [
         "🤖 AI가 주제와 관련된 황금 키워드를 발굴하고 있습니다...",
         "🔍 각 키워드의 실시간 검색량을 분석 중입니다...",
@@ -40,7 +47,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       setStatusMessage("");
     }
     return () => clearInterval(interval);
-  }, [isProcessing, candidates.length]);
+  }, [isAnalyzing]);
 
   const handleFetch = () => {
     if (!topic.trim()) {
@@ -50,23 +57,25 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     onFetch(topic.trim());
   };
 
+  const handleStop = () => {
+    onStop();
+    setStatusMessage("🛑 중단 요청 중...");
+  };
+
   const openPublishModal = (candidate: any) => {
     setSelectedCandidate(candidate);
-    // 기본 카테고리 추천 (주제 기반)
-    setCategoryInput(topic || "전체"); 
+    setCategoryInput("일상정보"); // 기본값 설정
   };
 
   const confirmPublish = () => {
     if (!selectedCandidate) return;
     if (!categoryInput.trim()) {
-      alert("카테고리 이름을 입력해주세요. (블로그에 실제 존재하는 게시판 이름)");
+      alert("블로그 게시판 이름을 입력해 주세요.");
       return;
     }
     onStart(selectedCandidate, categoryInput.trim());
-    setSelectedCandidate(null); // 모달 닫기
+    setSelectedCandidate(null);
   };
-
-  const isAnalyzing = isProcessing && candidates.length === 0;
 
   return (
     <div
@@ -135,6 +144,19 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
           )}
           {isAnalyzing ? "분석 중..." : "황금 키워드 발굴"}
         </button>
+
+        {isProcessing && (
+          <button
+            onClick={handleStop}
+            style={{
+              backgroundColor: "#ef4444",
+              color: "white", border: "none", borderRadius: "8px", padding: "0 15px",
+              fontWeight: "bold", cursor: "pointer", fontSize: "0.85rem"
+            }}
+          >
+            중단
+          </button>
+        )}
       </div>
 
       {/* 상태 메시지 */}
@@ -234,14 +256,14 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                 type="text" 
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
-                placeholder="예: 일상, IT리뷰, 맛집탐방"
+                placeholder="예: 일상정보, IT리뷰, 맛집탐방"
                 style={{
                   width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1",
                   fontSize: "0.95rem"
                 }}
               />
               <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "5px" }}>
-                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요. (AI 컨텍스트와는 무관함)
+                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요.
               </p>
             </div>
 

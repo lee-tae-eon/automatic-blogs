@@ -245,16 +245,17 @@ function registerIpcHandlers() {
   // ----------------------------------------
   // [Abort] 프로세스 중단
   // ----------------------------------------
-  ipcMain.on("abort-process", async () => {
-    console.log("🛑 중단 요청 수신: 작업 강제 종료 시도");
+  ipcMain.on("abort-process", async (event, type?: "manual" | "auto") => {
+    console.log(`🛑 중단 요청 수신 (${type || "전체"}): 작업 강제 종료 시도`);
 
-    // 1. 대기 중인 Promise 강제 reject
+    // 1. 대기 중인 Promise 강제 reject (현재는 공용 컨트롤러 사용)
     if (globalAbortController) {
       globalAbortController.abort();
     }
 
     // 2. Playwright 브라우저 물리적 종료
     if (currentPublisher) {
+      console.log("   🖱️ 브라우저 엔진 강제 종료");
       await currentPublisher.stop();
       currentPublisher = null;
     }
@@ -386,58 +387,49 @@ function registerIpcHandlers() {
   ipcMain.handle(
     "fetch-keyword-candidates",
     async (event, { broadTopic, modelType }) => {
+      globalAbortController = new AbortController();
       try {
-        const credentials: any = store.get("user-credentials");
+        return await runWithAbort(async () => {
+          const credentials: any = store.get("user-credentials");
+          const { geminiKey, subGemini } = credentials || {};
+          const apiKey = geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+          if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
 
-        const { geminiKey, subGemini } = credentials || {};
+          const modelName =
+            modelType === "fast"
+              ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+              : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
 
-        const apiKey =
-          geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+          const geminiClient = new GeminiClient(apiKey, modelName);
+          const scoutConfig = {
+            searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+            searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+            adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
+            adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
+            adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+          };
 
-        if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
+          // 1. 키워드 확장
+          const expander = new TopicExpanderService(geminiClient);
+          const candidates = await expander.expandTopic(broadTopic);
 
-        const modelName =
-          modelType === "fast"
-            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
-            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+          // 2. 각 키워드 정밀 분석 (중단 가능 루프)
+          const scout = new KeywordScoutService(scoutConfig);
+          const analyzed = [];
+          for (const c of candidates) {
+            if (globalAbortController?.signal.aborted) throw new Error("AbortError");
+            const analysis = await scout.analyzeKeyword(c.keyword);
+            analyzed.push({ ...c, ...analysis });
+            await new Promise((res) => setTimeout(res, 500));
+          }
 
-        const geminiClient = new GeminiClient(apiKey, modelName);
-
-        const scoutConfig = {
-          searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
-
-          searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
-
-          adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
-
-          adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-
-          adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
-        };
-
-        // 1. 키워드 확장
-
-        const expander = new TopicExpanderService(geminiClient);
-
-        const candidates = await expander.expandTopic(broadTopic);
-
-        // 2. 각 키워드 정밀 분석 (429 에러 방지를 위해 순차 처리 및 딜레이 고려)
-
-        const scout = new KeywordScoutService(scoutConfig);
-
-        const analyzed = [];
-
-        for (const c of candidates) {
-          const analysis = await scout.analyzeKeyword(c.keyword);
-
-          analyzed.push({ ...c, ...analysis });
-
-          await new Promise((res) => setTimeout(res, 500)); // 0.5초 딜레이
-        }
-
-        return { success: true, data: analyzed };
+          return { success: true, data: analyzed };
+        }, globalAbortController);
       } catch (error: any) {
+        if (error.message === "AbortError") return { success: false, error: "AbortError" };
         return { success: false, error: error.message };
+      } finally {
+        globalAbortController = null;
       }
     },
   );

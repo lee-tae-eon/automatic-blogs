@@ -3,12 +3,22 @@ import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
 
 export const useAppViewModel = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 상태 세분화 (v3.23)
+  const [isManualProcessing, setIsManualProcessing] = useState(false);
+  const [isAutoSearching, setIsAutoSearching] = useState(false);
+  const [isAutoPublishing, setIsAutoPublishing] = useState(false);
+
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<any[]>([]); // 키워드 후보 상태 추가
-  const shouldStopRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [candidates, setCandidates] = useState<any[]>([]); 
+  
+  const shouldStopManualRef = useRef(false);
+  const manualAbortControllerRef = useRef<AbortController | null>(null);
+  
+  const shouldStopAutoRef = useRef(false);
+  const autoAbortControllerRef = useRef<AbortController | null>(null);
+
   const [isStoreLoaded, setIsStoreLoaded] = useState(false);
 
   const addLog = (message: string) => {
@@ -180,7 +190,7 @@ export const useAppViewModel = () => {
   };
 
   const handleClearAll = () => {
-    if (isProcessing) return;
+    if (isManualProcessing) return;
     if (confirm("업로드된 목록을 모두 삭제하시겠습니까?")) {
       setTasks([]);
       setCurrentFilePath(null);
@@ -190,23 +200,23 @@ export const useAppViewModel = () => {
   };
 
   const handleStop = () => {
-    shouldStopRef.current = true;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    shouldStopManualRef.current = true;
+    if (manualAbortControllerRef.current) {
+      manualAbortControllerRef.current.abort();
     }
-    window.ipcRenderer.send("abort-process");
-    addLog("중단 요청을 보냈습니다. 현재 작업이 마무리되는 대로 중단됩니다.");
+    window.ipcRenderer.send("abort-process", "manual"); // 'manual' 인자 추가
+    addLog("중단 요청을 보냈습니다. 현재 수동 작업이 마무리되는 대로 중단됩니다.");
   };
 
   /**
-   * v2.0 Auto-Pilot 실행 핸들러
+   * v2.0 Auto-Pilot 실행 핸들러 (Legacy용 - 곧 제거 대상)
    */
   const handleAutoPilot = async (keyword: string) => {
-    if (isProcessing || !keyword.trim()) return;
+    if (isAutoPublishing || !keyword.trim()) return;
 
-    setIsProcessing(true);
-    shouldStopRef.current = false;
-    abortControllerRef.current = new AbortController();
+    setIsAutoPublishing(true);
+    shouldStopAutoRef.current = false;
+    autoAbortControllerRef.current = new AbortController();
     setLogs([]);
     addLog(`🚀 [Auto-Pilot] 키워드 '${keyword}' 분석 및 발행 시작`);
 
@@ -231,18 +241,32 @@ export const useAppViewModel = () => {
     } catch (error: any) {
       addLog(`❌ [Auto-Pilot] 시스템 오류: ${error.message}`);
     } finally {
-      setIsProcessing(false);
-      abortControllerRef.current = null;
+      setIsAutoPublishing(false);
+      autoAbortControllerRef.current = null;
     }
+  };
+
+  /**
+   * v2.0 오토파일럿 중단 핸들러
+   */
+  const handleStopAutoPilot = () => {
+    shouldStopAutoRef.current = true;
+    if (autoAbortControllerRef.current) {
+      autoAbortControllerRef.current.abort();
+    }
+    window.ipcRenderer.send("abort-process", "auto"); // 'auto' 인자 추가
+    addLog("🛑 [Auto-Pilot] 중단 요청을 보냈습니다.");
   };
 
   /**
    * v2.0 오토파일럿 1단계: 키워드 후보 분석
    */
   const handleFetchCandidates = async (broadTopic: string) => {
-    if (isProcessing || !broadTopic.trim()) return;
+    if (isAutoSearching || isAutoPublishing || !broadTopic.trim()) return;
 
-    setIsProcessing(true);
+    setIsAutoSearching(true);
+    shouldStopAutoRef.current = false;
+    autoAbortControllerRef.current = new AbortController();
     setCandidates([]);
     addLog(`🔍 [Auto-Pilot] 주제 '${broadTopic}' 분석 중...`);
 
@@ -256,13 +280,17 @@ export const useAppViewModel = () => {
         setCandidates(result.data);
         addLog(`✅ [Auto-Pilot] ${result.data.length}개의 키워드 후보를 찾았습니다.`);
       } else {
-        addLog(`❌ [Auto-Pilot] 분석 실패: ${result.error}`);
-        alert(`분석 실패: ${result.error}`);
+        if (result.error === "AbortError") {
+          addLog("🛑 [Auto-Pilot] 분석이 중단되었습니다.");
+        } else {
+          addLog(`❌ [Auto-Pilot] 분석 실패: ${result.error}`);
+        }
       }
     } catch (error: any) {
       addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
     } finally {
-      setIsProcessing(false);
+      setIsAutoSearching(false);
+      autoAbortControllerRef.current = null;
     }
   };
 
@@ -270,15 +298,17 @@ export const useAppViewModel = () => {
    * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
    */
   const handleStartWithKeyword = async (analysis: any, category: string) => {
-    if (isProcessing) return;
+    if (isAutoPublishing) return;
 
-    setIsProcessing(true);
+    setIsAutoPublishing(true);
+    shouldStopAutoRef.current = false;
+    autoAbortControllerRef.current = new AbortController();
     addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${category}) 발행 시작`);
 
     try {
       const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
         analysis,
-        category, // 카테고리 전달
+        category, 
         modelType: credentials.modelType,
         headless: credentials.headless,
       });
@@ -287,28 +317,33 @@ export const useAppViewModel = () => {
         addLog(`✨ [Auto-Pilot] 성공: ${analysis.keyword}`);
         alert("발행 성공!");
       } else {
-        addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
-        alert(`실패: ${result.error}`);
+        if (result.error === "AbortError") {
+          addLog(`🛑 [Auto-Pilot] '${analysis.keyword}' 작업이 중단되었습니다.`);
+        } else {
+          addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
+          alert(`실패: ${result.error}`);
+        }
       }
     } catch (error: any) {
       addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
     } finally {
-      setIsProcessing(false);
+      setIsAutoPublishing(false);
+      autoAbortControllerRef.current = null;
     }
   };
 
   const handlePublishAll = async () => {
-    if (isProcessing || tasks.length === 0) return;
+    if (isManualProcessing || tasks.length === 0) return;
     if (!confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
 
-    setIsProcessing(true);
-    shouldStopRef.current = false;
-    abortControllerRef.current = new AbortController();
+    setIsManualProcessing(true);
+    shouldStopManualRef.current = false;
+    manualAbortControllerRef.current = new AbortController();
     setLogs([]); // 초기화
     addLog("전체 발행 프로세스를 시작합니다.");
 
     for (const [i, task] of tasks.entries()) {
-      if (shouldStopRef.current || abortControllerRef.current?.signal.aborted) {
+      if (shouldStopManualRef.current || manualAbortControllerRef.current?.signal.aborted) {
         addLog("사용자에 의해 작업이 중단되었습니다.");
         break;
       }
@@ -330,8 +365,8 @@ export const useAppViewModel = () => {
         });
 
         if (
-          shouldStopRef.current ||
-          abortControllerRef.current?.signal.aborted
+          shouldStopManualRef.current ||
+          manualAbortControllerRef.current?.signal.aborted
         ) {
           addLog(`[${i + 1}] 중단됨: ${task.topic}`);
           await updateTaskState(i, { status: "대기" });
@@ -379,7 +414,7 @@ export const useAppViewModel = () => {
         await updateTaskState(i, { status: "완료" });
       } catch (error: any) {
         // 중단으로 인한 에러인 경우 무시
-        if (error.name === "AbortError" || shouldStopRef.current) {
+        if (error.name === "AbortError" || shouldStopManualRef.current) {
           addLog(`[${i + 1}] 작업이 중단되었습니다.`);
           break;
         }
@@ -391,18 +426,27 @@ export const useAppViewModel = () => {
       }
     }
 
-    if (shouldStopRef.current) {
+    if (shouldStopManualRef.current) {
       addLog("작업이 중단되었습니다.");
     } else {
       addLog("모든 작업이 종료되었습니다.");
       alert("모든 작업이 종료되었습니다.");
     }
-    setIsProcessing(false);
-    abortControllerRef.current = null;
+    setIsManualProcessing(false);
+    manualAbortControllerRef.current = null;
   };
 
   return {
-    state: { tasks, isProcessing, credentials, logs, candidates },
+    state: { 
+      tasks, 
+      isManualProcessing, 
+      isAutoSearching, 
+      isAutoPublishing, 
+      isProcessing: isManualProcessing || isAutoSearching || isAutoPublishing, // 하위 호환성 유지
+      credentials, 
+      logs, 
+      candidates 
+    },
     actions: {
       handleCredentialChange,
       handleAddTask, // 추가
@@ -414,6 +458,7 @@ export const useAppViewModel = () => {
       handleToneChange,
       handleAutoPilot,
       handleFetchCandidates,
+      handleStopAutoPilot, // 추가
       handleStartWithKeyword,
     },
   };

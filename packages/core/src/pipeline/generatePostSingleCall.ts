@@ -2,6 +2,7 @@ import { BaseAiClient } from "../ai";
 import { BlogPostInput, AiGeneratedPost } from "../types/blog";
 import { safeGenerate } from "../util/safeGenerate";
 import { generateBlogPrompt } from "./generatePrompt";
+import { generateAutoPilotPrompt } from "./autoPilotPrompt"; // 추가
 
 /**
  * 메인 블로그 포스트 생성 함수
@@ -12,13 +13,16 @@ export const generatePostSingleCall = async (
 ): Promise<AiGeneratedPost> => {
   let prompt;
   try {
-    prompt = generateBlogPrompt(input);
+    // v3.13: 오토파일럿 모드와 일반 모드 분기
+    if (input.mode === "auto") {
+      prompt = generateAutoPilotPrompt(input);
+    } else {
+      prompt = generateBlogPrompt(input);
+    }
   } catch (error) {
-    console.error("🚨 [generateBlogPrompt] 프롬프트 생성 중 에러 발생:", error);
+    console.error("🚨 프롬프트 생성 중 에러 발생:", error);
     throw new Error(
-      `[generateBlogPrompt] 프롬프트 생성 실패: ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      `프롬프트 생성 실패: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 

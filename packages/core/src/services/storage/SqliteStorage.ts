@@ -43,12 +43,13 @@ export class SqliteStorage implements IStorage {
     this.db.exec("CREATE INDEX IF NOT EXISTS idx_post_cache_keys ON post_cache (topic, persona, tone)");
   }
 
-  saveNews(topic: string, content: string, urls: string[]): void {
+  saveNews(topic: string, content: string, references: { name: string; url: string }[]): void {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO news_cache (topic, content, urls, created_at)
       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     `);
-    stmt.run(topic, content, JSON.stringify(urls));
+    // 'urls' 컬럼에 구조화된 JSON 저장
+    stmt.run(topic, content, JSON.stringify(references));
   }
 
   getRecentNews(topic: string): NewsCache | null {
@@ -62,7 +63,7 @@ export class SqliteStorage implements IStorage {
     return {
       topic: row.topic,
       content: row.content,
-      urls: JSON.parse(row.urls),
+      references: JSON.parse(row.urls), // JSON 파싱 시 name, url 객체 배열이 됨
       created_at: row.created_at,
     };
   }

@@ -23,10 +23,10 @@ export class RssService {
         ? `https://news.google.com/rss/search?q=${encodedQuery}&hl=ko&gl=KR&ceid=KR:ko`
         : `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-US&gl=US&ceid=US:en`;
     } else {
-      // 📰 검색어가 없는 경우: 기본 테크 뉴스 헤드라인
+      // 📰 검색어가 없는 경우: 종합 주요 뉴스 헤드라인 (더 다양한 주제 제공)
       url = region === "KR" 
-        ? "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ko&gl=KR&ceid=KR:ko"
-        : "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en";
+        ? "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko"
+        : "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en";
     }
 
     try {
