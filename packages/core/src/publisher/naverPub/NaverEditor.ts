@@ -6,18 +6,63 @@ import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
 
 /**
- * 🎨 스타일 상수 (기존 로직 외부 유지)
+ * 🎨 [1] 전체 레이아웃
+ * - font-size: 15px (기존 대비 1~2px 축소)
+ * - line-height: 2.2 (시원시원하게)
  */
-const CONTENT_LAYOUT_STYLE =
-  `max-width: 720px; margin: 0 auto; padding: 0 20px; line-height: 1.8; word-break: keep-all;`.replace(
-    /\n/g,
-    "",
-  );
-const CUSTOM_QUOTE_STYLE =
-  `border-left: 4px solid #666; padding-left: 15px; margin: 25px 0; color: #555; font-style: normal; background-color: #f9f9f9; padding-top: 12px; padding-bottom: 12px;`.replace(
-    /\n/g,
-    "",
-  );
+const CONTENT_LAYOUT_STYLE = `
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+  line-height: 2.2;
+  word-break: keep-all;
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  color: #333;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  font-size: 15px;
+`.replace(/\n/g, "");
+
+/**
+ * 🎨 [2] 문단 스타일 (덩어리감 형성)
+ * - margin-bottom: 30px (문단 덩어리 사이를 확실히 띄움)
+ * - display: block (블록 요소 강제)
+ */
+const PARAGRAPH_STYLE = `
+  display: block;
+  margin-bottom: 30px;
+  font-size: 15px;
+  line-height: 2.2;
+  color: #333;
+  font-weight: normal !important;
+`.replace(/\n/g, "");
+
+/**
+ * 🎨 [3] 소제목 스타일 (19px 유지)
+ */
+const VERTICAL_BAR_HEADING_STYLE = `
+  display: block;
+  border-left: 5px solid #222;
+  padding-left: 12px;
+  margin: 50px 0 20px 0;
+  font-size: 19px;
+  font-weight: bold;
+  color: #111;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  font-family: 'Apple SD Gothic Neo', sans-serif;
+  clear: both;
+`.replace(/\n/g, "");
+
+const SIDE_BAR_QUOTE_STYLE = `
+  border-left: 4px solid #ccc;
+  padding-left: 15px;
+  margin: 30px 0;
+  color: #666;
+  font-style: normal;
+  background-color: transparent;
+  font-weight: normal;
+`.replace(/\n/g, "");
 
 export class NaverEditor {
   private pexelsService = new PexelsService();
@@ -42,22 +87,111 @@ export class NaverEditor {
     this.persona = persona;
   }
 
-  /**
-   * 텍스트와 HTML에서 가비지 문구를 제거하는 유틸리티
-   * (이미지 태그는 이제 처리하므로 삭제하지 않음)
-   */
   private cleanContent(content: string): string {
     const garbageRegex = /(\(Image suggestion.*?\)|image suggestion:.*?\n?)/gi;
     return content.replace(garbageRegex, "").trim();
   }
 
   /**
-   * 클립보드를 통해 HTML을 에디터에 붙여넣는 공통 함수
-   * ✅ 폭 720px 및 인용구 스타일 래핑 적용
+   * ⚡️ [Algorithm] 텍스트 재조립 함수
+   * 흩어진 문장들을 모아서 2~3문장 단위의 '단단한 문단'으로 재구성합니다.
    */
-  private async pasteHtml(htmlContent: string, isQuote: boolean = false) {
-    const style = isQuote ? CUSTOM_QUOTE_STYLE : CONTENT_LAYOUT_STYLE;
-    const finalHtml = `<div style="${style}">${htmlContent}</div>`;
+  private reconstructParagraphs(html: string): string {
+    // 1. 태그 제거 및 줄바꿈을 공백으로 치환 (Flatten)
+    // 기존에 엔터로 끊겨있던 문장들을 하나로 잇습니다.
+    let fullText = html
+      .replace(/<[^>]*>/g, "")
+      .replace(/\n/g, " ")
+      .trim();
+    fullText = fullText.replace(/\s+/g, " "); // 다중 공백 제거
+
+    if (!fullText) return "";
+
+    // 2. 문장 단위로 분리 (마침표, 물음표, 느낌표 기준)
+    const sentences = fullText.match(/[^.!?]+[.!?]+[\s"']*/g);
+
+    if (!sentences || sentences.length === 0) {
+      // 문장 부호가 없는 짧은 텍스트라면 그냥 하나로 리턴
+      return `<p style="${PARAGRAPH_STYLE}">${fullText}</p>`;
+    }
+
+    let resultHtml = "";
+    let chunk = "";
+    let count = 0;
+
+    // 3. 2~3문장씩 그룹핑 (Grouping)
+    for (const sentence of sentences) {
+      chunk += sentence;
+      count++;
+
+      // 문장이 3개 모였거나, 글자수가 180자를 넘으면 하나의 문단으로 완성
+      if (count >= 3 || chunk.length > 180) {
+        resultHtml += `<p style="${PARAGRAPH_STYLE}">${chunk.trim()}</p>`;
+        chunk = "";
+        count = 0;
+      }
+    }
+
+    // 남은 문장 처리
+    if (chunk.trim()) {
+      resultHtml += `<p style="${PARAGRAPH_STYLE}">${chunk.trim()}</p>`;
+    }
+
+    return resultHtml;
+  }
+
+  private styleTable(html: string): string {
+    const $ = cheerio.load(html, { xmlMode: false }, false);
+
+    $("table").css({
+      "border-collapse": "collapse",
+      width: "100%",
+      margin: "30px 0",
+      "border-top": "2px solid #333",
+      "font-size": "13px",
+      "font-weight": "normal",
+      "table-layout": "fixed",
+    });
+
+    $("th").css({
+      padding: "10px 5px", // 좌우 패딩을 줄여서 공간 확보
+      "border-bottom": "1px solid #ccc",
+      "background-color": "#f9f9f9",
+      "font-weight": "bold",
+      color: "#333",
+      "text-align": "center",
+      "word-break": "keep-all",
+      "font-size": "13px",
+      "letter-spacing": "-0.5px", // 자간을 좁혀서 더 많이 들어가게
+    });
+
+    $("td").css({
+      padding: "10px 5px",
+      "border-bottom": "1px solid #eee",
+      color: "#555",
+      "line-height": "1.4", // 테이블 내부는 줄간격 좁힘
+      "font-weight": "normal",
+      "word-break": "keep-all", // 단어 중간에 끊기지 않도록
+      "vertical-align": "middle",
+      "font-size": "13px",
+    });
+
+    return $.html() || html;
+  }
+
+  private async pasteHtml(
+    htmlContent: string,
+    useDefaultLayout: boolean = true,
+  ) {
+    let finalHtml = htmlContent;
+
+    if (
+      useDefaultLayout &&
+      !htmlContent.startsWith('<div style="') &&
+      !htmlContent.includes(CONTENT_LAYOUT_STYLE)
+    ) {
+      finalHtml = `<div style="${CONTENT_LAYOUT_STYLE}">${htmlContent}</div>`;
+    }
 
     await this.page.evaluate((html) => {
       const type = "text/html";
@@ -69,9 +203,9 @@ export class NaverEditor {
     const isMac = process.platform === "darwin";
     const modifier = isMac ? "Meta" : "Control";
     await this.page.keyboard.press(`${modifier}+V`);
-    await this.page.waitForTimeout(100); // 안정적인 붙여넣기 대기
+    await this.page.waitForTimeout(200);
   }
-  // 팝업 클린
+
   public async clearPopups() {
     const CANCEL_SELECTOR = ".se-popup-button.se-popup-button-cancel";
     try {
@@ -82,7 +216,7 @@ export class NaverEditor {
     } catch (e) {}
     await this.page.keyboard.press("Escape");
   }
-  // 타이틀
+
   public async enterTitle(title: string, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -101,7 +235,7 @@ export class NaverEditor {
       }
     }
   }
-  // 컨텐츠 삽입
+
   public async enterContent(htmlContent: string) {
     try {
       await this.page.keyboard.press("Escape");
@@ -113,19 +247,18 @@ export class NaverEditor {
       const textBlocks = this.htmlToTextBlocks(htmlContent);
       let imageCount = 0;
       const MAX_IMAGES = 3;
-      const usedKeywords = new Set<string>(); // 중복 키워드 방지
+      const usedKeywords = new Set<string>();
 
       for (const block of textBlocks) {
-        // 타이핑 전 가비지 제거
         if (block.html) block.html = this.cleanContent(block.html);
         if (block.text) block.text = this.cleanContent(block.text);
 
         if (
           !block.html &&
-          !block.text && // text도 체크
+          !block.text &&
           block.type !== "separator" &&
           block.type !== "empty-line" &&
-          block.type !== "image" // image 타입 예외 허용
+          block.type !== "image"
         )
           continue;
 
@@ -136,100 +269,63 @@ export class NaverEditor {
             break;
 
           case "empty-line":
-            await this.page.keyboard.press("Enter");
+            // 재조립 로직이 마진을 처리하므로 빈 줄 입력은 최소화
             break;
 
           case "blockquote-heading":
-            // markdownToHtml에서 이미 스타일링된 block.html 사용
-            await this.pasteHtml(
-              `<blockquote>${block.html}</blockquote>`,
-              true,
-            );
-            await this.page.keyboard.press("ArrowDown");
+          case "heading":
+            if (!block.text) break;
+            const headingHtml = `<div style="${VERTICAL_BAR_HEADING_STYLE}">${block.text}</div>`;
+            await this.pasteHtml(headingHtml, false);
             await this.page.keyboard.press("Enter");
             break;
 
           case "blockquote-paragraph":
-            // markdownToHtml에서 이미 스타일링된 block.html 사용
+            if (!block.html) break;
+            const content = block.html
+              .replace(/<p>/g, "")
+              .replace(/<\/p>/g, "");
             await this.pasteHtml(
-              `<blockquote>${block.html}</blockquote>`,
-              true,
+              `<blockquote style="${SIDE_BAR_QUOTE_STYLE}">${content}</blockquote>`,
+              false,
             );
-            await this.page.keyboard.press("ArrowDown");
-            await this.page.keyboard.press("Enter");
-            break;
-
-          case "heading":
-            // 이미 <h1>~<h3> 태그와 스타일이 포함된 html 사용
-            const headingHtml = block.html.startsWith("<h")
-              ? block.html
-              : `<h3>${block.html}</h3>`;
-            await this.pasteHtml(headingHtml);
             await this.page.keyboard.press("Enter");
             break;
 
           case "table":
-            await this.pasteHtml(block.html);
-            await this.page.keyboard.press("ArrowDown");
+            if (!block.html) break;
+            const styledTable = this.styleTable(block.html);
+            await this.pasteHtml(styledTable);
             await this.page.keyboard.press("Enter");
             break;
 
           case "list":
-            // 리스트도 이미 스타일링된 상태
-            await this.pasteHtml(block.html);
+            const listHtml = `<div style="font-weight: normal; line-height: 2.2; font-size: 15px;">${block.html}</div>`;
+            await this.pasteHtml(listHtml, true);
             await this.page.keyboard.press("Enter");
             break;
 
           case "image":
-            // ... (기존 이미지 로직 유지)
-            // ✅ 헐리우드 특파원 페르소나는 이미지 검색 생략 (스톡 이미지 부적절)
-            if (this.persona === "hollywood-reporter") {
-              console.log(
-                "ℹ️ [NaverEditor] 'hollywood-reporter' 페르소나는 Pexels 이미지 검색을 생략합니다.",
-              );
-              break;
-            }
-
-            // ✅ 이미지 개수 제한 및 키워드 처리
-            if (imageCount >= MAX_IMAGES) {
-              console.log(
-                `⚠️ 이미지 제한(${MAX_IMAGES}개) 도달로 건너뜀: ${block.keyword}`,
-              );
-              break;
-            }
-
-            // 키워드 정제: 2어절까지만 사용, 특수문자 제거
+            if (this.persona === "hollywood-reporter") break;
+            if (imageCount >= MAX_IMAGES) break;
             let rawKeyword = block.keyword || this.topic;
-            // 대괄호, 특수문자 제거 및 앞쪽 2단어 추출
             let cleanKeyword = rawKeyword
               .replace(/[\[\]]/g, "")
               .replace(/이미지\s*:/, "")
-              .replace(/[^\w\s가-힣]/g, " ") // 특수문자는 공백으로 치환
+              .replace(/[^\w\s가-힣]/g, " ")
               .trim()
               .split(/\s+/)
               .slice(0, 2)
               .join(" ");
-
-            if (!cleanKeyword || cleanKeyword.length < 2) {
-              // 키워드가 너무 짧거나 없으면 토픽과 결합
+            if (!cleanKeyword || cleanKeyword.length < 2)
               cleanKeyword = `${this.topic} ${cleanKeyword}`;
-            }
-
-            if (usedKeywords.has(cleanKeyword)) {
-              console.log(`⚠️ 중복된 이미지 키워드 건너뜀: ${cleanKeyword}`);
-              break;
-            }
-
-            console.log(
-              `🖼️ 이미지 검색 시도 (${imageCount + 1}/${MAX_IMAGES}): "${cleanKeyword}"`,
-            );
+            if (usedKeywords.has(cleanKeyword)) break;
 
             try {
               const imagePath = await this.pexelsService.downloadImage(
                 cleanKeyword,
                 this.tempDir,
               );
-
               if (imagePath) {
                 await this.uploadImage(this.page, imagePath);
                 await this.page.waitForTimeout(500);
@@ -237,35 +333,37 @@ export class NaverEditor {
                 await this.page.keyboard.press("Enter");
                 imageCount++;
                 usedKeywords.add(cleanKeyword);
-              } else {
-                console.warn(
-                  `⚠️ 적절한 이미지를 찾지 못해 건너뜀: ${cleanKeyword}`,
-                );
               }
             } catch (e) {
-              console.error("❌ 이미지 처리 중 오류:", e);
+              console.error(e);
             }
             break;
 
+          // ✅ [핵심] 문단 재조립 로직 적용
           case "paragraph":
           default:
-            // markdownToHtml에서 이미 스타일링된 block.html 사용
-            await this.pasteHtml(block.html);
-            await this.page.keyboard.press("Enter");
+            if (!block.html) break;
+
+            // AI가 준 HTML을 다 뜯어서(reconstruct) 2~3문장씩 묶은 <p> 태그 덩어리로 변환
+            const reconstructedHtml = this.reconstructParagraphs(block.html);
+
+            // 변환된 덩어리를 에디터에 주입
+            if (reconstructedHtml) {
+              await this.pasteHtml(reconstructedHtml, true);
+              await this.page.keyboard.press("Enter");
+            }
             break;
         }
-        await this.page.waitForTimeout(10);
+        await this.page.waitForTimeout(80);
       }
     } catch (error) {
       console.error("❌ 본문 입력 중 오류:", error);
     }
   }
-  // html 을 text block 으로 변환
+
   private htmlToTextBlocks(html: string) {
     const blocks: any[] = [];
     const $ = cheerio.load(html);
-
-    // v3.25: .post-content 래퍼가 있으면 그 내부를, 없으면 body 전체를 탐색
     const $root =
       $(".post-content").length > 0 ? $(".post-content") : $("body");
 
@@ -274,109 +372,62 @@ export class NaverEditor {
       const tagName = element.tagName?.toLowerCase();
       const rawHtml = $el.html() || "";
       const textContent = $el.text().trim();
-
-      // ✅ 이미지 태그 감지 로직 (블록 전체가 이미지 태그인 경우)
-      // 예: [이미지: 키워드] 또는 > [이미지: 키워드]
       const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
       const imageMatch = textContent.match(imageRegex);
 
       if (imageMatch) {
-        blocks.push({
-          type: "image",
-          keyword: imageMatch[1].trim(),
-        });
-        return; // 이미지 블록으로 처리하고 다음 루프로
+        blocks.push({ type: "image", keyword: imageMatch[1].trim() });
+        return;
       }
 
       if (tagName === "hr") {
         blocks.push({ type: "separator", text: "" });
       } else if (tagName === "blockquote") {
-        // 인용구 내부에서도 이미지 태그가 있을 수 있음
         $el.children().each((_, child) => {
           const $child = $(child);
           const childTagName = child.tagName?.toLowerCase();
           const cText = $child.text().trim();
-          const cMatch = cText.match(imageRegex);
 
-          if (cMatch) {
-            blocks.push({
-              type: "image",
-              keyword: cMatch[1].trim(),
-            });
+          if (childTagName?.match(/^h[1-6]$/)) {
+            blocks.push({ type: "heading", text: cText, html: $child.html() });
           } else {
-            if (childTagName?.match(/^h[1-6]$/)) {
-              blocks.push({
-                type: "blockquote-heading",
-                text: cText,
-                html: $child.html(),
-              });
-            } else {
-              // ✅ 핵심: $.html($child)를 사용하여 태그 자체를 포함한 HTML을 보존 (링크 유실 방지)
-              blocks.push({
-                type: "blockquote-paragraph",
-                text: cText,
-                html: $.html($child),
-              });
-            }
+            blocks.push({
+              type: "blockquote-paragraph",
+              text: cText,
+              html: $.html($child),
+            });
           }
         });
       } else if (tagName?.match(/^h[1-6]$/)) {
-        let prefix = tagName === "h1" ? "■ " : tagName === "h2" ? "▶ " : "• ";
-        blocks.push({
-          type: "heading",
-          text: textContent,
-          prefix,
-          html: rawHtml,
-        });
+        blocks.push({ type: "heading", text: textContent, html: rawHtml });
       } else if (tagName === "ul" || tagName === "ol") {
-        $el.find("li").each((_, li) => {
-          blocks.push({
-            type: "list",
-            text: $(li).text().trim(),
-            html: $(li).html(),
-          });
-        });
+        blocks.push({ type: "list", text: textContent, html: $.html($el) });
       } else if (tagName === "table") {
         blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
       } else {
-        blocks.push({
-          type: "paragraph",
-          text: textContent,
-          html: rawHtml,
-        });
+        blocks.push({ type: "paragraph", text: textContent, html: rawHtml });
       }
     });
     return blocks;
   }
-  // 이미지 업로드
+
   private async uploadImage(page: Page, imagePath: string | null) {
-    if (!imagePath || !fs.existsSync(imagePath)) {
-      console.warn("⚠️ 이미지 파일이 존재하지 않습니다:", imagePath);
-      return;
-    }
-
+    if (!imagePath || !fs.existsSync(imagePath)) return;
     try {
-      // ✅ 1단계: 이미지 업로드 직전에 팝업 및 모든 포커스 해제
-      await page.keyboard.press("Escape"); // 현재 포커스 해제
-      await this.clearPopups(); // ✅ 핵심 추가: 팝업 제거 함수 호출
-      await page.waitForTimeout(200); // 팝업이 사라지는 애니메이션 등을 고려한 짧은 대기
-
+      await page.keyboard.press("Escape");
+      await this.clearPopups();
+      await page.waitForTimeout(200);
       const beforeCount = await page.evaluate(
         () => document.querySelectorAll("img").length,
       );
-
-      // ✅ 2단계: 에러 방지를 위한 Promise 핸들링 추가
       const fileChooserPromise = page
         .waitForEvent("filechooser", { timeout: 10000 })
         .catch(() => null);
-
-      // ✅ 3단계: 버튼 클릭 성공률 높이기 (여러 셀렉터 시도)
       const selectors = [
         'button[data-log="image"]',
         ".se-image-toolbar-button",
         'button[aria-label="사진"]',
       ];
-
       let clicked = false;
       for (const selector of selectors) {
         const btn = page.locator(selector).first();
@@ -386,33 +437,23 @@ export class NaverEditor {
           break;
         }
       }
-
-      if (!clicked) {
-        // 기본 시도
+      if (!clicked)
         await page
           .locator('button[data-log="image"]')
           .first()
           .click({ force: true });
-      }
-
       const fileChooser = await fileChooserPromise;
-      if (!fileChooser) {
-        console.warn("⚠️ 파일 선택창이 열리지 않아 업로드를 건너뜁니다.");
-        return;
+      if (fileChooser) {
+        await fileChooser.setFiles(imagePath);
+        await page.waitForFunction(
+          (prevCount) => document.querySelectorAll("img").length > prevCount,
+          beforeCount,
+          { timeout: 10000 },
+        );
+        console.log("✅ 이미지 업로드 성공");
       }
-
-      await fileChooser.setFiles(imagePath);
-
-      // 이미지가 실제로 업로드되어 DOM에 추가될 때까지 대기
-      await page.waitForFunction(
-        (prevCount) => document.querySelectorAll("img").length > prevCount,
-        beforeCount,
-        { timeout: 10000 },
-      );
-
-      console.log("✅ 이미지 업로드 성공:", imagePath);
-    } catch (error) {
-      console.error("❌ 이미지 업로드 실패:", error);
+    } catch (e) {
+      console.error("업로드 실패", e);
     }
   }
 }
