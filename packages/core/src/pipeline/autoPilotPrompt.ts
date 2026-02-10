@@ -1,5 +1,6 @@
 import { BlogPostInput, AutoPilotStrategy } from "../types/blog";
-import { analyzeTopicIntent } from "../util/autoInference";
+import { getPersonaDetail } from "../persona/persona.config";
+import { getToneInstruction } from "../tone/tone_config";
 
 /**
  * [v3.34] Auto-Pilot 전용 정밀 프롬프트 엔진
@@ -11,6 +12,9 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
   if (!strategy) {
     throw new Error("Auto-Pilot 모드이나 전략 데이터가 누락되었습니다.");
   }
+
+  const personaDetail = getPersonaDetail(input.persona);
+  const toneInstruction = getToneInstruction(input.tone);
 
   // 1. 뉴스 및 실시간 정보 (Language Lock 적용)
   let newsInstruction = "";
@@ -27,7 +31,14 @@ ${input.latestNews}
   // 2. 오토파일럿 전략 및 페르소나 (Authority)
   const strategicCore = `
 # 🎭 역할 및 전략 지침 (필수 준수)
-당신은 분석된 경쟁사들의 장점을 흡수하고 단점을 보완하는 **전략적 작가**입니다.
+당신은 분석된 경쟁사들의 장점을 흡수하고 단점을 보완하는 **전략적 작가**이자 **${personaDetail.role}**입니다.
+
+## 🚫 [CRITICAL] 페르소나 절대 금지 표현
+아래 리스트의 표현을 단 하나라도 사용하면 글의 전문성이 무너집니다. **절대 금지**:
+${personaDetail.forbidden.map((f) => `- **${f}**`).join("\n")}
+
+## 🎵 기본 톤앤매너 (Tone)
+${toneInstruction}
 
 ${
   input.topic.includes("리스트")
@@ -102,15 +113,19 @@ ${
   const mission = `
 # 🎯 작성 미션
 "${input.topic}" 주제로 포스트를 작성하세요.
+
+## ⚠️ [ULTRA CRITICAL] 본문(content) 구성 주의사항
+- **제목 중복 금지**: \`content\` 필드 내부에 제목(\`# 제목\`)을 다시 쓰지 마세요. 본문은 바로 첫 번째 소제목(\`##\`)부터 시작합니다.
+- **메타 정보 금지**: 아웃라인, 키워드, 태그 등을 \`content\` 필드에 텍스트로 포함하지 마세요. 오직 마크다운 본문만 들어갑니다.
 - **목표 분량**: 약 ${strategy.estimatedLength || 3000}자
 - **언어**: 100% 한국어 (영어 혼용 절대 금지)
 
 ## ✅ 최종 체크리스트 (하나라도 어길 시 실패)
+- [ ] 본문(\`content\`)이 제목 없이 바로 \`##\` 소제목으로 시작하는가?
 - [ ] 모든 소제목이 \`##\` (H2)로 작성되었는가? (볼드 처리 아님)
 - [ ] 문단당 2~3문장으로 끊어져 있고, 문단 사이 빈 줄이 있는가?
 - [ ] 표(Table)가 3열 이내이며 단답형으로 작성되었는가?
 - [ ] 본문에 \`(매체명)\`이나 \`[뉴스]\` 같은 찌꺼기가 없는가?
-- [ ] 이미지 태그가 하나도 없는가?
 
 ## 📤 출력 형식 (순수 JSON)
 \`\`\`json
@@ -135,3 +150,4 @@ ${layoutRules}
 ${mission}
 `.trim();
 }
+

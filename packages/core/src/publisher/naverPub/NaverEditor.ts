@@ -94,50 +94,17 @@ export class NaverEditor {
 
   /**
    * ⚡️ [Algorithm] 텍스트 재조립 함수
-   * 흩어진 문장들을 모아서 2~3문장 단위의 '단단한 문단'으로 재구성합니다.
+   * AI가 생성한 HTML 문단을 네이버 에디터 스타일에 맞게 래핑합니다.
    */
-  private reconstructParagraphs(html: string): string {
-    // 1. 태그 제거 및 줄바꿈을 공백으로 치환 (Flatten)
-    // 기존에 엔터로 끊겨있던 문장들을 하나로 잇습니다.
-    let fullText = html
-      .replace(/<[^>]*>/g, "")
-      .replace(/\n/g, " ")
-      .trim();
-    fullText = fullText.replace(/\s+/g, " "); // 다중 공백 제거
-
-    if (!fullText) return "";
-
-    // 2. 문장 단위로 분리 (마침표, 물음표, 느낌표 기준)
-    const sentences = fullText.match(/[^.!?]+[.!?]+[\s"']*/g);
-
-    if (!sentences || sentences.length === 0) {
-      // 문장 부호가 없는 짧은 텍스트라면 그냥 하나로 리턴
-      return `<p style="${PARAGRAPH_STYLE}">${fullText}</p>`;
+  private wrapParagraph(html: string): string {
+    if (!html || html.trim() === "") return "";
+    
+    // 이미 <p> 태그로 감싸져 있다면 스타일만 주입, 아니면 새로 감쌈
+    if (html.startsWith("<p")) {
+      return html.replace(/<p/g, `<p style="${PARAGRAPH_STYLE}"`);
     }
-
-    let resultHtml = "";
-    let chunk = "";
-    let count = 0;
-
-    // 3. 2~3문장씩 그룹핑 (Grouping)
-    for (const sentence of sentences) {
-      chunk += sentence;
-      count++;
-
-      // 문장이 3개 모였거나, 글자수가 180자를 넘으면 하나의 문단으로 완성
-      if (count >= 3 || chunk.length > 180) {
-        resultHtml += `<p style="${PARAGRAPH_STYLE}">${chunk.trim()}</p>`;
-        chunk = "";
-        count = 0;
-      }
-    }
-
-    // 남은 문장 처리
-    if (chunk.trim()) {
-      resultHtml += `<p style="${PARAGRAPH_STYLE}">${chunk.trim()}</p>`;
-    }
-
-    return resultHtml;
+    
+    return `<p style="${PARAGRAPH_STYLE}">${html}</p>`;
   }
 
   private styleTable(html: string): string {
@@ -339,17 +306,15 @@ export class NaverEditor {
             }
             break;
 
-          // ✅ [핵심] 문단 재조립 로직 적용
+          // ✅ AI가 생성한 문단 구조를 최대한 보존
           case "paragraph":
           default:
             if (!block.html) break;
 
-            // AI가 준 HTML을 다 뜯어서(reconstruct) 2~3문장씩 묶은 <p> 태그 덩어리로 변환
-            const reconstructedHtml = this.reconstructParagraphs(block.html);
+            const wrappedHtml = this.wrapParagraph(block.html);
 
-            // 변환된 덩어리를 에디터에 주입
-            if (reconstructedHtml) {
-              await this.pasteHtml(reconstructedHtml, true);
+            if (wrappedHtml) {
+              await this.pasteHtml(wrappedHtml, true);
               await this.page.keyboard.press("Enter");
             }
             break;
