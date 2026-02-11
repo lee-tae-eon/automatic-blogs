@@ -5,6 +5,7 @@ interface TaskTableProps {
   tasks: BatchTask[];
   onPersonaChange: (taskIndex: number, newPersona: Persona) => void;
   onToneChnage: (taskIndex: number, newTone: Tone) => void;
+  onUseImageChange: (taskIndex: number, useImage: boolean) => void; // 추가
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
@@ -15,14 +16,16 @@ const personaOptions: { label: string; value: Persona }[] = [
 
 const toneOptions: { label: string; value: Tone }[] = [
   { label: "전문적인", value: "professional" },
+  { label: "무게감 있는", value: "serious" },
   { label: "비판적인", value: "incisive" },
-  { label: "냉철한", value: "serious" },
+  { label: "부드러운 (공감)", value: "empathetic" },
 ];
 
 export const TaskTable: React.FC<TaskTableProps> = ({
   tasks,
   onPersonaChange,
   onToneChnage,
+  onUseImageChange,
 }) => {
   // 펼쳐진 행들의 인덱스를 관리
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -150,6 +153,17 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           <div className="info-group">
                             <label style={{ display: "block", fontSize: "0.8rem", color: "#adb5bd", marginBottom: "4px" }}>카테고리</label>
                             <span style={{ fontSize: "0.9rem" }}>{task.category || "미지정"}</span>
+                          </div>
+
+                          <div className="form-group" style={{ marginLeft: "auto" }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#495057" }}>
+                              <input
+                                type="checkbox"
+                                checked={task.useImage !== false} // undefined면 기본 true
+                                onChange={(e) => onUseImageChange(idx, e.target.checked)}
+                              />
+                              이미지 사용
+                            </label>
                           </div>
                         </div>
                       </td>

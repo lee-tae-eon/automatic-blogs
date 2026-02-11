@@ -24,6 +24,12 @@ export const TONE_CONFIG: Record<Tone, ToneConfig> = {
     description: "뉴스 속보를 전달하듯 빠르고 간결한 화법",
     ending: "기본적으로 '~습니다'를 사용하여 신뢰감을 주되, 독자와의 소통이나 부드러운 흐름이 필요할 때는 '~요'를 허용.",
   },
+
+  // 4. 공감형 (The Human) - 해요체/네체
+  empathetic: {
+    description: "독자의 마음에 공감하고 아쉬움이나 기쁨을 함께 나누는 따뜻한 화법",
+    ending: "부드러운 해요체 (~요, ~네요) 위주. 감성적인 단어(아쉽게도, 다행히도, 마음이 무겁네요 등) 사용 권장.",
+  },
 };
 
 export const getToneInstruction = (tone: Tone): string => {

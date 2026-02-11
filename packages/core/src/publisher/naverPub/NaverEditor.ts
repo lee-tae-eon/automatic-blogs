@@ -115,7 +115,7 @@ export class NaverEditor {
 
       const textBlocks = this.htmlToTextBlocks(htmlContent);
       let imageCount = 0;
-      const MAX_IMAGES = 3;
+      const MAX_IMAGES = 2; // v4.7: 최대 2개로 조정
       const usedKeywords = new Set<string>();
 
       for (const block of textBlocks) {

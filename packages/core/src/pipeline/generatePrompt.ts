@@ -60,6 +60,13 @@ ${personaDetail.writingTips ? personaDetail.writingTips.map(tip => `- ${tip}`).j
   const structureGuide = `
 # 📑 구조 및 가독성 가이드
 
+${input.useImage !== false ? `
+## 🖼️ [CRITICAL] 이미지 삽입 규칙
+- 본문 중간에 관련성 높은 이미지가 들어갈 위치를 선정하여 **[이미지: 검색 키워드]** 형식으로 태그를 삽입하세요.
+- **최대 2개**의 이미지만 삽입해야 합니다.
+- 키워드는 구체적인 사물이나 장소여야 합니다. (예: [이미지: 청년도약계좌 상담 창구])
+` : ""}
+
 ## 🏗️ [CRITICAL] 글의 전개 구조 (Persona Structure)
 당신은 **${personaDetail.role}**입니다. 반드시 아래 구조에 맞춰 글을 전개하세요:
 ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
@@ -90,6 +97,7 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 주제 **"${input.topic}"**에 대해 위 모든 규칙을 결합하여 최고의 블로그 포스팅을 작성하세요.
 
 ## ⚠️ [ULTRA CRITICAL] 본문 구성 주의사항
+- **자기소개 금지**: "안녕하세요, 리포터입니다", "분석가로서 정리해 드립니다" 등 당신의 정체를 밝히거나 페르소나 명칭을 본문에 쓰는 행위를 절대 금지합니다. 독자는 당신이 AI임을 몰라야 합니다.
 - **도입부 필수**: 제목 없이 바로 소제목으로 시작하지 마세요. 배경을 설명하는 도입 문단을 먼저 작성하세요.
 - **제목 중복 금지**: content 필드 내부에 제목(\`# 제목\`)을 다시 쓰지 마세요.
 - **메타 정보 금지**: 아웃라인, 태그 등을 본문에 텍스트로 포함하지 마세요.

@@ -154,6 +154,10 @@ export const useAppViewModel = () => {
     await updateTaskState(taskIndex, { tone: newTone });
   };
 
+  const handleUseImageChange = async (taskIndex: number, useImage: boolean) => {
+    await updateTaskState(taskIndex, { useImage });
+  };
+
   const processFile = async (file: File) => {
     if (typeof window.ipcRenderer?.getFilePath !== "function") {
       alert("Electron 초기화 오류: 앱을 재시작해주세요.");
@@ -458,6 +462,7 @@ export const useAppViewModel = () => {
       handlePublishAll,
       handlePersonaChange,
       handleToneChange,
+      handleUseImageChange,
       handleAutoPilot,
       handleFetchCandidates,
       handleStopAutoPilot, // 추가

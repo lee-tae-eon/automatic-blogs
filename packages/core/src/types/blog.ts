@@ -3,7 +3,7 @@ import { BaseAiClient } from "../ai";
 // ============================================
 // 톤
 // ============================================
-export type Tone = "professional" | "incisive" | "serious";
+export type Tone = "professional" | "incisive" | "serious" | "empathetic";
 
 export const TONE_INSTRUCTIONS: Record<Tone, string> = {
   professional:
@@ -73,6 +73,7 @@ export interface BlogPostInput {
   additionalInstructions?: string;
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
+  useImage?: boolean; // v4.7: 이미지 사용 여부
 }
 
 export interface AiGeneratedPost {
@@ -116,4 +117,5 @@ export interface BatchTask {
   additionalInstructions?: string;
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
+  useImage?: boolean; // v4.7: 이미지 사용 여부
 }
