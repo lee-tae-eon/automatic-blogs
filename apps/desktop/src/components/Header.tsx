@@ -6,6 +6,7 @@ interface HeaderProps {
     naverPw: string;
     geminiKey: string;
     subGemini: string;
+    thirdGemini: string; // 추가
     headless: boolean;
     modelType: "fast" | "normal";
     tistoryId: string;
@@ -221,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
               <input
                 name="geminiKey"
                 type="password"
-                placeholder="Primary Gemini Key"
+                placeholder="1. Primary Key"
                 value={credentials.geminiKey}
                 onChange={onChange}
                 style={{
@@ -235,12 +236,27 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
               <input
                 name="subGemini"
                 type="password"
-                placeholder="Secondary Gemini Key"
+                placeholder="2. Secondary Key"
                 value={credentials.subGemini}
                 onChange={onChange}
                 style={{
                   width: "100%",
                   padding: "8px",
+                  marginBottom: "5px",
+                  borderRadius: "4px",
+                  border: "1px solid #ddd",
+                }}
+              />
+              <input
+                name="thirdGemini"
+                type="password"
+                placeholder="3. Third Key"
+                value={credentials.thirdGemini}
+                onChange={onChange}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "5px",
                   borderRadius: "4px",
                   border: "1px solid #ddd",
                 }}

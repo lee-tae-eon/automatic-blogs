@@ -95,11 +95,23 @@ export class GeminiClient implements BaseAiClient {
       
       let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
 
-      // [v4.5] JSON 파싱 안정성 강화: 문자열 값 내부의 실제 줄바꿈을 \n 제어 문자로 변환
-      // 정규식 설명: 큰따옴표 사이의 텍스트 중 실제 줄바꿈(\n)을 찾아서 \\n으로 치환
+      // [v4.6] JSON 파싱 안정성 강화: 문자열 값 내부의 실제 줄바꿈을 \n 제어 문자로 변환
+      // 정규식 설명: "key": "value" 구조에서 value 부분에 포함된 실제 줄바꿈을 찾아냄
+      // 1. 단순 치환 시도
       jsonString = jsonString.replace(/(?<=: *"[^"]*)\n(?=[^"]*")/g, "\\n");
-
-      return JSON.parse(jsonString.trim()) as T;
+      
+      // 2. 여러 줄에 걸쳐 있을 경우를 대비한 강력한 치환 (줄바꿈이 포함된 문자열 값을 찾아서 처리)
+      // 주의: 이 정규식은 단순하지 않아 성능에 영향을 줄 수 있으므로 1차 시도 실패 시 적용 고려 가능하나,
+      // 현재는 안전하게 모든 줄바꿈을 \n으로 바꾸되, JSON 구조(괄호, 콤마 등) 밖의 줄바꿈은 유지해야 함.
+      // 따라서 가장 확실한 방법은, 파싱 에러가 날 경우에만 정밀 타격하는 것.
+      
+      try {
+        return JSON.parse(jsonString.trim()) as T;
+      } catch (e) {
+        // 2차 시도: 조금 더 공격적인 줄바꿈 치환 (큰따옴표 안의 줄바꿈만 타겟팅)
+        const repaired = jsonString.replace(/(".*?")/gs, (match) => match.replace(/\n/g, "\\n"));
+        return JSON.parse(repaired) as T;
+      }
     } catch (parseError: any) {
       // 이 경우는 순수한 JSON 파싱 에러입니다.
       console.error("JSON 파싱 에러. 원문 데이터:", responseText);

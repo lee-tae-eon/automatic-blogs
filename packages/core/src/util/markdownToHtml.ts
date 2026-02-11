@@ -14,14 +14,12 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   let content = markdown.replace(/^---\n[\s\S]*?\n---\n/, "");
 
   // 2. 마크다운 -> HTML 변환 (Pure HTML)
-  // [v4.3] 줄바꿈(Newline)을 <br/>로 변환하여 시각적 리듬 유지
-  const processedContent = content.replace(/\n(?!\n)/g, "  \n"); // 단일 줄바꿈 뒤에 공백 2개를 붙여 마크다운 브레이크 유도
-
+  // [v4.7] 실험적인 줄바꿈 로직 제거 (네이버 에디터 호환성 문제 해결)
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkHtml, { sanitize: false })
-    .process(processedContent);
+    .process(content);
   
   let html = result.toString();
 

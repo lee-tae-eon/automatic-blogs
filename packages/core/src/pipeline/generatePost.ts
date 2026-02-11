@@ -179,10 +179,14 @@ export async function generatePost({
       const sanitizedPublication = sanitizeContent(rawPublication, task.topic);
 
       // [v4.1] 출처(References)를 본문 하단에 클릭 가능한 링크 형식으로 추가
+      // (단, AI가 이미 본문에 '참고' 관련 섹션을 포함했다면 중복 추가 방지)
       if (sanitizedPublication.references && sanitizedPublication.references.length > 0) {
-        const refSection = "\n\n## 참고 자료\n" + 
-          sanitizedPublication.references.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
-        sanitizedPublication.content += refSection;
+        const hasRefSection = /참고\s*(자료|문헌|사이트)|References|출처/i.test(sanitizedPublication.content);
+        if (!hasRefSection) {
+          const refSection = "\n\n## 참고 자료\n" + 
+            sanitizedPublication.references.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
+          sanitizedPublication.content += refSection;
+        }
       }
 
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);

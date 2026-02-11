@@ -33,6 +33,7 @@ export const useAppViewModel = () => {
     tistoryPw: "",
     geminiKey: "",
     subGemini: "",
+    thirdGemini: "",
     headless: false,
     modelType: "normal" as "fast" | "normal",
     enableNaver: true,
@@ -54,6 +55,7 @@ export const useAppViewModel = () => {
           modelType: storedCreds.modelType ?? "normal",
           enableNaver: storedCreds.enableNaver ?? true,
           enableTistory: storedCreds.enableTistory ?? false,
+          thirdGemini: storedCreds.thirdGemini || "",
           tistoryPw: storedCreds.tistoryPw || storedCreds.tistoryToken || "", // 마이그레이션 호환성
         }));
       }
