@@ -33,6 +33,7 @@ export const useAppViewModel = () => {
     tistoryPw: "",
     geminiKey: "",
     subGemini: "",
+    thirdGemini: "",
     headless: false,
     modelType: "normal" as "fast" | "normal",
     enableNaver: true,
@@ -54,6 +55,7 @@ export const useAppViewModel = () => {
           modelType: storedCreds.modelType ?? "normal",
           enableNaver: storedCreds.enableNaver ?? true,
           enableTistory: storedCreds.enableTistory ?? false,
+          thirdGemini: storedCreds.thirdGemini || "",
           tistoryPw: storedCreds.tistoryPw || storedCreds.tistoryToken || "", // 마이그레이션 호환성
         }));
       }
@@ -150,6 +152,10 @@ export const useAppViewModel = () => {
 
   const handleToneChange = async (taskIndex: number, newTone: Tone) => {
     await updateTaskState(taskIndex, { tone: newTone });
+  };
+
+  const handleUseImageChange = async (taskIndex: number, useImage: boolean) => {
+    await updateTaskState(taskIndex, { useImage });
   };
 
   const processFile = async (file: File) => {
@@ -456,6 +462,7 @@ export const useAppViewModel = () => {
       handlePublishAll,
       handlePersonaChange,
       handleToneChange,
+      handleUseImageChange,
       handleAutoPilot,
       handleFetchCandidates,
       handleStopAutoPilot, // 추가

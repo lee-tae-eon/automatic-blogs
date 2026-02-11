@@ -17,6 +17,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   const [category, setCategory] = useState("일상정보");
   const [persona, setPersona] = useState<Persona>("informative");
   const [tone, setTone] = useState<Tone>("professional");
+  const [useImage, setUseImage] = useState(true); // v4.7: 이미지 사용 기본값 true
   
   const [trends, setTrends] = useState<TrendTopic[]>([]);
   const [trendQuery, setTrendQuery] = useState("");
@@ -47,7 +48,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
     
     if (trendType === "hollywood") {
       setCategory("해외연예");
-      setPersona("hollywood-reporter");
+      setPersona("reporter");
       setTone("professional");
     } else {
       setCategory("일상정보");
@@ -74,6 +75,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
       category,
       persona,
       tone,
+      useImage,
       status: "대기",
     };
 
@@ -322,12 +324,9 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               onChange={(e) => setPersona(e.target.value as Persona)}
               style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
-              <option value="informative">정보형</option>
-              <option value="empathetic">공감형</option>
-              <option value="storytelling">스토리텔링형</option>
-              <option value="experiential">체험형</option>
-              <option value="travelLog">여행기</option>
-              <option value="hollywood-reporter">헐리우드특파원</option>
+              <option value="informative">분석가 (정보)</option>
+              <option value="experiential">리뷰어 (후기)</option>
+              <option value="reporter">리포터 (뉴스)</option>
             </select>
           </div>
 
@@ -340,10 +339,23 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               onChange={(e) => setTone(e.target.value as Tone)}
               style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
-              <option value="professional">전문적인</option>
-              <option value="serious">냉철한</option>
-              <option value="incisive">비판적인</option>
+              <option value="professional">전문적인 (딱딱한)</option>
+              <option value="serious">냉철한 (무게감 있는)</option>
+              <option value="incisive">비판적인 (날카로운)</option>
+              <option value="empathetic">공감형 (부드러운)</option>
             </select>
+          </div>
+
+          <div className="form-group" style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: "10px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.9rem", color: "#495057", fontWeight: "600" }}>
+              <input
+                type="checkbox"
+                checked={useImage}
+                onChange={(e) => setUseImage(e.target.checked)}
+                style={{ width: "18px", height: "18px" }}
+              />
+              이미지 자동 삽입 (최대 2장)
+            </label>
           </div>
 
           <div style={{ gridColumn: "span 2", textAlign: "right", marginTop: "10px" }}>

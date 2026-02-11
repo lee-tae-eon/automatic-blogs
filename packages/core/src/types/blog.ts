@@ -3,7 +3,7 @@ import { BaseAiClient } from "../ai";
 // ============================================
 // 톤
 // ============================================
-export type Tone = "professional" | "incisive" | "serious";
+export type Tone = "professional" | "incisive" | "serious" | "empathetic";
 
 export const TONE_INSTRUCTIONS: Record<Tone, string> = {
   professional:
@@ -17,12 +17,9 @@ export const TONE_INSTRUCTIONS: Record<Tone, string> = {
 // ============================================
 
 export type Persona =
-  | "informative"
-  | "empathetic"
-  | "storytelling"
-  | "experiential"
-  | "travelLog"
-  | "hollywood-reporter"; // 헐리우드 전문 리포터 추가
+  | "informative" // 정보형 (The Analyst)
+  | "experiential" // 후기형 (The Reviewer)
+  | "reporter"; // 이슈형 (The Reporter)
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의
@@ -33,6 +30,7 @@ export interface PersonaDetail {
   transitions: string[]; // 문단 연결어 스타일
   closingStyle: string; // 마무리 방식
   forbidden: string[]; // 금지 표현 리스트
+  writingTips?: string[]; // [v3.5] 가독성을 높이는 작문 팁
 }
 
 export interface PersonaExamples {
@@ -75,6 +73,7 @@ export interface BlogPostInput {
   additionalInstructions?: string;
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
+  useImage?: boolean; // v4.7: 이미지 사용 여부
 }
 
 export interface AiGeneratedPost {
@@ -118,4 +117,5 @@ export interface BatchTask {
   additionalInstructions?: string;
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
+  useImage?: boolean; // v4.7: 이미지 사용 여부
 }

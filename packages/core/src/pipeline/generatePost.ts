@@ -38,26 +38,22 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
-  const currentYear = new Date().getFullYear().toString();
-  const outdatedYearsRegex = /202[3-5]년/g;
-  if (outdatedYearsRegex.test(content) || outdatedYearsRegex.test(title)) {
-    console.warn(`🕒 [Sanitizer] 과거 연도 감지됨. 2026년으로 수정을 시도합니다.`);
-    title = title.replace(outdatedYearsRegex, `${currentYear}년`);
-    content = content.replace(outdatedYearsRegex, `${currentYear}년`);
-    isModified = true;
-  }
-
   const oldContent = content;
 
   const refineSpacing = (text: string): string => {
     return text.split("\n").map(line => {
+      // 리스트, 표, 헤딩 등은 건드리지 않음
       if (line.trim().length === 0 || line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
+      
+      // [v4.4] AI가 의도한 단일 줄바꿈(쉼표 뒤 등)은 보존하고,
+      // 문장이 완전히 끝나는 지점(. ! ?) 뒤에 공백이 있을 때만 문단 나눔 수행
       return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
     }).join("\n");
   };
 
   content = refineSpacing(content);
-  content = content.replace(/\n\n/g, "\n\n\n"); 
+  // 연속된 엔터 3개 이상만 정리 (AI의 의도적 엔터 2개는 보존)
+  content = content.replace(/\n{4,}/g, "\n\n\n"); 
 
   if (content !== oldContent) {
     console.log("📱 [Mobile] 문단 간격을 넓혀 가독성을 최적화했습니다.");
@@ -106,8 +102,10 @@ export async function generatePost({
             adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
             adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
           });
+          // [v4.3] 너무 긴 주제는 API에서 에러가 나므로 앞의 2~3단어만 추출하여 분석
           const cleanTopic = task.topic.split("\n")[0].trim();
-          const volumeData = await scout.getMonthlySearchVolume(cleanTopic);
+          const scoutKeyword = cleanTopic.split(" ").slice(0, 3).join(" "); 
+          const volumeData = await scout.getMonthlySearchVolume(scoutKeyword);
           if (volumeData.related && volumeData.related.length > 0) {
             semanticKeywords = [...new Set([...semanticKeywords, ...volumeData.related.slice(0, 5)])];
           }
@@ -179,6 +177,18 @@ export async function generatePost({
 
       onProgress?.("🛡️ 안전 가이드라인 검수 중...");
       const sanitizedPublication = sanitizeContent(rawPublication, task.topic);
+
+      // [v4.1] 출처(References)를 본문 하단에 클릭 가능한 링크 형식으로 추가
+      // (단, AI가 이미 본문에 '참고' 관련 섹션을 포함했다면 중복 추가 방지)
+      if (sanitizedPublication.references && sanitizedPublication.references.length > 0) {
+        const hasRefSection = /참고\s*(자료|문헌|사이트)|References|출처/i.test(sanitizedPublication.content);
+        if (!hasRefSection) {
+          const refSection = "\n\n## 참고 자료\n" + 
+            sanitizedPublication.references.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
+          sanitizedPublication.content += refSection;
+        }
+      }
+
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);
 
       onProgress?.("포스팅 생성 완료");

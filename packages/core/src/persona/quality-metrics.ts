@@ -1,103 +1,49 @@
-// ============================================
-// 페르소나별 품질 기준
+import { QualityMetrics, Persona } from "../types/blog";
 
-import { Persona, QualityMetrics } from "@/types/blog";
+export const SEO_RULES = {
+  metaTitleLength: [20, 40],
+  metaDescriptionLength: [80, 150],
+  keywordDensity: [0.01, 0.03],
+};
 
-// ============================================
 export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
+  // 1. 정보성 (The Analyst)
   informative: {
-    targetLength: [2000, 3500], // 정보 전달형은 길게
-    headingCount: 5, // 소제목 5개
-    paragraphMaxLength: 200, // 문단당 최대 200자
-    sentenceMaxLength: 80, // 문장당 최대 80자
-    emojiUsage: "minimal", // 이모지 최소화
-    tableRequired: true, // 표 필수
-    imageCount: 2, // 이미지 3개 권장
-    keywordDensity: [1.5, 2.5], // 키워드 밀도 1.5~2.5%
+    targetLength: [1500, 3000],
+    headingCount: 5,
+    paragraphMaxLength: 150,
+    sentenceMaxLength: 50,
+    emojiUsage: "minimal",
+    tableRequired: true,
+    imageCount: 3,
+    keywordDensity: [0.01, 0.03],
   },
 
-  empathetic: {
-    targetLength: [1700, 2800],
-    headingCount: 5,
-    paragraphMaxLength: 150, // 짧은 문단으로 가독성 확보
-    sentenceMaxLength: 60,
-    emojiUsage: "moderate", // 감성 표현용 이모지 적절히 사용
+  // 2. 후기성 (The Reviewer)
+  experiential: {
+    targetLength: [1000, 2000],
+    headingCount: 4,
+    paragraphMaxLength: 120,
+    sentenceMaxLength: 40,
+    emojiUsage: "moderate",
+    tableRequired: false,
+    imageCount: 5,
+    keywordDensity: [0.01, 0.02],
+  },
+
+  // 3. 뉴스형 (The Reporter)
+  reporter: {
+    targetLength: [800, 1500],
+    headingCount: 4,
+    paragraphMaxLength: 100,
+    sentenceMaxLength: 45,
+    emojiUsage: "minimal",
     tableRequired: false,
     imageCount: 2,
-    keywordDensity: [1.0, 2.0],
-  },
-
-  storytelling: {
-    targetLength: [1800, 3000],
-    headingCount: 5,
-    paragraphMaxLength: 180,
-    sentenceMaxLength: 70,
-    emojiUsage: "minimal",
-    tableRequired: false, // 스토리 흐름 방해 방지
-    imageCount: 2, // 시각적 몰입 강화
-    keywordDensity: [1.0, 2.0],
-  },
-
-  experiential: {
-    targetLength: [1800, 3000],
-    headingCount: 5,
-    paragraphMaxLength: 150,
-    sentenceMaxLength: 70,
-    emojiUsage: "moderate",
-    tableRequired: true, // 장단점 비교표 필수
-    imageCount: 3, // 실제 사용 사진 많이
-    keywordDensity: [1.5, 2.5],
-  },
-
-  travelLog: {
-    targetLength: [2000, 3500],
-    headingCount: 5,
-    paragraphMaxLength: 130, // 호흡을 짧게 해서 감성 유지
-    sentenceMaxLength: 60,
-    emojiUsage: "moderate", // 감정 표현을 위해 적절히 사용
-    tableRequired: false, // 감성을 위해 표는 생략하거나 선택
-    imageCount: 3, // 여행지 풍경 중요
-    keywordDensity: [1.2, 2.2],
-  },
-
-  "hollywood-reporter": {
-    targetLength: [1500, 2800],
-    headingCount: 5,
-    paragraphMaxLength: 150,
-    sentenceMaxLength: 70,
-    emojiUsage: "moderate",
-    tableRequired: false,
-    imageCount: 3,
-    keywordDensity: [1.5, 2.5],
+    keywordDensity: [0.01, 0.02],
   },
 };
 
-// ============================================
-// 공통 SEO 규칙
-// ============================================
-export const SEO_RULES = {
-  maxImages: 3,
-  metaTitleLength: [30, 60], // 메타 제목 글자 수
-  metaDescriptionLength: [120, 160], // 메타 설명 글자 수
-  focusKeywordCount: [3, 5], // 주요 키워드 개수
-  headingKeywordUsage: true, // 소제목에 키워드 포함 필수
-  firstParagraphKeyword: true, // 첫 문단에 키워드 필수
-  imageAltRequired: true, // 이미지 alt 속성 필수
-};
-
-// ============================================
-// 가독성 점수 기준
-// ============================================
-export const READABILITY_SCORES = {
-  excellent: 80, // 매우 좋음
-  good: 60, // 좋음
-  fair: 40, // 보통
-  poor: 20, // 개선 필요
-};
-
-// ============================================
-// 품질 메트릭 가져오기 함수
-// ============================================
 export const getQualityMetrics = (persona: Persona): QualityMetrics => {
   return QUALITY_METRICS[persona] || QUALITY_METRICS.informative;
 };

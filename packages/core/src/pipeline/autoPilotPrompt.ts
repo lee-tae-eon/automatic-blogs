@@ -1,5 +1,7 @@
 import { BlogPostInput, AutoPilotStrategy } from "../types/blog";
-import { analyzeTopicIntent } from "../util/autoInference";
+import { getPersonaDetail } from "../persona/persona.config";
+import { getPersonaExamples } from "../persona/persona.example";
+import { getToneInstruction } from "../tone/tone_config";
 
 /**
  * [v3.34] Auto-Pilot 전용 정밀 프롬프트 엔진
@@ -11,6 +13,10 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
   if (!strategy) {
     throw new Error("Auto-Pilot 모드이나 전략 데이터가 누락되었습니다.");
   }
+
+  const personaDetail = getPersonaDetail(input.persona);
+  const examples = getPersonaExamples(input.persona);
+  const toneInstruction = getToneInstruction(input.tone);
 
   // 1. 뉴스 및 실시간 정보 (Language Lock 적용)
   let newsInstruction = "";
@@ -25,12 +31,25 @@ ${input.latestNews}
   }
 
   // 2. 오토파일럿 전략 및 페르소나 (Authority)
-  const strategicCore = `
-# 🎭 역할 및 전략 지침 (필수 준수)
-당신은 분석된 경쟁사들의 장점을 흡수하고 단점을 보완하는 **전략적 작가**입니다.
+  const writingStyleSection = `
+## ✍️ [CRITICAL] 작문 스타일 및 문체 지시 (Anti-Machine)
+당신은 기계적인 AI가 아닌, 독자의 몰입을 이끌어내는 **전문 칼럼니스트**입니다.
+1. **마이크로 브리딩 (Micro-Breathing) [ULTRA CRITICAL]**:
+   - 한 문장의 길이를 **최대 40~50자 이내**로 짧고 간결하게 유지하세요.
+   - 문장이 길어질 경우, 반드시 **쉼표(,) 바로 뒤에서 줄바꿈(\n)**을 수행하여 시각적 리듬을 만드세요. (종결 어미가 다음 줄로 툭 떨어지는 현상 방지)
+2. **문맥 기반 어미 변화**: 문장의 성격에 따라 어미를 변화시키세요. (사실 전달: ~입니다 / 현장감/생동감: ~죠, ~거든요 / 결론/강조: ~인 셈입니다)
+3. **리듬감(Rhythm)**: 모든 문장의 길이가 비슷하면 글이 지루해집니다. [단문 - 단문 - 장문] 또는 [장문 - 단문] 식으로 문장 길이를 극단적으로 섞으세요.
+4. **패턴 파괴(Pattern Breaking)**: 어떤 종결 어미든 **3번 이상 연속으로 같은 계열을 쓰면 실패**로 간주합니다.
+5. **단어 보존(Word Integrity)**: 단어 중간이나 고유명사 내부에 불필요한 공백이나 줄바꿈을 절대 넣지 마세요.
+${personaDetail.writingTips ? personaDetail.writingTips.map((tip) => ` - ${tip}`).join("\n") : ""}
 
-${
-  input.topic.includes("리스트")
+## ✅ 이 페르소나의 모범 사례 (Style Examples)
+글을 쓸 때 아래 예시 문장의 느낌과 리듬을 참고하세요:
+${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}
+${examples.transitions.length > 0 ? `\n**자연스러운 문장 연결 예시**:\n${examples.transitions.map((t) => `- "${t}..."`).join("\n")}` : ""}
+`;
+
+  const listInstruction = input.topic.includes("리스트")
     ? `
 ## 📋 [CRITICAL] 리스트 중심 구성 및 계층 구조(Depth) 지시
 - 주제에 '리스트'가 포함되어 있습니다. 정보를 서술형 문단으로 쓰지 말고, 반드시 **계층이 구분된 마크다운 리스트(\`-\`)**로만 정리하세요.
@@ -42,8 +61,22 @@ ${
       - 포함된 굿즈 리스트
 - 본문의 핵심 데이터를 모두 리스트의 깊이(Depth)를 활용해 시각적으로 구조화하세요.
 `
-    : ""
-}
+    : "";
+
+  const strategicCore = `
+# 🎭 역할 및 전략 지침 (필수 준수)
+당신은 분석된 경쟁사들의 장점을 흡수하고 단점을 보완하는 **전략적 작가**이자 **${personaDetail.role}**입니다.
+
+## 🚫 [CRITICAL] 페르소나 절대 금지 표현
+아래 리스트의 표현을 단 하나라도 사용하면 글의 전문성이 무너집니다. **절대 금지**:
+${personaDetail.forbidden.map((f) => ` - **${f}**`).join("\n")}
+
+## 🎵 기본 톤앤매너 (Tone)
+${toneInstruction}
+
+${writingStyleSection}
+
+${listInstruction}
 
 ## 1. 차별화 전략
 ${strategy.differentiationStrategy}
@@ -55,8 +88,11 @@ ${strategy.differentiationStrategy}
 
 ## 3. 문체 및 스타일 DNA
 ${strategy.styleDNA}
-- **말투**: '해요체'를 절대 쓰지 마세요. 신뢰감을 주는 **'하십시오체' 또는 '평어체(-다)'**로 고정합니다.
-- **정체**: AI임을 암시하거나 "전문가로서"와 같은 서술을 하지 마세요.
+- **정체성 숨기기 [ULTRA CRITICAL]**: 
+  - 당신이 누구인지 밝히지 마세요. "안녕하세요, 리포터입니다", "전문가로서 말씀드리면" 같은 모든 형태의 자기소개를 절대 금지합니다.
+  - "리포터", "분석가", "리뷰어" 등 당신의 **페르소나 명칭을 본문에 단 한 번도 쓰지 마세요.**
+  - 오직 정보와 분석에만 집중하여 글 자체로 당신의 전문성을 증명하세요.
+- **말투**: '해요체'를 적절히 섞되, 신뢰감을 주는 **'하십시오체' 또는 '평어체(-다)'**를 기본으로 합니다.
 
 ## 4. 구조 및 아웃라인
 반드시 아래 5개 섹션을 충실히 채우세요:
@@ -65,7 +101,18 @@ ${(strategy.suggestedOutline || []).join(" -> ")}
 
   // ✅ 3. 레이아웃 및 가독성 (Manual 모드와 동일한 엔진 적용)
   const layoutRules = `
-# 🎨 레이아웃 및 포맷 규칙 (절대 준수)
+# 🎨 레이아웃 및 [CRITICAL] 강조 규칙
+
+${input.useImage !== false ? `
+## 🖼️ [CRITICAL] 이미지 삽입 규칙
+- 본문 중간에 이미지가 들어갈 위치에 **[이미지: 검색 키워드]** 태그를 삽입하세요. (최대 2개)
+- 키워드는 Pexels에서 검색 가능하도록 구체적으로 작성하세요.
+` : ""}
+
+당신의 글은 텍스트로만 이루어져 지루합니다. 반드시 **볼드체(**...**)**를 사용하여 시각적 포인트를 만드세요.
+- **핵심 강조**: 문맥상 가장 중요한 **'단어'**나 **'짧은 구'**만 굵게(Bold) 처리하세요.
+- **분량 제한 [ULTRA CRITICAL]**: 한 문장에 굵은 글씨는 **최대 2단어**를 넘지 마세요. 문장 전체나 문단 전체를 굵게 만드는 것은 절대 금지입니다.
+- **빈도**: 각 문단마다 핵심적인 부분에만 1~2회 사용하세요. 너무 잦은 강조는 오히려 가독성을 해칩니다.
 
 ## 📐 [CRITICAL] 헤딩(Heading) 및 소제목 규칙
 이 규칙을 지키지 않으면 에디터 스타일이 적용되지 않습니다.
@@ -102,15 +149,20 @@ ${
   const mission = `
 # 🎯 작성 미션
 "${input.topic}" 주제로 포스트를 작성하세요.
-- **목표 분량**: 약 ${strategy.estimatedLength || 3000}자
+
+## ⚠️ [ULTRA CRITICAL] 본문(content) 구성 주의사항
+- **도입부 필수**: 본문 시작 시 바로 소제목(\`##\`)부터 나오지 마세요. 반드시 **글의 배경이나 흥미를 유발하는 도입 문단(Intro)**을 2~3문장 작성한 후 첫 번째 소제목을 시작하세요.
+- **제목 중복 금지**: \`content\` 필드 내부에 제목(\`# 제목\`)을 다시 쓰지 마세요. 제목은 시스템이 별도로 처리합니다.
+- **메타 정보 금지**: 아웃라인, 키워드, 태그 등을 \`content\` 필드에 텍스트로 포함하지 마세요. 오직 마크다운 본문만 들어갑니다.
+- **목표 분량**: 약 ${Number(strategy.estimatedLength || 3000)}자
 - **언어**: 100% 한국어 (영어 혼용 절대 금지)
 
 ## ✅ 최종 체크리스트 (하나라도 어길 시 실패)
+- [ ] 본문이 흥미로운 도입 문단으로 시작하는가?
 - [ ] 모든 소제목이 \`##\` (H2)로 작성되었는가? (볼드 처리 아님)
 - [ ] 문단당 2~3문장으로 끊어져 있고, 문단 사이 빈 줄이 있는가?
 - [ ] 표(Table)가 3열 이내이며 단답형으로 작성되었는가?
 - [ ] 본문에 \`(매체명)\`이나 \`[뉴스]\` 같은 찌꺼기가 없는가?
-- [ ] 이미지 태그가 하나도 없는가?
 
 ## 📤 출력 형식 (순수 JSON)
 \`\`\`json

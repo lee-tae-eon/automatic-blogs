@@ -6,13 +6,12 @@ import { BlogPostInput } from "../types/blog";
 import { inferTargetAudience, inferContentGoal } from "../util/autoInference";
 
 /**
- * [v3.33] 모바일 가독성(호흡) 및 테이블 규격 강제화 프롬프트 엔진
+ * [v4.2] 자연스러운 흐름 + 구체적 예시 주입 엔진
  */
 export function generateBlogPrompt(input: BlogPostInput): string {
   const persona = input.persona;
   const tone = input.tone;
 
-  // 1. 설정값 가져오기
   const toneInstruction = getToneInstruction(tone);
   const personaDetail = getPersonaDetail(persona);
   const examples = getPersonaExamples(persona);
@@ -21,123 +20,110 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   const targetAudience = inferTargetAudience(input.topic, persona);
   const contentGoal = inferContentGoal(persona);
 
-  // 2. 뉴스 데이터 지침
+  // 1. 실시간 정보 지침
   let newsInstruction = "";
   if (input.latestNews) {
     newsInstruction = `
 # 📰 실시간 정보 (Source Material)
-아래 정보를 바탕으로 글을 작성하되, **반드시 한국어로 자연스럽게 번역/가공**하세요.
-- **🚨 절대 금지**: 문장 끝에 \`(출처)\`, \`[1]\` 등을 붙이지 마세요. 본문에 녹여내세요.
+아래 정보를 바탕으로 글을 작성하되, **반드시 한국어로 자연스럽게 가공**하세요.
+- **절대 금지**: 본문 내에 \`(출처)\`, \`[1]\` 등 마커를 붙이지 마세요. 자연스럽게 녹여내세요.
 ${input.latestNews}
 `;
   }
 
-  // 3. 리스트 감지 로직
-  const listPriorityInstruction = input.topic.includes("리스트")
-    ? `
-## 📋 [CRITICAL] 리스트 중심 구성 (Listicle Structure)
-- 주제 특성상 서술형보다는 **불렛 포인트(Bullet Points)** 위주로 작성해야 합니다.
-- 정보의 계층(Depth)을 명확히 하세요. (예: 항목 > 특징 > 혜택)
-`
-    : "";
-
-  // ✅ 4. [NEW] 모바일 가독성 절대 규칙 (Mobile Breathing Rule)
-  // AI가 문단을 통으로 뱉는 것을 방지하기 위한 강력한 제약 조건
-  const mobileReadability = `
-## 📱 [CRITICAL] 모바일 가독성 절대 규칙 (Mobile First Writing)
-이 글은 100% 모바일 사용자가 읽습니다. **"벽돌 같은 텍스트(Wall of Text)"는 즉시 이탈을 부릅니다.** 아래 규칙을 어길 시 글 생성을 실패로 간주합니다.
-
-1.  **호흡 끊기 (Chunking)**:
-    - 절대로 4문장 이상을 한 문단에 이어 쓰지 마세요.
-    - **2~3문장(최대 150자)**이 모이면 무조건 줄을 바꾸세요(Line Break).
-    - 문단 사이에는 반드시 **빈 줄(Enter 2번)**을 넣어 시각적 여백을 확보하세요.
-2.  **시각적 리듬**:
-    - 독자가 스크롤을 멈추지 않도록 짧고 간결한 문장을 사용하세요.
-    - 접속사(그리고, 하지만 등)로 문장을 길게 늘이지 말고, 단문으로 끊으세요.
-`;
-
-  // ✅ 5. 테이블 모바일 최적화 절대 규칙
-  const tableRule = `
-## 📊 [CRITICAL] 표(Table) 작성 절대 규칙 (Mobile First)
-모바일 화면 폭(360px)을 고려하여 아래 규칙을 엄수하세요.
-
-1.  **생성 여부**: ${metrics.tableRequired ? "**반드시 1개 이상 포함**" : "내용 비교/요약이 필요할 때만 사용"}
-2.  **컬럼(열) 제한**: **최대 3열(Column)**까지만 허용합니다. (4열 이상 금지)
-3.  **텍스트 제한**: 각 셀(Cell)은 **최대 15자 이내의 '핵심 키워드'**로만 채우세요.
-    - ❌ 나쁜 예: "이 제품은 배터리가 오래 가서 좋습니다." (서술형 절대 금지)
-    - ⭕ 좋은 예: "배터리 효율 우수" (단답형)
-4.  **목적**: 독자가 1초 만에 훑어볼 수 있는 **요약/비교용**으로만 사용하세요.
-`;
-
-  // 6. 톤앤매너 & 페르소나 가이드
+  // 2. 문체 및 페르소나 가이드 (예시 주입)
   const styleGuide = `
-# 🎭 문체 및 화법 가이드 (Voice & Tone)
+# 🎭 문체 및 페르소나 가이드 (Voice & Tone)
 
-## 🎵 1. 기본 톤(Tone) 설정: [${tone.toUpperCase()}]
+## 🎵 톤 설정: ${tone}
 ${toneInstruction}
-(위 톤 설정에 정의된 '종결어미'와 '피해야 할 표현'을 1순위로 준수하세요.)
 
-## 🗣️ 2. 페르소나 역할: [${personaDetail.role}]
-당신은 **${personaDetail.role}**입니다. 기본 톤을 유지하되, 아래 화법을 섞으세요.
+## 🗣️ 페르소나: ${personaDetail.role}
+- **핵심 원칙**: ${personaDetail.principle}
+- **🚫 절대 금지**: ${personaDetail.forbidden.join(", ")}
 
-### 🚫 [CRITICAL] 절대 금지 표현 (Prohibited)
-아래 리스트에 포함된 표현이나 말투를 단 하나라도 사용할 경우, 글의 신뢰도가 무너집니다. **절대로 사용하지 마세요.**
-${personaDetail.forbidden.map((f) => `- **${f}**`).join("\n")}
+## ✅ 작문 스타일 및 모범 사례 (Style Examples)
+글을 쓸 때 아래 예시의 느낌과 리듬을 반드시 반영하세요:
+${examples.goodSentences.map(s => `- "${s}"`).join('\n')}
+${examples.transitions.length > 0 ? `\n**자연스러운 연결 방식**:\n${examples.transitions.map(t => `- "${t}..."`).join('\n')}` : ''}
 
-### ✅ 권장 문장 (Persona Examples)
-${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}
+## ✍️ [CRITICAL] 작법 규칙 (Anti-Machine)
+1. **마이크로 브리딩 (Micro-Breathing) [ULTRA CRITICAL]**: 한 문장이 **40~50자**를 넘지 않도록 짧게 끊으세요. 길어질 경우 반드시 **쉼표(,) 뒤에서 줄바꿈(\n)**을 하여 시각적 리듬을 조절하세요. (종결 어미가 다음 줄로 툭 떨어지는 현상 방지)
+2. **문맥 기반 어미 변화**: 상황에 따라 어미를 변화시키세요. (보고: ~입니다 / 생동감: ~죠 / 강조: ~인 셈입니다)
+3. **리듬감**: 문장의 길이를 짧게, 길게, 아주 짧게 섞어서 리듬감을 만드세요.
+4. **패턴 파괴**: 어떤 종결 어미든 **3번 이상 연속으로 같은 계열을 쓰면 실패**입니다.
+5. **단어 보존**: 단어 중간이나 고유명사 내부에 불필요한 공백이나 줄바꿈을 넣지 마세요.
+${personaDetail.writingTips ? personaDetail.writingTips.map(tip => `- ${tip}`).join('\n') : ''}
+`;
 
-### 🔗 자연스러운 연결어
-${examples.transitions.map((s) => `- "${s}..."`).join("\n")}
-`.trim();
+  // 3. 구조 가이드
+  const structureGuide = `
+# 📑 구조 및 가독성 가이드
 
-  // 7. 품질 및 구조 가이드 (위에서 정의한 규칙 통합)
-  const qualityGuide = `
-# 📏 품질 및 구조 가이드라인 (Structure Rules)
-- **목표 글자 수**: ${metrics.targetLength[0]} ~ ${metrics.targetLength[1]}자
-- **소제목 개수**: 정확히 ${metrics.headingCount}개
-${mobileReadability}
-${tableRule}
-- **이모지 사용**: **${metrics.emojiUsage}** 모드
-- **이미지**: 본문에 이미지 태그 절대 금지
-`.trim();
+${input.useImage !== false ? `
+## 🖼️ [CRITICAL] 이미지 삽입 규칙
+- 본문 중간에 관련성 높은 이미지가 들어갈 위치를 선정하여 **[이미지: 검색 키워드]** 형식으로 태그를 삽입하세요.
+- **최대 2개**의 이미지만 삽입해야 합니다.
+- 키워드는 구체적인 사물이나 장소여야 합니다. (예: [이미지: 청년도약계좌 상담 창구])
+` : ""}
 
-  // 8. SEO 규칙
-  const seoGuide = `
-# 🔍 SEO 최적화 (Technical Rules)
-- **메타 제목**: ${SEO_RULES.metaTitleLength[0]}~${SEO_RULES.metaTitleLength[1]}자
-- **메타 설명**: ${SEO_RULES.metaDescriptionLength[0]}~${SEO_RULES.metaDescriptionLength[1]}자
-- **키워드 배치**: 포커스 키워드 "${input.keywords?.join(", ") || input.topic}"를 3~5회 자연스럽게 포함
-`.trim();
+## 🏗️ [CRITICAL] 글의 전개 구조 (Persona Structure)
+당신은 **${personaDetail.role}**입니다. 반드시 아래 구조에 맞춰 글을 전개하세요:
+${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 
+**각 섹션(소제목) 작성 가이드**:
+1. **도입 소문단**: 핵심 주장 제시 (2~3문장)
+2. **본론 소문단**: 구체적 근거/예시/데이터 (2~3문장)
+3. **시각화**: 필요시 리스트나 표 활용
+4. **마무리**: 다음 섹션 연결
+
+## 📱 [CRITICAL] 모바일 가독성 (Mobile Breathing)
+- **소문단 단위**: 2~3문장마다 무조건 줄을 바꾸세요(Enter 2번).
+- **시각적 여백**: 문단 사이 빈 줄을 통해 독자가 숨 쉴 공간을 만드세요.
+
+## 📊 데이터 시각화
+- **리스트 필수**: 3개 이상의 항목 나열 시 반드시 마크다운 리스트(\`-\`)를 사용하세요.
+- **표(Table) 활용**: 비교/대조 시 최대 3열 이내의 표를 작성하세요. (셀 내용은 단답형 핵심어만)
+
+## 🎨 [CRITICAL] 텍스트 강조 (Bold)
+- **핵심 키워드**: 문맥상 가장 중요한 **'단어'**나 **'짧은 구'**만 굵게(**...**) 처리하세요.
+- **제한 [ULTRA CRITICAL]**: 한 문장에 굵은 글씨는 **최대 2단어** 이내로 제한합니다. 문장 전체나 문단 전체를 굵게 하지 마세요.
+- **빈도**: 문단마다 1~2개 정도의 확실한 포인트에만 사용하세요. 너무 많으면 강조 효과가 사라집니다.
+`;
+
+  // 4. 최종 미션
   const mission = `
 # 🎯 최종 미션
-주제 **"${input.topic}"**에 대해 위 규칙들을 완벽히 결합하여 블로그 포스팅을 작성하세요.
+주제 **"${input.topic}"**에 대해 위 모든 규칙을 결합하여 최고의 블로그 포스팅을 작성하세요.
 
-## 👥 타겟 독자
+## ⚠️ [ULTRA CRITICAL] 본문 구성 주의사항
+- **자기소개 금지**: "안녕하세요, 리포터입니다", "분석가로서 정리해 드립니다" 등 당신의 정체를 밝히거나 페르소나 명칭을 본문에 쓰는 행위를 절대 금지합니다. 독자는 당신이 AI임을 몰라야 합니다.
+- **도입부 필수**: 제목 없이 바로 소제목으로 시작하지 마세요. 배경을 설명하는 도입 문단을 먼저 작성하세요.
+- **제목 중복 금지**: content 필드 내부에 제목(\`# 제목\`)을 다시 쓰지 마세요.
+- **메타 정보 금지**: 아웃라인, 태그 등을 본문에 텍스트로 포함하지 마세요.
+
+## 👥 타겟 및 목표
 - **독자**: ${targetAudience}
 - **목표**: ${contentGoal}
 
-## 📤 출력 형식 (JSON Only)
+## 📤 출력 형식 (JSON)
 \`\`\`json
 {
-  "title": "클릭을 부르는 매력적인 제목",
-  "outline": ["소제목1", "소제목2", ...],
-  "content": "마크다운 본문 내용...",
-  "metaTitle": "SEO 메타 제목",
-  "metaDescription": "SEO 메타 설명",
+  "title": "클릭을 부르는 제목",
+  "outline": ["소제목1", "소제목2", "소제목3", "소제목4", "소제목5"],
+  "content": "마크다운 본문 (도입부 + 소제목 + 본론 + 결론 + 참고자료)",
+  "metaTitle": "SEO 제목",
+  "metaDescription": "SEO 설명",
   "focusKeywords": ["키워드1", "키워드2"],
-  "references": [{"name": "매체명", "url": "..."}]
+  "references": [{"name": "뉴스 제목 (매체명)", "url": "URL"}]
 }
 \`\`\`
-`.trim();
+`;
 
   return `
 ${newsInstruction}
 ${styleGuide}
-${qualityGuide}
-${seoGuide}
-${listPriorityInstruction}
+${structureGuide}
 ${mission}
 `.trim();
 }

@@ -48,6 +48,7 @@ export const App: React.FC = () => {
         tasks={tasks}
         onPersonaChange={actions.handlePersonaChange}
         onToneChnage={actions.handleToneChange}
+        onUseImageChange={actions.handleUseImageChange}
       />
 
       <LogConsole logs={logs} />

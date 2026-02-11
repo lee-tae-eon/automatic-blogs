@@ -116,12 +116,13 @@ function registerIpcHandlers() {
   // ----------------------------------------
   ipcMain.handle("fetch-hollywood-trends", async (event, query?: string) => {
     const credentials: any = store.get("user-credentials");
-    const { geminiKey, subGemini } = credentials || {};
+    const { geminiKey, subGemini, thirdGemini } = credentials || {};
 
     // 사용 가능한 키 목록 생성
     const apiKeys = [
       geminiKey,
       subGemini,
+      thirdGemini,
       process.env.VITE_GEMINI_API_KEY,
     ].filter((k) => !!k && k.trim() !== "");
 
@@ -295,13 +296,14 @@ function registerIpcHandlers() {
     try {
       return await runWithAbort(async () => {
         const credentials: any = store.get("user-credentials");
-        const { geminiKey, subGemini } = credentials || {};
-        const userDataPath = app.getPath("userData");
+        const { geminiKey, subGemini, thirdGemini } = credentials || {};
+        const userDataPath = isDev ? rootPath : app.getPath("userData");
 
         // 1. 키 배열 생성
         const apiKeys = [
           geminiKey,
           subGemini,
+          thirdGemini,
           process.env.VITE_GEMINI_API_KEY,
         ].filter((k) => !!k && k.trim() !== "");
 
@@ -391,8 +393,8 @@ function registerIpcHandlers() {
       try {
         return await runWithAbort(async () => {
           const credentials: any = store.get("user-credentials");
-          const { geminiKey, subGemini } = credentials || {};
-          const apiKey = geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+          const { geminiKey, subGemini, thirdGemini } = credentials || {};
+          const apiKey = geminiKey || subGemini || thirdGemini || process.env.VITE_GEMINI_API_KEY;
           if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
 
           const modelName =
@@ -452,6 +454,7 @@ function registerIpcHandlers() {
           const {
             geminiKey,
             subGemini,
+            thirdGemini,
             naverId,
             naverPw,
             tistoryId,
@@ -460,10 +463,10 @@ function registerIpcHandlers() {
             enableTistory,
           } = credentials || {};
 
-          const userDataPath = app.getPath("userData");
+          const userDataPath = isDev ? rootPath : app.getPath("userData");
 
           const apiKey =
-            geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+            geminiKey || subGemini || thirdGemini || process.env.VITE_GEMINI_API_KEY;
 
           const modelName =
             modelType === "fast"
@@ -554,6 +557,7 @@ function registerIpcHandlers() {
           const {
             geminiKey,
             subGemini,
+            thirdGemini,
             naverId,
             naverPw,
             tistoryId,
@@ -562,12 +566,12 @@ function registerIpcHandlers() {
             enableTistory,
           } = credentials || {};
 
-          const userDataPath = app.getPath("userData");
+          const userDataPath = isDev ? rootPath : app.getPath("userData");
 
           // 1. Gemini 클라이언트 준비
 
           const apiKey =
-            geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
+            geminiKey || subGemini || thirdGemini || process.env.VITE_GEMINI_API_KEY;
 
           if (!apiKey) throw new Error("Gemini API Key가 없습니다.");
 
@@ -656,7 +660,7 @@ function registerIpcHandlers() {
           ...postData
         } = payload;
 
-        const userDataPath = app.getPath("userData");
+        const userDataPath = isDev ? rootPath : app.getPath("userData");
 
         let publisher;
 
