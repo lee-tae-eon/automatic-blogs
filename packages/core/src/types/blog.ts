@@ -17,12 +17,9 @@ export const TONE_INSTRUCTIONS: Record<Tone, string> = {
 // ============================================
 
 export type Persona =
-  | "informative"
-  | "empathetic"
-  | "storytelling"
-  | "experiential"
-  | "travelLog"
-  | "hollywood-reporter"; // 헐리우드 전문 리포터 추가
+  | "informative" // 정보형 (The Analyst)
+  | "experiential" // 후기형 (The Reviewer)
+  | "reporter"; // 이슈형 (The Reporter)
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의

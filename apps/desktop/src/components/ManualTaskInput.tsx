@@ -47,7 +47,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
     
     if (trendType === "hollywood") {
       setCategory("해외연예");
-      setPersona("hollywood-reporter");
+      setPersona("reporter");
       setTone("professional");
     } else {
       setCategory("일상정보");
@@ -322,12 +322,9 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
               onChange={(e) => setPersona(e.target.value as Persona)}
               style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", backgroundColor: "#fff", outline: "none", boxSizing: "border-box" }}
             >
-              <option value="informative">정보형</option>
-              <option value="empathetic">공감형</option>
-              <option value="storytelling">스토리텔링형</option>
-              <option value="experiential">체험형</option>
-              <option value="travelLog">여행기</option>
-              <option value="hollywood-reporter">헐리우드특파원</option>
+              <option value="informative">분석가 (정보)</option>
+              <option value="experiential">리뷰어 (후기)</option>
+              <option value="reporter">리포터 (뉴스)</option>
             </select>
           </div>
 

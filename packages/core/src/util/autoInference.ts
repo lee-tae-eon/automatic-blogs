@@ -58,12 +58,9 @@ export function inferTargetAudience(topic: string, persona: Persona): string {
   // 3단계: 페르소나 기반 기본 타겟
   // ==========================================
   const personaDefaultTargets: Record<Persona, string> = {
-    informative: "정보를 찾는 사람들",
-    empathetic: "고민이 있는 사람들",
-    storytelling: "이야기를 좋아하는 독자",
-    experiential: "실제 경험담을 원하는 사람들",
-    travelLog: "여행지의 생생한 분위기를 느끼고 싶은 사람들",
-    "hollywood-reporter": "헐리우드 스타와 영화 소식에 관심 있는 사람들",
+    informative: "정보와 분석을 필요로 하는 전문가 및 학습자",
+    experiential: "실제 사용 후기와 생생한 경험담을 찾는 소비자",
+    reporter: "최신 이슈와 트렌드를 빠르게 파악하고 싶은 독자",
   };
 
   return personaDefaultTargets[persona] || "일반 독자";
@@ -78,11 +75,8 @@ export function inferContentGoal(
   const goalMap: Record<Persona, "informative" | "conversion" | "engagement"> =
     {
       informative: "informative", // 정보 전달
-      empathetic: "engagement", // 감정적 연결
-      storytelling: "engagement", // 독자 몰입
       experiential: "conversion", // 구매/행동 유도
-      travelLog: "engagement", // 여행지 공감 및 소통
-      "hollywood-reporter": "engagement", // 연예 소식 공유 및 소통
+      reporter: "engagement", // 이슈 공유 및 소통
     };
 
   return goalMap[persona] || "informative";

@@ -9,20 +9,20 @@ async function manualTest() {
   const geminiKey = process.env.VITE_GEMINI_API_KEY || "";
   const client = new GeminiClient(geminiKey, "gemini-2.5-flash");
 
-  const topic = "일본 다카이치 총리 패딩 이슈와 패션 분석";
+  const topic = "경남 양산 풍력발전기 화재";
   console.log(`Topic: ${topic}`);
 
   const task: any = {
     topic,
     persona: "informative",
     tone: "professional",
-    category: "international",
-    mode: "auto", 
+    category: "news",
+    mode: "auto",
     strategy: {
-      headings: ["다카이치 총리의 패딩 화제 이유", "패딩 브랜드 및 특징 분석", "일본 내 여론과 반응", "정치인의 패션이 가지는 의미"],
-      suggestedOutline: ["## 1. 다카이치 사나에 총리의 패딩이 화제가 된 배경", "## 2. 해당 패딩 브랜드 정보 및 상세 스펙", "## 3. 일본 현지 반응: 찬반 양론 정리", "## 4. 정치적 메시지로서의 패션 분석", "## 5. 결론: 대중과 소통하는 새로운 방식"],
-      differentiationStrategy: "단순 가십이 아닌, 해당 브랜드의 역사와 일본 내수 경제, 그리고 정치인의 이미지 메이킹 관점에서 심층 분석",
-      styleDNA: "리드미컬한 문체, 수치와 브랜드 스펙은 리스트로 정리",
+      headings: ["사건 개요", "화재 원인 및 피해", "대응 현황", "시사점"],
+      suggestedOutline: ["## 1. 경남 양산 풍력발전기 화재 사건 요약", "## 2. 발생 경위 및 피해 현황", "## 3. 소방 당국 및 지자체 대응 상황", "## 4. 풍력발전 설비 안전 관리의 필요성", "## 5. 결론"],
+      differentiationStrategy: "3줄 요약과 핵심 수치 테이블을 통해 빠른 정보 전달",
+      styleDNA: "건조한 분석가 톤, 2문장마다 줄바꿈 강제",
       estimatedLength: 2000,
       hasTable: true
     }
@@ -41,11 +41,15 @@ async function manualTest() {
       const outputDir = path.join(__dirname, "../output");
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-      const outputPathMd = path.join(outputDir, "test_result_takaichi.md");
+      const outputPathMd = path.join(outputDir, "test_result_yangsan.md");
+      const outputPathHtml = path.join(outputDir, "test_result_yangsan.html");
+      
       fs.writeFileSync(outputPathMd, result.content);
+      fs.writeFileSync(outputPathHtml, html);
 
       console.log("\nSuccess!");
       console.log(`MD: ${outputPathMd}`);
+      console.log(`HTML: ${outputPathHtml}`);
     }
   } catch (error) {
     console.error("Error:", error);

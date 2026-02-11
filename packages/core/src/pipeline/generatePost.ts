@@ -97,8 +97,10 @@ export async function generatePost({
             adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
             adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
           });
+          // [v4.3] 너무 긴 주제는 API에서 에러가 나므로 앞의 2~3단어만 추출하여 분석
           const cleanTopic = task.topic.split("\n")[0].trim();
-          const volumeData = await scout.getMonthlySearchVolume(cleanTopic);
+          const scoutKeyword = cleanTopic.split(" ").slice(0, 3).join(" "); 
+          const volumeData = await scout.getMonthlySearchVolume(scoutKeyword);
           if (volumeData.related && volumeData.related.length > 0) {
             semanticKeywords = [...new Set([...semanticKeywords, ...volumeData.related.slice(0, 5)])];
           }
@@ -170,6 +172,14 @@ export async function generatePost({
 
       onProgress?.("🛡️ 안전 가이드라인 검수 중...");
       const sanitizedPublication = sanitizeContent(rawPublication, task.topic);
+
+      // [v4.1] 출처(References)를 본문 하단에 클릭 가능한 링크 형식으로 추가
+      if (sanitizedPublication.references && sanitizedPublication.references.length > 0) {
+        const refSection = "\n\n## 참고 자료\n" + 
+          sanitizedPublication.references.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
+        sanitizedPublication.content += refSection;
+      }
+
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);
 
       onProgress?.("포스팅 생성 완료");

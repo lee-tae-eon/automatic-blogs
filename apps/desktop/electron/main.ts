@@ -296,7 +296,7 @@ function registerIpcHandlers() {
       return await runWithAbort(async () => {
         const credentials: any = store.get("user-credentials");
         const { geminiKey, subGemini } = credentials || {};
-        const userDataPath = app.getPath("userData");
+        const userDataPath = isDev ? rootPath : app.getPath("userData");
 
         // 1. 키 배열 생성
         const apiKeys = [
@@ -460,7 +460,7 @@ function registerIpcHandlers() {
             enableTistory,
           } = credentials || {};
 
-          const userDataPath = app.getPath("userData");
+          const userDataPath = isDev ? rootPath : app.getPath("userData");
 
           const apiKey =
             geminiKey || subGemini || process.env.VITE_GEMINI_API_KEY;
@@ -562,7 +562,7 @@ function registerIpcHandlers() {
             enableTistory,
           } = credentials || {};
 
-          const userDataPath = app.getPath("userData");
+          const userDataPath = isDev ? rootPath : app.getPath("userData");
 
           // 1. Gemini 클라이언트 준비
 
@@ -656,7 +656,7 @@ function registerIpcHandlers() {
           ...postData
         } = payload;
 
-        const userDataPath = app.getPath("userData");
+        const userDataPath = isDev ? rootPath : app.getPath("userData");
 
         let publisher;
 
