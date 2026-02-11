@@ -14,20 +14,16 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   let content = markdown.replace(/^---\n[\s\S]*?\n---\n/, "");
 
   // 2. 마크다운 -> HTML 변환 (Pure HTML)
+  // [v4.3] 줄바꿈(Newline)을 <br/>로 변환하여 시각적 리듬 유지
+  const processedContent = content.replace(/\n(?!\n)/g, "  \n"); // 단일 줄바꿈 뒤에 공백 2개를 붙여 마크다운 브레이크 유도
+
   const result = await unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkHtml, { sanitize: false })
-    .process(content);
+    .process(processedContent);
   
   let html = result.toString();
-
-  // 3. 컬러 문법 후처리 (강조용으로 이것만 남김)
-  // !!빨강!!, ++초록++, ??주황??
-  html = html
-    .replace(/!!\s*(.*?)\s*!!/g, '<span style="color: #e53e3e; font-weight: bold;">$1</span>')
-    .replace(/\+\+\s*(.*?)\s*\+\+/g, '<span style="color: #16a34a; font-weight: bold;">$1</span>')
-    .replace(/\?\?\s*(.*?)\s*\?\?/g, '<span style="color: #d97706; font-weight: bold;">$1</span>');
 
   // 4. [중요] 불필요한 인라인 스타일 제거
   // 네이버 에디터는 외부 스타일을 대부분 무시하거나, 오히려 꼬이게 만듭니다.

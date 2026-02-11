@@ -179,8 +179,8 @@ export class NaverEditor {
           case "paragraph":
           default:
             if (!block.html) break;
-            // 일반 문단: 스타일 없이 붙여넣고 엔터로 숨쉬기
-            await this.pasteHtml(`<p>${block.text || block.html}</p>`);
+            // [v4.6] block.text 대신 block.html을 사용하여 <br/>(마이크로 브리딩) 및 굵게 표시 보존
+            await this.pasteHtml(`<p>${block.html}</p>`);
             await this.page.keyboard.press("Enter");
             await this.page.keyboard.press("Enter"); // 문단 간격 (Chunking)
             break;

@@ -93,7 +93,12 @@ export class GeminiClient implements BaseAiClient {
         throw new Error(`응답에서 JSON 형식을 찾을 수 없습니다.`);
       }
       
-      const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
+      let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
+
+      // [v4.5] JSON 파싱 안정성 강화: 문자열 값 내부의 실제 줄바꿈을 \n 제어 문자로 변환
+      // 정규식 설명: 큰따옴표 사이의 텍스트 중 실제 줄바꿈(\n)을 찾아서 \\n으로 치환
+      jsonString = jsonString.replace(/(?<=: *"[^"]*)\n(?=[^"]*")/g, "\\n");
+
       return JSON.parse(jsonString.trim()) as T;
     } catch (parseError: any) {
       // 이 경우는 순수한 JSON 파싱 에러입니다.

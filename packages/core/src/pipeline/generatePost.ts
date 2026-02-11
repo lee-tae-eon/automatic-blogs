@@ -42,13 +42,18 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
 
   const refineSpacing = (text: string): string => {
     return text.split("\n").map(line => {
+      // 리스트, 표, 헤딩 등은 건드리지 않음
       if (line.trim().length === 0 || line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
+      
+      // [v4.4] AI가 의도한 단일 줄바꿈(쉼표 뒤 등)은 보존하고,
+      // 문장이 완전히 끝나는 지점(. ! ?) 뒤에 공백이 있을 때만 문단 나눔 수행
       return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
     }).join("\n");
   };
 
   content = refineSpacing(content);
-  content = content.replace(/\n\n/g, "\n\n\n"); 
+  // 연속된 엔터 3개 이상만 정리 (AI의 의도적 엔터 2개는 보존)
+  content = content.replace(/\n{4,}/g, "\n\n\n"); 
 
   if (content !== oldContent) {
     console.log("📱 [Mobile] 문단 간격을 넓혀 가독성을 최적화했습니다.");

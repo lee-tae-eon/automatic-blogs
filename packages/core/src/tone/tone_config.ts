@@ -20,9 +20,9 @@ export const TONE_CONFIG: Record<Tone, ToneConfig> = {
   },
 
   // 3. 리포터 (The Reporter) - 평어체/간결체
-  serious: { // 기존 코드 호환을 위해 serious 키 유지 (실제 역할: News Reporter)
+  serious: { 
     description: "뉴스 속보를 전달하듯 빠르고 간결한 화법",
-    ending: "평어체 (~다) 또는 명사형 종결 (~임, ~함). 문장을 길게 늘이지 않음.",
+    ending: "기본적으로 '~습니다'를 사용하여 신뢰감을 주되, 독자와의 소통이나 부드러운 흐름이 필요할 때는 '~요'를 허용.",
   },
 };
 
