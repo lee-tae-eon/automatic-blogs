@@ -202,7 +202,9 @@ export class NaverPublisher implements IBlogPublisher {
         try {
           await authenticator.login(blogId, password);
         } catch (e) {
-          onProgress?.("자동 로그인 실패. 수동 로그인을 시도해 주세요 (2분 대기).");
+          onProgress?.(
+            "자동 로그인 실패. 수동 로그인을 시도해 주세요 (2분 대기).",
+          );
         }
       } else {
         onProgress?.("수동 로그인이 필요합니다 (2분 대기)");
@@ -211,7 +213,7 @@ export class NaverPublisher implements IBlogPublisher {
       console.log(
         "👉 로그인이 필요합니다. 브라우저 창에서 로그인을 완료해 주세요 (2분 대기).",
       );
-      
+
       // 로그인 완료 후 블로그 페이지로 이동할 때까지 충분히 대기 (최대 2분)
       await page.waitForURL("https://blog.naver.com/**", { timeout: 120000 });
       onProgress?.("로그인 확인 완료 (세션 저장 중...)");

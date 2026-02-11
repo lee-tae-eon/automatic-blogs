@@ -1,5 +1,6 @@
 import { BlogPostInput, AutoPilotStrategy } from "../types/blog";
 import { getPersonaDetail } from "../persona/persona.config";
+import { getPersonaExamples } from "../persona/persona.example";
 import { getToneInstruction } from "../tone/tone_config";
 
 /**
@@ -14,6 +15,7 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
   }
 
   const personaDetail = getPersonaDetail(input.persona);
+  const examples = getPersonaExamples(input.persona);
   const toneInstruction = getToneInstruction(input.tone);
 
   // 1. 뉴스 및 실시간 정보 (Language Lock 적용)
@@ -36,6 +38,11 @@ ${input.latestNews}
 2. **리듬감(Rhythm)**: 모든 문장의 길이가 비슷하면 글이 지루해집니다. [단문 - 단문 - 장문] 또는 [장문 - 단문] 식으로 문장 길이를 극단적으로 섞으세요.
 3. **패턴 파괴(Pattern Breaking)**: 어떤 종결 어미든 **3번 이상 연속으로 같은 계열을 쓰면 실패**로 간주합니다.
 ${personaDetail.writingTips ? personaDetail.writingTips.map(tip => ` - ${tip}`).join('\n') : ''}
+
+## ✅ 이 페르소나의 모범 사례 (Style Examples)
+글을 쓸 때 아래 예시 문장의 느낌과 리듬을 참고하세요:
+${examples.goodSentences.map(s => `- "${s}"`).join('\n')}
+${examples.transitions.length > 0 ? `\n**자연스러운 문장 연결 예시**:\n${examples.transitions.map(t => `- "${t}..."`).join('\n')}` : ''}
 `;
 
   const listInstruction = input.topic.includes("리스트")

@@ -22,7 +22,7 @@ export const generatePostSingleCall = async (
   } catch (error) {
     console.error("🚨 프롬프트 생성 중 에러 발생:", error);
     throw new Error(
-      `프롬프트 생성 실패: ${error instanceof Error ? error.message : String(error)}`
+      `프롬프트 생성 실패: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 

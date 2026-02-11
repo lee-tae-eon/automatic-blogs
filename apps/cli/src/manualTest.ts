@@ -9,22 +9,22 @@ async function manualTest() {
   const geminiKey = process.env.VITE_GEMINI_API_KEY || "";
   const client = new GeminiClient(geminiKey, "gemini-2.5-flash");
 
-  const topic = "경남 양산 풍력발전기 화재";
+  const topic = "중국인 개발자, 퇴사 전 공격 테스트 논란";
   console.log(`Topic: ${topic}`);
 
   const task: any = {
     topic,
-    persona: "informative",
+    persona: "reporter",
     tone: "professional",
-    category: "news",
+    category: "it-news",
     mode: "auto",
     strategy: {
-      headings: ["사건 개요", "화재 원인 및 피해", "대응 현황", "시사점"],
-      suggestedOutline: ["## 1. 경남 양산 풍력발전기 화재 사건 요약", "## 2. 발생 경위 및 피해 현황", "## 3. 소방 당국 및 지자체 대응 상황", "## 4. 풍력발전 설비 안전 관리의 필요성", "## 5. 결론"],
-      differentiationStrategy: "3줄 요약과 핵심 수치 테이블을 통해 빠른 정보 전달",
-      styleDNA: "건조한 분석가 톤, 2문장마다 줄바꿈 강제",
-      estimatedLength: 2000,
-      hasTable: true
+      headings: ["사건 개요", "충격적인 수법", "업계 반응", "시사점"],
+      suggestedOutline: ["## 1. 퇴사 전 시스템 공격? 사건의 전말", "## 2. 정밀 분석: 그가 심어놓은 '시한폭탄'", "## 3. 현장 반응: 분노한 IT 업계와 법적 쟁점", "## 4. 재발 방지를 위한 기업들의 과제", "## 5. 결론"],
+      differentiationStrategy: "단순 보도가 아닌, 기술적 관점에서의 공격 방식 분석과 업계의 생생한 목소리를 담은 긴급 리포트",
+      styleDNA: "속도감 있는 리포터 문체, !!빨강!! 강조 다수 활용, 인용구 활용",
+      estimatedLength: 1500,
+      hasTable: false
     }
   };
 
@@ -41,8 +41,8 @@ async function manualTest() {
       const outputDir = path.join(__dirname, "../output");
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-      const outputPathMd = path.join(outputDir, "test_result_yangsan.md");
-      const outputPathHtml = path.join(outputDir, "test_result_yangsan.html");
+      const outputPathMd = path.join(outputDir, "test_result_china_dev.md");
+      const outputPathHtml = path.join(outputDir, "test_result_china_dev.html");
       
       fs.writeFileSync(outputPathMd, result.content);
       fs.writeFileSync(outputPathHtml, html);
