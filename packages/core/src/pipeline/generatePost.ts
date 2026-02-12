@@ -2,6 +2,7 @@ import { delay } from "../util/delay";
 import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
 import { TavilyService } from "../services/tavilyService";
+import { NaverSearchService } from "../services/naverSearchService";
 import { DbService } from "../services/dbService";
 import { analyzeTopicIntent } from "../util/autoInference";
 import { KeywordScoutService } from "../services/KeywordScoutService";
@@ -39,6 +40,10 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
   }
 
   const oldContent = content;
+
+  // [v4.8] 강조(Bold) 내부에 불필요하게 포함된 따옴표 제거 (**'텍스트'** -> **텍스트**)
+  content = content.replace(/\*\*['"](.*?)['"]\*\*/g, "**$1**")
+                   .replace(/<strong>['"](.*?)['"]<\/strong>/g, "<strong>$1</strong>");
 
   const refineSpacing = (text: string): string => {
     return text.split("\n").map(line => {
@@ -132,9 +137,9 @@ export async function generatePost({
         return cachedPost;
       }
 
-      // 2. 뉴스 데이터 확보
+      // 2. 데이터 확보 (Tavily + Naver)
       let newsContext = "";
-      onProgress?.("데이터 확보 중...");
+      onProgress?.("실시간 전문 데이터 확보 중...");
       const cachedNews = db.getRecentNews(task.topic);
 
       if (cachedNews) {
@@ -142,14 +147,32 @@ export async function generatePost({
         inputParams.latestNews = `[기존 저장된 정보 활용]\n${cachedNews.content}`;
       } else {
         const cleanTopic = task.topic.split("\n")[0].trim();
-        let searchQuery = `${cleanTopic} 2026년 최신 정보`;
         const tavily = new TavilyService();
-        const searchResult = await tavily.searchLatestNews(searchQuery);
-        newsContext = searchResult.context;
+        const naverSearch = new NaverSearchService({
+          clientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+          clientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+        });
+
+        // 두 API 병렬 호출 (속도 최적화)
+        const [tavilyResult, naverResult] = await Promise.all([
+          tavily.searchLatestNews(cleanTopic),
+          naverSearch.searchBlog(cleanTopic, 3)
+        ]);
+
+        // 데이터 통합
+        newsContext = `
+# [웹 검색 및 분석 데이터 (Tavily)]
+${tavilyResult.context}
+
+# [네이버 블로그 실시간 동향 (Naver)]
+${naverResult}
+        `.trim();
+
         inputParams.latestNews = newsContext || "최신 정보 없음";
 
-        if (newsContext && newsContext.length > 50) {
-          db.saveNews(task.topic, newsContext, searchResult.rawResults);
+        if (newsContext && newsContext.length > 100) {
+          // 참고자료는 Tavily의 원문 위주로 저장 (네이버는 요약만 활용)
+          db.saveNews(task.topic, newsContext, tavilyResult.rawResults);
         }
       }
 

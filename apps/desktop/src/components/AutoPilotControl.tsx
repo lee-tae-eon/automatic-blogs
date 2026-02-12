@@ -130,19 +130,20 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
           onClick={handleFetch}
           disabled={isProcessing || !topic.trim()}
           style={{
-            backgroundColor: isProcessing ? "#94a3b8" : "#6366f1",
+            backgroundColor: (isProcessing || !topic.trim()) ? "#94a3b8" : "#6366f1",
             color: "white", border: "none", borderRadius: "8px", padding: "0 25px",
-            fontWeight: "bold", cursor: isProcessing ? "not-allowed" : "pointer",
-            display: "flex", alignItems: "center", gap: "8px"
+            fontWeight: "bold", cursor: (isProcessing || !topic.trim()) ? "not-allowed" : "pointer",
+            display: "flex", alignItems: "center", gap: "8px",
+            transition: "all 0.2s"
           }}
         >
-          {isAnalyzing && (
+          {isSearching && (
             <span className="spinner" style={{
               width: "14px", height: "14px", border: "2px solid white",
               borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s infinite linear"
             }} />
           )}
-          {isAnalyzing ? "분석 중..." : "황금 키워드 발굴"}
+          {isSearching ? "분석 중..." : "황금 키워드 발굴"}
         </button>
 
         {isProcessing && (
