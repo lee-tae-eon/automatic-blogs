@@ -28,7 +28,7 @@ const allowedUsers: Record<
     pin: "1119", // 지인용 PIN
     name: "희경",
     naverId: "prettyhihihi",
-    naverPw: "guest_pw",
+    naverPw: "Smi858619@@",
   },
 };
 
@@ -76,7 +76,7 @@ app.get("/", (req: Request, res: Response) => {
                 <h2 id="welcome-msg">🚀 오토파일럿</h2>
                 <label>블로그 주제</label>
                 <textarea id="topic" placeholder="어떤 주제로 블로그를 쓸까요?"></textarea>
-                
+
                 <label>게시판 이름 (네이버 블로그 카테고리)</label>
                 <input type="text" id="blogBoardName" placeholder="예: 일상정보, IT/테크" value="">
 
@@ -214,7 +214,9 @@ app.post("/api/publish", async (req: Request, res: Response) => {
       .json({ success: false, error: "이미 작업이 진행 중입니다." });
 
   isProcessing = true;
-  console.log(`[SERVER] ${user.name} started: ${topic} (Board: ${blogBoardName})`);
+  console.log(
+    `[SERVER] ${user.name} started: ${topic} (Board: ${blogBoardName})`,
+  );
 
   const config = {
     searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
