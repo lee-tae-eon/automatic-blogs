@@ -111,7 +111,8 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       let pubCreds: any = {};
 
       if (platform === "naver" && credentials.naver) {
-        publisher = new NaverPublisher(userDataPath);
+        // 유저 ID를 기반으로 퍼블리셔 생성 (세션 분리)
+        publisher = new NaverPublisher(userDataPath, credentials.naver.id);
         pubCreds = { blogId: credentials.naver.id, password: credentials.naver.pw, headless };
       } else if (platform === "tistory" && credentials.tistory) {
         publisher = new TistoryPublisher(userDataPath);

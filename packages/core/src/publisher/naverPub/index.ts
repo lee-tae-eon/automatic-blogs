@@ -34,9 +34,10 @@ export class NaverPublisher implements IBlogPublisher {
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
 
-  constructor(customProjectRoot?: string) {
+  constructor(customProjectRoot?: string, userId: string = "default") {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
-    this.userDataDir = path.join(this.projectRoot, ".auth/naver");
+    // 유저별로 별도의 인증 디렉토리 설정
+    this.userDataDir = path.join(this.projectRoot, `.auth/naver_${userId}`);
 
     this.ensureAuthDirectory();
   }

@@ -12,19 +12,24 @@ export class TavilyService {
     try {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
-        query: `${query} 최신 뉴스 팩트`,
+        query: `${query} 2026년 최신 현황 및 상세 분석`,
         search_depth: "advanced",
         max_results: 3,
         include_images: false,
+        include_raw_content: true, // 본문 전체 텍스트 포함
       });
 
       const results = response.data.results || [];
 
-      // AI가 읽기 좋게 출처와 본문을 문자열로 가공
+      // AI가 읽기 좋게 출처와 본문을 문자열로 가공 (raw_content 우선 사용)
       const context = results
         .map(
-          (r: any, i: number) =>
-            `[뉴스 ${i + 1}] 제목: ${r.title}\n내용: ${r.content}\n출처: ${r.url}`,
+          (r: any, i: number) => {
+            const bodyContent = r.raw_content || r.content || "내용 없음";
+            // 너무 긴 경우 AI 토큰 제한을 고려해 약 3000자 정도로 제한 (필요시 조절)
+            const truncatedContent = bodyContent.length > 3000 ? bodyContent.slice(0, 3000) + "..." : bodyContent;
+            return `[참고자료 ${i + 1}] 제목: ${r.title}\n내용: ${truncatedContent}\n출처: ${r.url}`;
+          },
         )
         .join("\n\n");
 

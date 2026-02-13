@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
+import { ChartService } from "../../services/chartService";
 
 // ✅ 네이버 에디터에서 "소제목"처럼 보이게 하는 세로바 스타일
 const HEADING_STYLE = `
@@ -31,6 +32,7 @@ const QUOTE_STYLE = `
 
 export class NaverEditor {
   private pexelsService = new PexelsService();
+  private chartService = new ChartService();
   private tempDir: string;
   private topic: string;
   private tags: string[];
@@ -211,6 +213,31 @@ export class NaverEditor {
           case "paragraph":
           default:
             if (!block.html) break;
+
+            // 📊 [v4.9] 차트 태그 감지 및 처리
+            const chartRegex = /\[차트:\s*({.*?})\]/i;
+            const chartMatch = block.text?.match(chartRegex);
+
+            if (chartMatch) {
+              try {
+                const chartData = JSON.parse(chartMatch[1]);
+                const chartPath = await this.chartService.generateChartImage(
+                  chartData,
+                  this.tempDir,
+                );
+                if (chartPath) {
+                  await this.page.keyboard.press("Enter");
+                  await this.uploadImage(this.page, chartPath);
+                  await this.page.waitForTimeout(500);
+                  await this.page.keyboard.press("ArrowDown");
+                  await this.page.keyboard.press("Enter");
+                  break; // 차트 업로드 후 단락 처리 종료
+                }
+              } catch (e) {
+                console.error("❌ 차트 파싱/생성 에러:", e);
+              }
+            }
+
             // 문단은 p 태그로 감싸고 스타일 지정
             // margin-bottom 등을 인라인으로 줘서 청킹 효과 유지
             await this.pasteHtml(
@@ -230,14 +257,30 @@ export class NaverEditor {
   private htmlToTextBlocks(html: string) {
     const blocks: any[] = [];
     const $ = cheerio.load(html);
-    const $root =
-      $(".post-content").length > 0 ? $(".post-content") : $("body");
+    
+    // .post-content가 있으면 그 내부를, 없으면 body 전체를 대상으로 함
+    const $target = $(".post-content").length > 0 ? $(".post-content") : $("body");
 
-    $root.children().each((_, element) => {
+    // target의 직계 자식뿐만 아니라, target이 body일 경우 최상위 노드들을 모두 순회
+    const elements = $target.children().length > 0 ? $target.children() : $target;
+
+    $target.contents().each((_, element) => {
       const $el = $(element);
-      const tagName = element.tagName?.toLowerCase();
-      const rawHtml = $el.html() || "";
+      const nodeType = element.type;
+      
+      // Element 타입인 경우에만 tagName에 접근
+      const tagName = 'tagName' in element ? (element as any).tagName.toLowerCase() : undefined;
       const textContent = $el.text().trim();
+
+      // 텍스트 노드 처리 (태그 없이 생으로 들어온 경우)
+      if (nodeType === 'text') {
+        if (textContent) {
+          blocks.push({ type: "paragraph", text: textContent, html: textContent });
+        }
+        return;
+      }
+
+      const rawHtml = $el.html() || "";
       const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
       const imageMatch = textContent.match(imageRegex);
 
@@ -251,7 +294,7 @@ export class NaverEditor {
       } else if (tagName === "blockquote") {
         blocks.push({
           type: "blockquote-paragraph",
-          html: $el.html() || "",
+          html: rawHtml,
         });
       } else if (tagName?.match(/^h[1-6]$/)) {
         blocks.push({ type: "heading", text: textContent, html: rawHtml });
