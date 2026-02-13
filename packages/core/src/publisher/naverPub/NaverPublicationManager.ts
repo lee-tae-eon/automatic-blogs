@@ -73,27 +73,39 @@ export class NaverPublicationManager {
       // 3. 카테고리 설정
       if (category) {
         try {
-          // 카테고리 영역 텍스트로 찾기
-          const categoryGroup = this.page.locator(`${layerSelector} .form_group, ${layerSelector} div`).filter({ hasText: "카테고리" }).first();
-          const categoryTrigger = categoryGroup.locator("button, select").first();
+          console.log(`   📂 카테고리 설정 시도: ${category}`);
+          
+          // 1단계: 카테고리 선택 드롭다운 열기
+          // '카테고리'라는 글자가 포함된 영역 근처의 버튼을 찾습니다.
+          const categorySection = this.page.locator('.se-publish-item').filter({ hasText: '카테고리' });
+          const categoryBtn = categorySection.locator('button').first();
+          
+          await categoryBtn.waitFor({ state: 'visible', timeout: 3000 });
+          await categoryBtn.click({ force: true });
+          await this.page.waitForTimeout(1000); // 목록 렌더링 대기
 
-          if (await categoryTrigger.isVisible({ timeout: 3000 })) {
-            const tagName = await categoryTrigger.evaluate(el => el.tagName.toUpperCase());
-            
-            if (tagName === "SELECT") {
-              await categoryTrigger.selectOption({ label: category });
+          // 2단계: 목록에서 해당 카테고리 클릭
+          // 텍스트가 정확히 일치하거나, 뒤에 숫자가 붙은 경우를 모두 찾습니다.
+          const listItems = this.page.locator('.se-publish-category-picker-item, .item_text, li');
+          const targetItem = listItems.filter({ hasText: new RegExp(`^${category}(\\s*\\(\\d+\\))?$`) }).last();
+
+          if (await targetItem.isVisible({ timeout: 2000 })) {
+            await targetItem.click({ force: true });
+            console.log(`   ✅ 카테고리 선택 완료: ${category}`);
+          } else {
+            console.warn(`   ⚠️ '${category}'를 목록에서 찾을 수 없어 텍스트 포함 검색으로 재시도...`);
+            // 텍스트 포함 검색으로 한 번 더 시도
+            const fuzzyItem = listItems.filter({ hasText: category }).last();
+            if (await fuzzyItem.isVisible()) {
+              await fuzzyItem.click({ force: true });
+              console.log(`   ✅ 카테고리 선택 완료 (유연한 매칭): ${category}`);
             } else {
-              await categoryTrigger.click({ force: true });
-              await this.page.waitForTimeout(500);
-              
-              // 드롭다운에서 정확한 카테고리명 찾기 (정규식 사용)
-              const categoryItem = this.page.locator("li, div").filter({ hasText: new RegExp(`^${category}$|^${category}\\s*\\(`) }).last();
-              await categoryItem.click({ force: true });
+              throw new Error("카테고리 목록에서 해당 항목을 찾을 수 없습니다.");
             }
-            console.log(`   ✅ 카테고리 설정 완료: ${category}`);
           }
         } catch (e) {
-          console.warn(`   ⚠️ 카테고리 설정 중 오류 (무시하고 진행): ${e instanceof Error ? e.message : String(e)}`);
+          console.warn(`   ⚠️ 카테고리 설정 실패 (기본값 유지): ${e instanceof Error ? e.message : String(e)}`);
+          await this.page.keyboard.press("Escape"); // 열려있을지 모르는 창 닫기
         }
       }
 
@@ -137,18 +149,33 @@ export class NaverPublicationManager {
 
       // 5. 최종 '발행' 버튼 클릭
       console.log("   🖱️ 최종 발행 버튼 클릭 시도...");
-      const finalPublishBtn = this.page.locator(`${layerSelector} button`).filter({ hasText: /^발행$/ }).last();
       
+      const finalPublishBtn = this.page.locator(`${layerSelector} button`).filter({ hasText: /^발행$/ }).last();
       await finalPublishBtn.waitFor({ state: "visible", timeout: 5000 });
-      await finalPublishBtn.click({ force: true });
+      
+      // 클릭 시도 (강제 클릭 및 대기)
+      await Promise.all([
+        this.page.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 }).catch(() => null),
+        finalPublishBtn.click({ force: true })
+      ]);
 
-      // 6. 결과 확인
+      // 6. 결과 확인 (URL 변화로 확실히 검증)
       await this.page.waitForTimeout(3000);
       const currentUrl = this.page.url();
-      if (!currentUrl.includes("postwrite")) {
-        console.log("✅ 발행 성공! (페이지 이동 감지)");
+      
+      if (!currentUrl.includes("postwrite") && !currentUrl.includes("nid.naver.com")) {
+        console.log("✅ 발행 성공! (페이지 이동 완료)");
       } else {
-        console.log("ℹ️ 발행 버튼 클릭 완료 (작성 페이지 체류 중, 발행 여부 확인 필요)");
+        // 아직 글쓰기 페이지라면 한 번 더 클릭 시도 (팝업 등이 원인일 수 있음)
+        console.warn("   ⚠️ 아직 글쓰기 페이지에 체류 중. 재시도합니다...");
+        await this.page.keyboard.press("Enter"); // 엔터로 발행 시도
+        await this.page.waitForTimeout(5000);
+        
+        if (!this.page.url().includes("postwrite")) {
+          console.log("✅ 발행 성공! (2차 시도 완료)");
+        } else {
+          throw new Error("최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)");
+        }
       }
 
     } catch (error) {
