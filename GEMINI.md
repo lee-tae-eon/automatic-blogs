@@ -20,6 +20,7 @@ This file defines the core philosophy and architecture of the system. The agent 
   - `pipeline/`: 콘텐츠 생성부터 발행까지의 워크플로우 관리.
 - **`apps/desktop`**: Electron 기반 GUI 애플리케이션 (React + Vite).
 - **`apps/cli`**: 명령줄 인터페이스 도구.
+- **`apps/server`**: 블로그 발행을 외부 네트워크에서 접속하여 발행하기 위한 서버.
 
 ## 3. 핵심 기술 원칙 (Core Technical Principles)
 
