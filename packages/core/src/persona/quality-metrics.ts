@@ -42,6 +42,18 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 2,
     keywordDensity: [0.01, 0.02],
   },
+
+  // 4. 엔터형 (The Fan/Watcher)
+  entertainment: {
+    targetLength: [800, 1500],
+    headingCount: 4,
+    paragraphMaxLength: 100,
+    sentenceMaxLength: 40,
+    emojiUsage: "heavy",
+    tableRequired: false,
+    imageCount: 4,
+    keywordDensity: [0.01, 0.02],
+  },
 };
 
 export const getQualityMetrics = (persona: Persona): QualityMetrics => {

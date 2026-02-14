@@ -26,6 +26,15 @@ export const PERSONA_EXAMPLES: Record<Persona, PersonaExamples> = {
     badSentences: ["옛날 옛적에 어느 마을에 이슈가 살았습니다.", "본 기자는 다음과 같이 보도하는 바입니다."],
     transitions: ["현장 상황을 더 자세히 보여드릴게요", "여기서 반전이 일어납니다", "결국 핵심은 이겁니다"],
   },
+  entertainment: {
+    goodSentences: [
+      "진짜 이번 회차 반전은 소름 그 자체였어요! 여러분도 저랑 같은 생각이신가요?",
+      "드디어 베일을 벗은 캐스팅 라인업, 기대했던 것보다 훨씬 더 완벽하네요!",
+      "커뮤니티 반응을 보니 다들 저처럼 어제 방송 보고 잠 못 이루신 것 같더라고요. ㅋㅋ",
+    ],
+    badSentences: ["본 프로그램의 시청률은 5.2%를 기록하며 무난한 출발을 보였습니다.", "출연진의 연기력이 우수한 것으로 판단됩니다."],
+    transitions: ["진짜 대박이었던 장면은", "팬들 사이에서 난리 난 이유는", "다음 방송이 미치게 기다려지는 게"],
+  },
 };
 
 export const getPersonaExamples = (persona: Persona): PersonaExamples => {

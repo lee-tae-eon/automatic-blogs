@@ -200,10 +200,10 @@ export class KeywordScoutService {
 
     const score = this.calculateScore(baseAnalysis);
     
-    let recommendation = "보통";
-    if (score >= 80) recommendation = "강력 추천 (황금)";
-    else if (score >= 60) recommendation = "추천 (해볼만 함)";
-    else if (score < 40) recommendation = "비추천 (레드오션)";
+    let recommendation = "일반 토픽";
+    if (score >= 80) recommendation = "🔥 화제성/전략적 가치 높음";
+    else if (score >= 60) recommendation = "✅ 안정적인 정보성 토픽";
+    else if (score < 40) recommendation = "⚠️ 검색 수요 대비 경쟁 과다";
 
     return {
       ...baseAnalysis,

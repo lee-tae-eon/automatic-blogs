@@ -61,6 +61,7 @@ export function inferTargetAudience(topic: string, persona: Persona): string {
     informative: "정보와 분석을 필요로 하는 전문가 및 학습자",
     experiential: "실제 사용 후기와 생생한 경험담을 찾는 소비자",
     reporter: "최신 이슈와 트렌드를 빠르게 파악하고 싶은 독자",
+    entertainment: "연예, 방송, 문화 트렌드를 즐기는 팬들과 대중",
   };
 
   return personaDefaultTargets[persona] || "일반 독자";
@@ -77,6 +78,7 @@ export function inferContentGoal(
       informative: "informative", // 정보 전달
       experiential: "conversion", // 구매/행동 유도
       reporter: "engagement", // 이슈 공유 및 소통
+      entertainment: "engagement", // 팬들과의 소통 및 공감
     };
 
   return goalMap[persona] || "informative";

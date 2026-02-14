@@ -95,22 +95,33 @@ export class GeminiClient implements BaseAiClient {
       
       let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
 
-      // [v4.6] JSON 파싱 안정성 강화: 문자열 값 내부의 실제 줄바꿈을 \n 제어 문자로 변환
-      // 정규식 설명: "key": "value" 구조에서 value 부분에 포함된 실제 줄바꿈을 찾아냄
-      // 1. 단순 치환 시도
-      jsonString = jsonString.replace(/(?<=: *"[^"]*)\n(?=[^"]*")/g, "\\n");
-      
-      // 2. 여러 줄에 걸쳐 있을 경우를 대비한 강력한 치환 (줄바꿈이 포함된 문자열 값을 찾아서 처리)
-      // 주의: 이 정규식은 단순하지 않아 성능에 영향을 줄 수 있으므로 1차 시도 실패 시 적용 고려 가능하나,
-      // 현재는 안전하게 모든 줄바꿈을 \n으로 바꾸되, JSON 구조(괄호, 콤마 등) 밖의 줄바꿈은 유지해야 함.
-      // 따라서 가장 확실한 방법은, 파싱 에러가 날 경우에만 정밀 타격하는 것.
-      
+      // [v4.10] JSON 파싱 안정성 극대화 로직
+      const sanitizeJsonString = (str: string) => {
+        return str
+          .replace(/\n/g, "\\n") // 모든 실제 줄바꿈을 \n 문자로 변환
+          .replace(/\r/g, "\\r")
+          .replace(/\t/g, "\\t");
+      };
+
       try {
+        // 1차 시도: 단순 파싱
         return JSON.parse(jsonString.trim()) as T;
       } catch (e) {
-        // 2차 시도: 조금 더 공격적인 줄바꿈 치환 (큰따옴표 안의 줄바꿈만 타겟팅)
-        const repaired = jsonString.replace(/(".*?")/gs, (match) => match.replace(/\n/g, "\\n"));
-        return JSON.parse(repaired) as T;
+        // 2차 시도: 값(Value) 부분의 줄바꿈 및 특수문자 정밀 정제
+        // 큰따옴표로 감싸진 값 내부의 실제 줄바꿈만 타겟팅하여 변환
+        let repaired = jsonString.replace(/(": *")([\s\S]*?)(",? *\n|",? *\r|",? *$)/g, (match, prefix, content, suffix) => {
+          return prefix + content.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + suffix;
+        });
+
+        try {
+          return JSON.parse(repaired) as T;
+        } catch (e2) {
+          // 3차 시도: 더욱 공격적인 정제 (문자열 내 큰따옴표 중첩 문제 해결 시도)
+          // 실제 JSON 구조용 따옴표를 제외한 나머지 따옴표를 작은따옴표로 변환하거나 이스케이프
+          const doubleFix = repaired.replace(/([^\\])"/g, '$1\\"'); // 모든 따옴표 이스케이프 (임시)
+          // 단, JSON 키와 구조용 따옴표는 복구해야 함 (매우 복잡하므로 여기서는 2차 시도까지만 우선 적용 후 관찰)
+          throw e2; 
+        }
       }
     } catch (parseError: any) {
       // 이 경우는 순수한 JSON 파싱 에러입니다.

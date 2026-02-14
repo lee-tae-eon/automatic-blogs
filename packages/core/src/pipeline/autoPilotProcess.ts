@@ -6,7 +6,7 @@ import { markdownToHtml } from "../util/markdownToHtml";
 import { IBlogPublisher } from "../publisher/interface";
 import { NaverPublisher } from "../publisher/naverPub";
 import { TistoryPublisher } from "../publisher/tistoryPub";
-import { BatchTask } from "../types/blog";
+import { BatchTask, Persona, Tone } from "../types/blog";
 
 export interface AutoPilotOptions {
   broadTopic: string; // 이제 구체적인 키워드가 아닌 '주제'를 받습니다.
@@ -19,6 +19,9 @@ export interface AutoPilotOptions {
     naver?: { id: string; pw: string };
     tistory?: { id: string; pw: string };
   };
+  persona?: Persona;
+  tone?: Tone;
+  useImage?: boolean;
   headless?: boolean;
   onProgress?: (message: string) => void;
 }
@@ -28,7 +31,20 @@ export interface AutoPilotOptions {
  * 주제 확장 -> 키워드 선정 -> 경쟁사 분석 -> 전략적 생성 -> 발행
  */
 export async function runAutoPilot(options: AutoPilotOptions) {
-  const { broadTopic, blogBoardName, config, userDataPath, geminiClient, publishPlatforms, credentials, headless, onProgress } = options;
+  const { 
+    broadTopic, 
+    blogBoardName, 
+    config, 
+    userDataPath, 
+    geminiClient, 
+    publishPlatforms, 
+    credentials, 
+    persona = "informative", 
+    tone = "professional", 
+    useImage = true,
+    headless, 
+    onProgress 
+  } = options;
   const log = (msg: string) => onProgress?.(msg);
 
   if (!blogBoardName || blogBoardName.trim() === "") {
@@ -76,8 +92,9 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     // v3.13: 오토파일럿 전용 모드 및 전략 데이터 전달
     const task: BatchTask = {
       topic: bestTarget.keyword,
-      persona: "informative",
-      tone: "professional",
+      persona,
+      tone,
+      useImage,
       status: "진행",
       category: "정보/리뷰", 
       keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], // 세만틱 키워드 주입
