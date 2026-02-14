@@ -2,7 +2,13 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import { GeminiClient, runAutoPilot } from "@blog-automation/core";
+import { 
+  GeminiClient, 
+  runAutoPilot, 
+  generatePost, 
+  markdownToHtml, 
+  NaverPublisher 
+} from "@blog-automation/core";
 
 dotenv.config({ path: path.join(__dirname, "../../../.env") });
 
@@ -49,9 +55,10 @@ app.get("/", (req: Request, res: Response) => {
             body { font-family: -apple-system, sans-serif; background: var(--ios-bg); margin: 0; padding: 20px; color: #1c1c1e; }
             .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
             h2 { margin: 0 0 20px 0; font-size: 22px; text-align: center; }
-            input, textarea {
+            label { font-size: 14px; color: #8e8e93; display: block; margin-bottom: 5px; font-weight: 500; }
+            input, textarea, select {
                 width: 100%; border: 1px solid #d1d1d6; border-radius: 12px; padding: 14px;
-                box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 15px;
+                box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 15px; background: white;
             }
             button {
                 width: 100%; background: var(--ios-blue); color: white; border: none; border-radius: 12px;
@@ -61,6 +68,13 @@ app.get("/", (req: Request, res: Response) => {
             #main-ui { display: none; }
             #login-ui { margin-top: 80px; text-align: center; }
             #status-box { background: #f8f8fa; border-radius: 12px; padding: 15px; font-size: 14px; color: #3a3a3c; min-height: 60px; text-align: center; display: flex; align-items: center; justify-content: center; }
+            
+            /* Tab Styles */
+            .tabs { display: flex; background: #e3e3e8; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+            .tab { flex: 1; text-align: center; padding: 10px; font-size: 15px; font-weight: 600; color: #8e8e93; cursor: pointer; border-radius: 10px; transition: 0.2s; }
+            .tab.active { background: white; color: #1c1c1e; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .tab-content { display: none; }
+            .tab-content.active { display: block; }
         </style>
     </head>
     <body>
@@ -73,27 +87,70 @@ app.get("/", (req: Request, res: Response) => {
 
         <div id="main-ui">
             <div class="card">
-                <h2 id="welcome-msg">🚀 오토파일럿</h2>
-                <label>블로그 주제</label>
-                <textarea id="topic" placeholder="어떤 주제로 블로그를 쓸까요?"></textarea>
+                <h2 id="welcome-msg" style="margin-bottom: 10px;">🚀 반갑습니다</h2>
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('auto')">Auto-Pilot</div>
+                    <div class="tab" onclick="switchTab('manual')">Manual</div>
+                </div>
 
-                <label>게시판 이름 (네이버 블로그 카테고리)</label>
-                <input type="text" id="blogBoardName" placeholder="예: 일상정보, IT/테크" value="">
+                <!-- Auto Tab -->
+                <div id="tab-auto" class="tab-content active">
+                    <label>블로그 주제</label>
+                    <textarea id="topic-auto" placeholder="어떤 큰 주제로 블로그를 쓸까요? AI가 키워드를 확장하고 분석합니다."></textarea>
+                </div>
 
-                <p style="font-size: 12px; color: #ff3b30; margin: 5px 0 0 5px; font-weight: 500;">
-                    * 정확한 게시판 이름을 입력해야 발행됩니다.
-                </p>
+                <!-- Manual Tab -->
+                <div id="tab-manual" class="tab-content">
+                    <label>구체적 주제 (키워드)</label>
+                    <input type="text" id="topic-manual" placeholder="블로그 제목이나 구체적 키워드를 입력하세요.">
+                    
+                    <label>참고 키워드 (쉼표 구분)</label>
+                    <input type="text" id="keywords-manual" placeholder="예: 아이폰16, 가성비폰, 추천">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 0;">
+                    <div style="flex: 1;">
+                        <label>페르소나</label>
+                        <select id="persona">
+                            <option value="informative">정보형 (The Analyst)</option>
+                            <option value="experiential">후기형 (The Reviewer)</option>
+                            <option value="reporter">이슈형 (The Reporter)</option>
+                            <option value="entertainment">엔터형 (The Fan)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>말투 (Tone)</label>
+                        <select id="tone">
+                            <option value="professional">분석가 (하십시오)</option>
+                            <option value="incisive">리뷰어 (해요체)</option>
+                            <option value="serious">리포터 (평어체)</option>
+                            <option value="empathetic">공감형 (해요/네)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 0;">
+                    <label>이미지 설정</label>
+                    <select id="useImage">
+                        <option value="true">AI 자동 이미지 (Pexels)</option>
+                        <option value="false">이미지 사용 안 함</option>
+                    </select>
+                </div>
+
+                <label>게시판 이름</label>
+                <input type="text" id="blogBoardName" placeholder="예: 일상정보, IT/테크" value="일상정보">
 
                 <button id="runBtn" onclick="run()">발행 시작</button>
                 <button onclick="logout()" style="background:none; color:#8e8e93; font-size:13px; margin-top:15px; font-weight: normal;">로그아웃</button>
             </div>
-            <div class="card">
+            <div class="card" style="padding: 15px;">
                 <div id="status-box">대기 중...</div>
             </div>
         </div>
 
         <script>
             let userSession = null;
+            let currentMode = 'auto';
 
             window.onload = () => {
                 const saved = localStorage.getItem('blog_session_v3');
@@ -102,6 +159,20 @@ app.get("/", (req: Request, res: Response) => {
                     showMain();
                 }
             };
+
+            function switchTab(mode) {
+                currentMode = mode;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                if (mode === 'auto') {
+                    document.querySelector('.tab:nth-child(1)').classList.add('active');
+                    document.getElementById('tab-auto').classList.add('active');
+                } else {
+                    document.querySelector('.tab:nth-child(2)').classList.add('active');
+                    document.getElementById('tab-manual').classList.add('active');
+                }
+            }
 
             async function login() {
                 const pin = document.getElementById('pinInput').value;
@@ -142,8 +213,15 @@ app.get("/", (req: Request, res: Response) => {
             }
 
             async function run() {
-                const topic = document.getElementById('topic').value;
+                const topic = currentMode === 'auto' 
+                    ? document.getElementById('topic-auto').value 
+                    : document.getElementById('topic-manual').value;
+                const keywords = currentMode === 'manual' ? document.getElementById('keywords-manual').value : '';
                 const blogBoardName = document.getElementById('blogBoardName').value;
+                const persona = document.getElementById('persona').value;
+                const tone = document.getElementById('tone').value;
+                const useImage = document.getElementById('useImage').value === 'true';
+
                 if (!topic) return alert('주제를 입력하세요.');
                 if (!blogBoardName) return alert('게시판 이름을 입력하세요.');
 
@@ -154,7 +232,16 @@ app.get("/", (req: Request, res: Response) => {
                     const res = await fetch('/api/publish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ topic, blogBoardName, pin: userSession.pin })
+                        body: JSON.stringify({ 
+                            topic, 
+                            mode: currentMode,
+                            keywords: keywords.split(',').map(k => k.trim()).filter(k => k),
+                            blogBoardName, 
+                            persona,
+                            tone,
+                            useImage,
+                            pin: userSession.pin 
+                        })
                     });
                     const data = await res.json();
                     if (res.status === 401) {
@@ -200,7 +287,7 @@ app.get("/api/events", (req: Request, res: Response) => {
 
 // ⚙️ 실행 API
 app.post("/api/publish", async (req: Request, res: Response) => {
-  const { topic, blogBoardName, pin } = req.body;
+  const { topic, mode, keywords, blogBoardName, persona, tone, useImage, pin } = req.body;
   const userKey = Object.keys(allowedUsers).find(
     (k) => allowedUsers[k].pin === pin,
   );
@@ -215,7 +302,7 @@ app.post("/api/publish", async (req: Request, res: Response) => {
 
   isProcessing = true;
   console.log(
-    `[SERVER] ${user.name} started: ${topic} (Board: ${blogBoardName})`,
+    `[SERVER] ${user.name} started (${mode}): ${topic} (Board: ${blogBoardName}, Persona: ${persona}, Tone: ${tone}, Image: ${useImage})`,
   );
 
   const config = {
@@ -231,21 +318,71 @@ app.post("/api/publish", async (req: Request, res: Response) => {
     "gemini-2.5-flash",
   );
 
+  const userDataPath = path.join(__dirname, "../../../");
+
   try {
-    const result = await runAutoPilot({
-      broadTopic: topic,
-      blogBoardName: blogBoardName || "일상정보",
-      config,
-      userDataPath: path.join(__dirname, "../../../"),
-      geminiClient: client,
-      publishPlatforms: ["naver"],
-      credentials: { naver: { id: user.naverId, pw: user.naverPw } },
-      headless: true,
-      onProgress: (msg: string) => {
-        currentLog = msg;
-        console.log(`[${user.name}] ${msg}`);
-      },
-    } as any);
+    let result;
+    if (mode === "auto") {
+      result = await runAutoPilot({
+        broadTopic: topic,
+        blogBoardName,
+        config,
+        userDataPath,
+        geminiClient: client,
+        publishPlatforms: ["naver"],
+        credentials: { naver: { id: user.naverId, pw: user.naverPw } },
+        persona,
+        tone,
+        useImage,
+        headless: true,
+        onProgress: (msg: string) => {
+          currentLog = msg;
+          console.log(`[${user.name}] ${msg}`);
+        },
+      } as any);
+    } else {
+      // Manual Mode
+      currentLog = "🤖 매뉴얼 모드 콘텐츠 생성 중...";
+      
+      const task: any = {
+        topic,
+        keywords,
+        persona,
+        tone,
+        useImage,
+        category: "정보/리뷰",
+        status: "진행",
+        mode: "manual"
+      };
+
+      const publication = await generatePost({
+        client,
+        task,
+        projectRoot: userDataPath,
+        onProgress: (msg: string) => {
+          currentLog = `[AI] ${msg}`;
+          console.log(`[${user.name}] ${msg}`);
+        },
+      });
+
+      if (!publication) throw new Error("콘텐츠 생성 실패");
+
+      currentLog = "🚀 네이버 발행 중...";
+      const htmlContent = await markdownToHtml(publication.content);
+      const publisher = new NaverPublisher(userDataPath, user.naverId);
+      
+      await publisher.publish(
+        { blogId: user.naverId, password: user.naverPw, headless: true },
+        {
+          ...publication,
+          content: htmlContent,
+          category: blogBoardName,
+          tags: publication.tags || (keywords.length > 0 ? keywords : topic.split(" ")),
+        }
+      );
+      
+      result = { success: true, publication };
+    }
 
     res.json(
       result.success
@@ -256,7 +393,10 @@ app.post("/api/publish", async (req: Request, res: Response) => {
     res.json({ success: false, error: error.message });
   } finally {
     isProcessing = false;
-    currentLog = "대기 중...";
+    // 3초 후 대기 상태로 변경 (마지막 로그를 볼 수 있도록)
+    setTimeout(() => {
+      if (!isProcessing) currentLog = "대기 중...";
+    }, 3000);
   }
 });
 
