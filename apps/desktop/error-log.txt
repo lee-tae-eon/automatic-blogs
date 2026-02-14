@@ -8,3 +8,10 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ============================================================
 🔗 발생 URL: https://nid.naver.com/nidlogin.login
 --------------------------------------------------
+
+==================================================
+[2026. 2. 14. 오전 11:20:45]
+📍 대상 포스트: 2026년 ISA 계좌: 초보 투자자를 위한 핵심 분석
+❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
