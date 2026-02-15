@@ -303,18 +303,21 @@ export const useAppViewModel = () => {
   /**
    * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
    */
-  const handleStartWithKeyword = async (analysis: any, category: string) => {
+  const handleStartWithKeyword = async (analysis: any, options: { category: string; persona: Persona; tone: Tone; useImage: boolean }) => {
     if (isAutoPublishing) return;
 
     setIsAutoPublishing(true);
     shouldStopAutoRef.current = false;
     autoAbortControllerRef.current = new AbortController();
-    addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${category}) 발행 시작`);
+    addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${options.category}) 발행 시작`);
 
     try {
       const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
         analysis,
-        category, 
+        category: options.category, 
+        persona: options.persona,
+        tone: options.tone,
+        useImage: options.useImage,
         modelType: credentials.modelType,
         headless: credentials.headless,
       });

@@ -73,7 +73,13 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       alert("블로그 게시판 이름을 입력해 주세요.");
       return;
     }
-    onStart(selectedCandidate, categoryInput.trim());
+    // v4.0: 페르소나, 톤, 이미지 설정 포함하여 시작
+    onStart(selectedCandidate, {
+      category: categoryInput.trim(),
+      persona,
+      tone,
+      useImage
+    });
     setSelectedCandidate(null);
   };
 
@@ -263,12 +269,50 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                   fontSize: "0.95rem"
                 }}
               />
-              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "5px" }}>
-                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요.
-              </p>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>페르소나</label>
+                <select 
+                  value={persona} 
+                  onChange={(e) => setPersona(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                >
+                  <option value="informative">분석가 (정보)</option>
+                  <option value="experiential">리뷰어 (후기)</option>
+                  <option value="reporter">리포터 (뉴스)</option>
+                  <option value="entertainment">엔터형 (팬)</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>톤 (말투)</label>
+                <select 
+                  value={tone} 
+                  onChange={(e) => setTone(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                >
+                  <option value="professional">하십시오체</option>
+                  <option value="incisive">해요체</option>
+                  <option value="serious">평어체</option>
+                  <option value="empathetic">공감형</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input 
+                type="checkbox" 
+                id="modal-use-image"
+                checked={useImage} 
+                onChange={(e) => setUseImage(e.target.checked)}
+              />
+              <label htmlFor="modal-use-image" style={{ fontSize: "0.85rem", color: "#333", cursor: "pointer" }}>
+                AI 자동 이미지 삽입
+              </label>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
               <button 
                 onClick={() => setSelectedCandidate(null)}
                 style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", backgroundColor: "white", cursor: "pointer" }}

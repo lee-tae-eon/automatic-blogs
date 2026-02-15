@@ -444,7 +444,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle(
     "run-autopilot-step2",
-    async (event, { analysis, category, modelType, headless }) => {
+    async (event, { analysis, category, persona, tone, useImage, modelType, headless }) => {
       globalAbortController = new AbortController();
 
       try {
@@ -475,55 +475,31 @@ function registerIpcHandlers() {
 
           const geminiClient = new GeminiClient(apiKey, modelName);
 
-          // 이미 분석된 데이터를 가지고 바로 생성/발행 단계 수행하는 별도 함수 혹은 runAutoPilot 수정 필요
-
-          // 여기서는 기존 runAutoPilot이 처음부터 다 하는 구조이므로,
-
-          // 선택된 키워드 하나로 runAutoPilot을 속여서 호출하거나 로직을 분리해야 함.
-
-          // 일단은 기존 runAutoPilot을 'keyword' 모드로 동작하게 살짝 수정해서 사용.
-
           const publishPlatforms: ("naver" | "tistory")[] = [];
-
           if (enableNaver) publishPlatforms.push("naver");
-
           if (enableTistory) publishPlatforms.push("tistory");
-
-          // 분석된 데이터를 옵션으로 넘겨주는 방식으로 진행 (추후 core 수정 필요)
-
-          // 현재는 broadTopic 자리에 선택된 키워드를 넣으면 다시 분석하지만 점수는 동일할 것임.
 
           return await runAutoPilot({
             broadTopic: analysis.keyword,
-            blogBoardName: category, // UI에서 입력받은 category를 blogBoardName으로 전달
-
+            blogBoardName: category,
             config: {
               searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
-
               searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
-
               adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
-
               adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-
-              adCustomerId:
-                process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+              adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
             },
-
             userDataPath,
-
             geminiClient,
-
             publishPlatforms,
-
             credentials: {
               naver: { id: naverId, pw: naverPw },
-
               tistory: { id: tistoryId, pw: tistoryPw },
             },
-
+            persona,
+            tone,
+            useImage,
             headless,
-
             onProgress: (message: string) => {
               if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send("process-log", message);
