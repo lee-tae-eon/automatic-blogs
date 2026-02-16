@@ -116,7 +116,7 @@ app.get("/", (req: Request, res: Response) => {
                             <option value="experiential">후기형 (The Reviewer)</option>
                             <option value="reporter">이슈형 (The Reporter)</option>
                             <option value="entertainment">엔터형 (The Fan)</option>
-                            <option value="master">마스터 (The Influencer)</option>
+                            <option value="travel">여행 정보 (The Guide)</option>
                         </select>
                     </div>
                     <div style="flex: 1;">

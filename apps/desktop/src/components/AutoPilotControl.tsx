@@ -283,7 +283,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                   <option value="experiential">리뷰어 (후기)</option>
                   <option value="reporter">리포터 (뉴스)</option>
                   <option value="entertainment">엔터형 (팬)</option>
-                  <option value="master">마스터 (통합)</option>
+                  <option value="travel">여행 가이드</option>
                 </select>
               </div>
               <div style={{ flex: 1 }}>
