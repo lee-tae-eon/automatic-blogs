@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export interface ChartData {
-  type: "bar" | "pie" | "line";
+  type: "bar" | "pie" | "line" | "horizontalBar" | "doughnut";
   title: string;
   labels: string[];
   data: number[];
@@ -17,6 +17,7 @@ export class ChartService {
    */
   async generateChartImage(chartData: ChartData, outputDir: string): Promise<string | null> {
     try {
+      const isMultiColor = chartData.type === 'pie' || chartData.type === 'doughnut';
       const chartConfig = {
         type: chartData.type,
         data: {
@@ -24,8 +25,8 @@ export class ChartService {
           datasets: [{
             label: chartData.title,
             data: chartData.data,
-            backgroundColor: chartData.type === 'pie' 
-              ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'] 
+            backgroundColor: isMultiColor
+              ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF'] 
               : '#36A2EB',
           }]
         },
