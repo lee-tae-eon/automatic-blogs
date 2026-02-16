@@ -54,6 +54,18 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 4,
     keywordDensity: [0.01, 0.02],
   },
+
+  // 5. 통합형 (The Master Influencer)
+  master: {
+    targetLength: [2500, 4000],
+    headingCount: 6,
+    paragraphMaxLength: 150,
+    sentenceMaxLength: 50,
+    emojiUsage: "moderate",
+    tableRequired: true,
+    imageCount: 5,
+    keywordDensity: [0.01, 0.03],
+  },
 };
 
 export const getQualityMetrics = (persona: Persona): QualityMetrics => {
