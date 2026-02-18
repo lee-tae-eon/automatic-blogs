@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
       "run-autopilot",
       "fetch-keyword-candidates",
       "run-autopilot-step2",
+      "fetch-recommended-topics",
     ];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, ...args);

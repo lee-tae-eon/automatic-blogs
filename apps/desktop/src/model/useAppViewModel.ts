@@ -12,6 +12,8 @@ export const useAppViewModel = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<any[]>([]); 
+  const [recommendations, setRecommendations] = useState<Record<string, any[]>>({}); // 추가
+  const [isFetchingRecs, setIsFetchingRecs] = useState(false); // 추가
   
   const shouldStopManualRef = useRef(false);
   const manualAbortControllerRef = useRef<AbortController | null>(null);
@@ -212,6 +214,25 @@ export const useAppViewModel = () => {
     }
     window.ipcRenderer.send("abort-process", "manual"); // 'manual' 인자 추가
     addLog("중단 요청을 보냈습니다. 현재 수동 작업이 마무리되는 대로 중단됩니다.");
+  };
+
+  /**
+   * v3.0 추천 토픽 가져오기 핸들러
+   */
+  const handleFetchRecommendations = async (category: string) => {
+    setIsFetchingRecs(true);
+    try {
+      const result = await window.ipcRenderer.invoke("fetch-recommended-topics", category);
+      if (result.success) {
+        setRecommendations(prev => ({ ...prev, [category]: result.data }));
+      } else {
+        addLog(`❌ 추천 토픽 수집 실패: ${result.error}`);
+      }
+    } catch (e: any) {
+      addLog(`❌ 추천 토픽 오류: ${e.message}`);
+    } finally {
+      setIsFetchingRecs(false);
+    }
   };
 
   /**
@@ -454,7 +475,9 @@ export const useAppViewModel = () => {
       isProcessing: isManualProcessing || isAutoSearching || isAutoPublishing, // 하위 호환성 유지
       credentials, 
       logs, 
-      candidates 
+      candidates,
+      recommendations,
+      isFetchingRecs
     },
     actions: {
       handleCredentialChange,
@@ -470,6 +493,7 @@ export const useAppViewModel = () => {
       handleFetchCandidates,
       handleStopAutoPilot, // 추가
       handleStartWithKeyword,
+      handleFetchRecommendations, // 추가
     },
   };
 };

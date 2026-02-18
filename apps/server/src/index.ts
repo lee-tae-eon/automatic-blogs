@@ -7,7 +7,8 @@ import {
   runAutoPilot, 
   generatePost, 
   markdownToHtml, 
-  NaverPublisher 
+  NaverPublisher,
+  TopicRecommendationService 
 } from "@blog-automation/core";
 
 dotenv.config({ path: path.join(__dirname, "../../../.env") });
@@ -75,6 +76,13 @@ app.get("/", (req: Request, res: Response) => {
             .tab.active { background: white; color: #1c1c1e; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
             .tab-content { display: none; }
             .tab-content.active { display: block; }
+
+            /* Recommendation Cards */
+            .rec-card { background: #f8f8fa; border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid #e5e5ea; }
+            .rec-title { font-weight: 700; font-size: 15px; margin-bottom: 5px; color: #1c1c1e; display: flex; justify-content: space-between; }
+            .rec-reason { font-size: 13px; color: #8e8e93; line-height: 1.4; margin-bottom: 10px; }
+            .badge { background: #fff3cd; color: #92400e; font-size: 11px; padding: 2px 6px; border-radius: 5px; font-weight: 800; }
+            .btn-mini { padding: 8px 15px; font-size: 13px; border-radius: 8px; width: auto; margin-top: 5px; }
         </style>
     </head>
     <body>
@@ -86,6 +94,21 @@ app.get("/", (req: Request, res: Response) => {
         </div>
 
         <div id="main-ui">
+            <!-- 🌟 추천 토픽 영역 추가 -->
+            <div class="card" style="padding: 20px 15px;">
+                <h2 style="font-size: 18px; margin-bottom: 15px; text-align: left;">🌟 오늘의 추천 토픽</h2>
+                <div style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; -webkit-overflow-scrolling: touch;">
+                    <button class="tab-mini" onclick="loadRecs('tech')" style="white-space: nowrap; padding: 6px 12px; font-size: 13px; border-radius: 15px; border: none; background: #eef2ff; color: #4338ca;">💻 테크</button>
+                    <button class="tab-mini" onclick="loadRecs('economy')" style="white-space: nowrap; padding: 6px 12px; font-size: 13px; border-radius: 15px; border: none; background: #eef2ff; color: #4338ca;">📈 경제</button>
+                    <button class="tab-mini" onclick="loadRecs('entertainment')" style="white-space: nowrap; padding: 6px 12px; font-size: 13px; border-radius: 15px; border: none; background: #eef2ff; color: #4338ca;">🎬 연예</button>
+                    <button class="tab-mini" onclick="loadRecs('life')" style="white-space: nowrap; padding: 6px 12px; font-size: 13px; border-radius: 15px; border: none; background: #eef2ff; color: #4338ca;">🏠 생활</button>
+                    <button class="tab-mini" onclick="loadRecs('travel')" style="white-space: nowrap; padding: 6px 12px; font-size: 13px; border-radius: 15px; border: none; background: #eef2ff; color: #4338ca;">✈️ 여행</button>
+                </div>
+                <div id="rec-list" style="max-height: 300px; overflow-y: auto;">
+                    <p style="text-align:center; color:#8e8e93; font-size:13px; padding: 20px;">카테고리를 선택하여<br>추천 주제를 확인하세요.</p>
+                </div>
+            </div>
+
             <div class="card">
                 <h2 id="welcome-msg" style="margin-bottom: 10px;">🚀 반갑습니다</h2>
                 <div class="tabs">
@@ -213,6 +236,33 @@ app.get("/", (req: Request, res: Response) => {
                 };
             }
 
+            async function loadRecs(category) {
+                const list = document.getElementById('rec-list');
+                list.innerHTML = '<p style="text-align:center; padding:20px;"><span class="spinner"></span> 로딩 중...</p>';
+                
+                try {
+                    const res = await fetch('/api/recommendations?category=' + category);
+                    const data = await res.json();
+                    if (data.success) {
+                        list.innerHTML = data.data.map(item => 
+                            '<div class="rec-card">' +
+                                '<div class="rec-title">' + item.keyword + ' <span class="badge">🔥 ' + item.hotness + '</span></div>' +
+                                '<div class="rec-reason">' + item.reason + '</div>' +
+                                '<button class="btn-mini" onclick="selectRec(\'' + item.keyword.replace(/'/g, "\\'") + '\')">이 주제로 작성</button>' +
+                            '</div>'
+                        ).join('');
+                    }
+                } catch(e) {
+                    list.innerHTML = '<p style="text-align:center; color:red; padding:20px;">로딩 실패</p>';
+                }
+            }
+
+            function selectRec(keyword) {
+                switchTab('auto');
+                document.getElementById('topic-auto').value = keyword;
+                window.scrollTo({ top: document.getElementById('tab-auto').offsetTop - 100, behavior: 'smooth' });
+            }
+
             async function run() {
                 const topic = currentMode === 'auto' 
                     ? document.getElementById('topic-auto').value 
@@ -273,6 +323,22 @@ app.post("/api/auth", (req: Request, res: Response) => {
     res.json({ success: true, name: allowedUsers[userKey].name });
   } else {
     res.status(401).json({ success: false });
+  }
+});
+
+// 📈 추천 토픽 API
+app.get("/api/recommendations", async (req: Request, res: Response) => {
+  const { category } = req.query;
+  const apiKey = process.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ success: false, error: "API Key missing" });
+
+  try {
+    const client = new GeminiClient(apiKey, "gemini-2.5-flash");
+    const service = new TopicRecommendationService(client);
+    const data = await service.getRecommendationsByCategory(category as any);
+    res.json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
