@@ -94,9 +94,9 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     setStatusMessage("🛑 중단 요청 중...");
   };
 
-  const openPublishModal = (candidate: any) => {
+  const openPublishModal = (candidate: any, defaultCategory?: string) => {
     setSelectedCandidate(candidate);
-    setCategoryInput("일상정보"); // 기본값 설정
+    setCategoryInput(defaultCategory || "일상정보"); // 추천 카테고리가 있으면 해당 값 사용
   };
 
   const confirmPublish = () => {
@@ -212,7 +212,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
               <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "8px 0 0 0", lineHeight: "1.5" }}>{rec.reason}</p>
             </div>
             <button
-              onClick={() => openPublishModal({ keyword: rec.keyword, reason: rec.reason })}
+              onClick={() => openPublishModal({ keyword: rec.keyword, reason: rec.reason }, rec.category)}
               disabled={isProcessing}
               style={{
                 width: "100%",

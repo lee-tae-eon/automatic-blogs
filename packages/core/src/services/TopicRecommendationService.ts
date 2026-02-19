@@ -57,9 +57,19 @@ export class TopicRecommendationService {
         const rssTrends = await this.rssService.fetchTrendingTopics("KR");
         rawData = rssTrends.map(t => t.title).join(", ");
       } else {
-        // 테크, 생활, 여행은 Tavily 검색이 더 고품질
-        const searchResult = await this.tavilyService.searchLatestNews(`${CATEGORY_MAP[category]} 최신 트렌드 이슈`);
-        rawData = searchResult.context;
+        // 테크, 생활, 여행은 Tavily 검색 시도, 실패 시 RSS로 대체
+        try {
+          const searchResult = await this.tavilyService.searchLatestNews(`${CATEGORY_MAP[category]} 최신 트렌드 이슈`);
+          rawData = searchResult.context;
+        } catch (e) {
+          console.warn(`⚠️ [TopicRec] Tavily 검색 실패, RSS로 대체 시도: ${category}`);
+          const rssTrends = await this.rssService.fetchTrendingTopics("KR");
+          rawData = rssTrends.map(t => t.title).join(", ");
+        }
+      }
+
+      if (!rawData || rawData.trim().length < 10) {
+        throw new Error("분석할 충분한 트렌드 데이터를 수집하지 못했습니다.");
       }
 
       // 2. AI를 통한 토픽 큐레이션 및 전략 수립
