@@ -125,26 +125,37 @@ function registerIpcHandlers() {
     if (apiKeys.length === 0) return { success: false, error: "Gemini API Key가 없습니다." };
 
     let lastError: any;
-    for (const apiKey of apiKeys) {
-      try {
-        const modelName = process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
-        const client = new GeminiClient(apiKey, modelName);
-        const service = new TopicRecommendationService(client);
+    const modelVersions = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
-        const data = await service.getRecommendationsByCategory(category);
-        return { success: true, data };
-      } catch (error: any) {
-        lastError = error;
-        const errorMsg = error.message || "";
-        if (errorMsg.includes("429") || errorMsg.includes("limit")) {
-          console.warn(`⚠️ 추천 토픽 수집 중 키(${apiKey.slice(0, 5)}...) 할당량 초과. 다음 키 시도.`);
-          continue;
+    for (const [idx, apiKey] of apiKeys.entries()) {
+      for (const modelName of modelVersions) {
+        try {
+          const client = new GeminiClient(apiKey, modelName);
+          const service = new TopicRecommendationService(client);
+
+          const logMsg = `🔍 [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 중...`;
+          if (mainWindow) mainWindow.webContents.send("process-log", logMsg);
+
+          const data = await service.getRecommendationsByCategory(category);
+          return { success: true, data };
+        } catch (error: any) {
+          lastError = error;
+          const errorMsg = String(error.message || error);
+          
+          if (errorMsg.includes("429") || errorMsg.includes("quota") || errorMsg.includes("limit")) {
+            const warnMsg = `⚠️ [추천 시스템] 키 #${idx + 1} (${modelName}) 할당량 초과. 다음 모델/키 시도...`;
+            console.warn(warnMsg);
+            if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
+            continue; // 다음 모델 시도 (안에서)
+          }
+          break; // 429 외의 에러는 해당 키의 다른 모델도 실패할 확률이 높으므로 다음 키로
         }
-        break; 
       }
     }
 
-    return { success: false, error: `모든 API 키가 할당량을 초과했거나 에러가 발생했습니다. (${lastError?.message || ""})` };
+    const finalError = `모든 API 키가 할당량을 초과했거나 에러가 발생했습니다. (${lastError?.message || lastError})`;
+    if (mainWindow) mainWindow.webContents.send("process-log", `❌ ${finalError}`);
+    return { success: false, error: finalError };
   });
 
   // ----------------------------------------

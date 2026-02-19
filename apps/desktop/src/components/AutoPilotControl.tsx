@@ -35,12 +35,13 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     { id: "travel", label: "✈️ 여행" },
   ];
 
-  // 카테고리 변경 시 추천 토픽 가져오기
-  useEffect(() => {
-    if (!recommendations[activeCategory]) {
-      onFetchRecs(activeCategory);
-    }
-  }, [activeCategory]);
+  const currentRecs = recommendations[activeCategory] || [];
+  const hasRecs = currentRecs.length > 0;
+
+  // 카테고리 변경 시 검색 유도 (자동 검색 제거)
+  const handleFetchRecs = () => {
+    onFetchRecs(activeCategory);
+  };
 
   // 발행 설정 모달 상태
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
@@ -173,18 +174,49 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       {/* 추천 토픽 카드 리스트 */}
       <div style={{ 
         display: "grid", 
-        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", 
+        gridTemplateColumns: hasRecs ? "repeat(auto-fill, minmax(280px, 1fr))" : "1fr", 
         gap: "12px",
+        minHeight: "150px",
         maxHeight: "350px",
         overflowY: "auto",
         padding: "4px"
       }}>
         {isFetchingRecs ? (
-          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "#6366f1" }}>
+          <div style={{ textAlign: "center", padding: "40px", color: "#6366f1" }}>
             <span className="spinner" style={{ display: "inline-block", width: "20px", height: "20px", border: "3px solid #eef2ff", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 0.8s infinite linear" }} />
-            <div style={{ marginTop: "10px", fontWeight: "600" }}>최신 트렌드 수집 및 분석 중...</div>
+            <div style={{ marginTop: "10px", fontWeight: "600" }}>최신 트렌드 분석 중...</div>
           </div>
-        ) : recommendations[activeCategory]?.map((rec, idx) => (
+        ) : !hasRecs ? (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "30px", 
+            border: "2px dashed #c7d2fe", 
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <p style={{ fontSize: "0.9rem", color: "#4338ca", margin: 0 }}>
+              해당 카테고리의 오늘의 추천 토픽이 아직 없습니다.
+            </p>
+            <button
+              onClick={handleFetchRecs}
+              style={{
+                padding: "10px 24px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "#6366f1",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer",
+                boxShadow: "0 4px 6px rgba(99, 102, 241, 0.2)"
+              }}
+            >
+              ⚡ 추천 토픽 가져오기
+            </button>
+          </div>
+        ) : currentRecs.map((rec, idx) => (
           <div 
             key={idx}
             style={{

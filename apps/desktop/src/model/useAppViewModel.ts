@@ -221,6 +221,7 @@ export const useAppViewModel = () => {
    */
   const handleFetchRecommendations = async (category: string) => {
     setIsFetchingRecs(true);
+    addLog(`📡 [추천 시스템] '${category}' 카테고리 최신 트렌드 분석 시작...`);
     try {
       const result = await window.ipcRenderer.invoke("fetch-recommended-topics", category);
       if (result.success) {

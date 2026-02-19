@@ -101,8 +101,8 @@ export class TopicRecommendationService {
       }));
 
     } catch (error) {
-      console.error(`❌ [TopicRec] '${category}' 추천 실패:`, error);
-      return [];
+      // 에러를 무시하지 않고 상위(main.ts)로 던져서 키 로테이션이 작동하게 함
+      throw error;
     }
   }
 }
