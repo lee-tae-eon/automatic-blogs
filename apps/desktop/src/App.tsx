@@ -24,9 +24,12 @@ export const App: React.FC = () => {
         isSearching={isAutoSearching}
         isPublishing={isAutoPublishing}
         candidates={state.candidates}
+        recommendations={state.recommendations}
+        isFetchingRecs={state.isFetchingRecs}
         onFetch={actions.handleFetchCandidates}
         onStop={actions.handleStopAutoPilot}
         onStart={actions.handleStartWithKeyword} 
+        onFetchRecs={actions.handleFetchRecommendations}
       />
 
       {/* 메인 입력 영역: 2단 레이아웃 (트렌드 + 폼) */}

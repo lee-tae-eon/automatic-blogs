@@ -169,4 +169,5 @@ blob-report/
 playwright/.cache/
 
 #cli-test
-apps/cli/data/
+apps/cli/data/data/blog_automation.db
+data/blog_automation.db

@@ -21,7 +21,8 @@ export type Persona =
   | "informative" // 정보형 (The Analyst)
   | "experiential" // 후기형 (The Reviewer)
   | "reporter" // 이슈형 (The Reporter)
-  | "entertainment"; // 엔터형 (The Fan/Watcher)
+  | "entertainment" // 엔터형 (The Fan/Watcher)
+  | "travel"; // 여행 가이드 (The Travel Guide)
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의

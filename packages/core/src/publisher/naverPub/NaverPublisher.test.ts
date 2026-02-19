@@ -41,7 +41,7 @@ describe('NaverPublisher', () => {
     // @ts-ignore - access private method for testing
     const result = publisher.appendReferences(html, refs);
     
-    expect(result).toContain('🔗 참고 자료 및 최신 뉴스 출처');
+    expect(result).toContain('🔗 참고 자료 및 뉴스 출처');
     expect(result).toContain('https://test.com');
     expect(result).toContain('Test News');
   });

@@ -4,25 +4,51 @@ interface AutoPilotControlProps {
   isSearching: boolean;
   isPublishing: boolean;
   candidates: any[];
+  recommendations: Record<string, any[]>;
+  isFetchingRecs: boolean;
   onFetch: (topic: string) => void;
   onStop: () => void;
-  onStart: (analysis: any, category: string) => void;
+  onStart: (analysis: any, options: any) => void;
+  onFetchRecs: (category: string) => void;
 }
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   isSearching,
   isPublishing,
   candidates,
+  recommendations,
+  isFetchingRecs,
   onFetch,
   onStop,
   onStart,
+  onFetchRecs,
 }) => {
   const [topic, setTopic] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("tech");
   
+  const categories = [
+    { id: "tech", label: "💻 IT/테크" },
+    { id: "economy", label: "📈 경제" },
+    { id: "entertainment", label: "🎬 연예" },
+    { id: "life", label: "🏠 생활" },
+    { id: "travel", label: "✈️ 여행" },
+  ];
+
+  const currentRecs = recommendations[activeCategory] || [];
+  const hasRecs = currentRecs.length > 0;
+
+  // 카테고리 변경 시 검색 유도 (자동 검색 제거)
+  const handleFetchRecs = () => {
+    onFetchRecs(activeCategory);
+  };
+
   // 발행 설정 모달 상태
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
   const [categoryInput, setCategoryInput] = useState("");
+  const [persona, setPersona] = useState<string>("informative");
+  const [tone, setTone] = useState<string>("professional");
+  const [useImage, setUseImage] = useState(true);
 
   const isAnalyzing = isSearching && candidates.length === 0;
   const isProcessing = isSearching || isPublishing;
@@ -30,13 +56,20 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   // 로딩 메시지 순환 효과
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isAnalyzing) {
-      const messages = [
-        "🤖 AI가 주제와 관련된 황금 키워드를 발굴하고 있습니다...",
-        "🔍 각 키워드의 실시간 검색량을 분석 중입니다...",
-        "⚖️ 경쟁률을 계산하여 승산 있는 키워드를 선별하고 있습니다...",
-        "📊 데이터를 정리하고 있습니다. 잠시만 기다려 주세요..."
-      ];
+    if (isAnalyzing || isFetchingRecs) {
+      const messages = isFetchingRecs 
+        ? [
+            "📡 최신 트렌드 데이터를 수집하고 있습니다...",
+            "🤖 AI가 오늘 발행하기 좋은 토픽을 선별 중입니다...",
+            "💡 할당량 초과 시 자동으로 다음 키를 시도합니다. 잠시만 기다려 주세요...",
+            "📊 카테고리별 전략적 주제를 구성하고 있습니다..."
+          ]
+        : [
+            "🤖 AI가 주제와 관련된 황금 키워드를 발굴하고 있습니다...",
+            "🔍 각 키워드의 실시간 검색량을 분석 중입니다...",
+            "⚖️ 경쟁률을 계산하여 승산 있는 키워드를 선별하고 있습니다...",
+            "📊 데이터를 정리하고 있습니다. 잠시만 기다려 주세요..."
+          ];
       let i = 0;
       setStatusMessage(messages[0]);
       interval = setInterval(() => {
@@ -62,9 +95,9 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     setStatusMessage("🛑 중단 요청 중...");
   };
 
-  const openPublishModal = (candidate: any) => {
+  const openPublishModal = (candidate: any, defaultCategory?: string) => {
     setSelectedCandidate(candidate);
-    setCategoryInput("일상정보"); // 기본값 설정
+    setCategoryInput(defaultCategory || "일상정보"); // 추천 카테고리가 있으면 해당 값 사용
   };
 
   const confirmPublish = () => {
@@ -73,7 +106,13 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       alert("블로그 게시판 이름을 입력해 주세요.");
       return;
     }
-    onStart(selectedCandidate, categoryInput.trim());
+    // v4.0: 페르소나, 톤, 이미지 설정 포함하여 시작
+    onStart(selectedCandidate, {
+      category: categoryInput.trim(),
+      persona,
+      tone,
+      useImage
+    });
     setSelectedCandidate(null);
   };
 
@@ -103,9 +142,134 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "1.2rem" }}>🧠</span>
+        <span style={{ fontSize: "1.2rem" }}>🚀</span>
+        <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#4338ca" }}>
+          오늘의 추천 토픽 (실시간 트렌드 분석)
+        </h2>
+      </div>
+
+      {/* 카테고리 탭 */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: "none",
+              backgroundColor: activeCategory === cat.id ? "#6366f1" : "#eef2ff",
+              color: activeCategory === cat.id ? "white" : "#4338ca",
+              fontWeight: "600",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              transition: "0.2s"
+            }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 추천 토픽 카드 리스트 */}
+      <div style={{ 
+        display: "grid", 
+        gridTemplateColumns: hasRecs ? "repeat(auto-fill, minmax(280px, 1fr))" : "1fr", 
+        gap: "12px",
+        minHeight: "150px",
+        maxHeight: "350px",
+        overflowY: "auto",
+        padding: "4px"
+      }}>
+        {isFetchingRecs ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#6366f1" }}>
+            <span className="spinner" style={{ display: "inline-block", width: "20px", height: "20px", border: "3px solid #eef2ff", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 0.8s infinite linear" }} />
+            <div style={{ marginTop: "10px", fontWeight: "600" }}>최신 트렌드 분석 중...</div>
+          </div>
+        ) : !hasRecs ? (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "30px", 
+            border: "2px dashed #c7d2fe", 
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "10px"
+          }}>
+            <p style={{ fontSize: "0.9rem", color: "#4338ca", margin: 0 }}>
+              해당 카테고리의 오늘의 추천 토픽이 아직 없습니다.
+            </p>
+            <button
+              onClick={handleFetchRecs}
+              style={{
+                padding: "10px 24px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "#6366f1",
+                color: "white",
+                fontWeight: "bold",
+                cursor: "pointer",
+                boxShadow: "0 4px 6px rgba(99, 102, 241, 0.2)"
+              }}
+            >
+              ⚡ 추천 토픽 가져오기
+            </button>
+          </div>
+        ) : currentRecs.map((rec, idx) => (
+          <div 
+            key={idx}
+            style={{
+              backgroundColor: "white",
+              padding: "15px",
+              borderRadius: "12px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              gap: "10px",
+              transition: "0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.borderColor = "#6366f1"}
+            onMouseOut={(e) => e.currentTarget.style.borderColor = "#e2e8f0"}
+          >
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <strong style={{ fontSize: "0.95rem", color: "#1e293b", lineHeight: "1.4" }}>{rec.keyword}</strong>
+                <span style={{ fontSize: "0.75rem", padding: "2px 6px", borderRadius: "4px", backgroundColor: "#fef3c7", color: "#92400e", fontWeight: "700" }}>
+                  🔥 {rec.hotness}
+                </span>
+              </div>
+              <p style={{ fontSize: "0.8rem", color: "#64748b", margin: "8px 0 0 0", lineHeight: "1.5" }}>{rec.reason}</p>
+            </div>
+            <button
+              onClick={() => openPublishModal({ keyword: rec.keyword, reason: rec.reason }, rec.category)}
+              disabled={isProcessing}
+              style={{
+                width: "100%",
+                padding: "8px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "#6366f1",
+                color: "white",
+                fontSize: "0.8rem",
+                fontWeight: "bold",
+                cursor: isProcessing ? "not-allowed" : "pointer"
+              }}
+            >
+              이 주제로 발행하기
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ height: "1px", backgroundColor: "#e2e8f0", margin: "10px 0" }} />
+
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <span style={{ fontSize: "1.2rem" }}>🔍</span>
         <h2 style={{ fontSize: "1rem", margin: 0, color: "#4338ca" }}>
-          v2.0 Autonomous Auto-Pilot (주제 확장 및 선택)
+          직접 주제 검색 (Auto-Pilot v2.0)
         </h2>
       </div>
 
@@ -161,13 +325,13 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       </div>
 
       {/* 상태 메시지 */}
-      {statusMessage && (
+      {(statusMessage || isFetchingRecs) && (
         <div style={{ 
           fontSize: "0.85rem", color: "#4f46e5", backgroundColor: "#eef2ff", 
           padding: "10px", borderRadius: "6px", textAlign: "center", fontWeight: "500",
           animation: "pulse 2s infinite"
         }}>
-          {statusMessage}
+          {statusMessage || "🚀 트렌드 분석 중..."}
         </div>
       )}
 
@@ -263,12 +427,51 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                   fontSize: "0.95rem"
                 }}
               />
-              <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "5px" }}>
-                * 네이버 블로그에 실제로 존재하는 게시판 이름을 정확히 입력해 주세요.
-              </p>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>페르소나</label>
+                <select 
+                  value={persona} 
+                  onChange={(e) => setPersona(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                >
+                  <option value="informative">분석가 (정보)</option>
+                  <option value="experiential">리뷰어 (후기)</option>
+                  <option value="reporter">리포터 (뉴스)</option>
+                  <option value="entertainment">엔터형 (팬)</option>
+                  <option value="travel">여행 가이드</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#666", marginBottom: "5px" }}>톤 (말투)</label>
+                <select 
+                  value={tone} 
+                  onChange={(e) => setTone(e.target.value)}
+                  style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                >
+                  <option value="professional">하십시오체</option>
+                  <option value="incisive">해요체</option>
+                  <option value="serious">평어체</option>
+                  <option value="empathetic">공감형</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input 
+                type="checkbox" 
+                id="modal-use-image"
+                checked={useImage} 
+                onChange={(e) => setUseImage(e.target.checked)}
+              />
+              <label htmlFor="modal-use-image" style={{ fontSize: "0.85rem", color: "#333", cursor: "pointer" }}>
+                AI 자동 이미지 삽입
+              </label>
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
               <button 
                 onClick={() => setSelectedCandidate(null)}
                 style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", backgroundColor: "white", cursor: "pointer" }}

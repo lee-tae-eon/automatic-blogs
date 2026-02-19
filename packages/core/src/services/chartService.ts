@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export interface ChartData {
-  type: "bar" | "pie" | "line";
+  type: "bar" | "pie" | "line" | "horizontalBar" | "doughnut";
   title: string;
   labels: string[];
   data: number[];
@@ -17,6 +17,13 @@ export class ChartService {
    */
   async generateChartImage(chartData: ChartData, outputDir: string): Promise<string | null> {
     try {
+      const isMultiColor = chartData.type === 'pie' || chartData.type === 'doughnut';
+      const isHorizontal = chartData.type === 'horizontalBar';
+      
+      // 0부터 시작하도록 강제하고 상단 여백 확보를 위한 최대값 계산
+      const maxVal = Math.max(...chartData.data);
+      const suggestedMax = maxVal > 0 ? maxVal * 1.15 : 10; // 15% 여유 공간
+
       const chartConfig = {
         type: chartData.type,
         data: {
@@ -24,8 +31,8 @@ export class ChartService {
           datasets: [{
             label: chartData.title,
             data: chartData.data,
-            backgroundColor: chartData.type === 'pie' 
-              ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'] 
+            backgroundColor: isMultiColor
+              ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF'] 
               : '#36A2EB',
           }]
         },
@@ -35,13 +42,22 @@ export class ChartService {
             text: chartData.title,
             fontSize: 20
           },
+          scales: isMultiColor ? {} : {
+            [isHorizontal ? 'xAxes' : 'yAxes']: [{
+              ticks: {
+                beginAtZero: true,
+                suggestedMax: suggestedMax
+              }
+            }]
+          },
           plugins: {
             datalabels: {
               display: true,
               anchor: 'end',
-              align: 'top',
+              align: isHorizontal ? 'right' : 'top',
               color: '#444',
-              font: { weight: 'bold' }
+              font: { weight: 'bold', size: 14 },
+              formatter: (value: number) => value.toLocaleString() // 숫자 콤마 표시
             }
           }
         }

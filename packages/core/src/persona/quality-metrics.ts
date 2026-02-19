@@ -54,6 +54,18 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 4,
     keywordDensity: [0.01, 0.02],
   },
+
+  // 6. 여행 가이드 (The Travel Guide)
+  travel: {
+    targetLength: [1500, 2500],
+    headingCount: 5,
+    paragraphMaxLength: 120,
+    sentenceMaxLength: 45,
+    emojiUsage: "moderate",
+    tableRequired: true,
+    imageCount: 4,
+    keywordDensity: [0.01, 0.02],
+  },
 };
 
 export const getQualityMetrics = (persona: Persona): QualityMetrics => {
