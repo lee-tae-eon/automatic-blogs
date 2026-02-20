@@ -6,29 +6,45 @@ import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
 import { ChartService } from "../../services/chartService";
 
-// ✅ 네이버 에디터에서 "소제목"처럼 보이게 하는 세로바 스타일
-const HEADING_STYLE = `
-  display: block;
-  border-left: 5px solid #000; /* 검은색 세로바 */
-  padding-left: 12px;
-  margin-top: 40px;
-  margin-bottom: 20px;
-  font-size: 19px;
-  font-weight: bold;
-  color: #000;
-  line-height: 1.3;
-  background-color: transparent;
-`;
+// ✅ 페르소나별 테마 컬러 및 스타일 정의
+const PERSONA_THEMES: Record<string, { color: string; bgColor: string }> = {
+  informative: { color: "#2c3e50", bgColor: "#f8f9fa" }, // 딥 블루 (신뢰)
+  experiential: { color: "#e67e22", bgColor: "#fffaf0" }, // 오렌지 (친근)
+  reporter: { color: "#c0392b", bgColor: "#fff5f5" }, // 레드 (긴급)
+  entertainment: { color: "#9b59b6", bgColor: "#fcfaff" }, // 바이올렛 (발랄)
+  travel: { color: "#27ae60", bgColor: "#f0fff4" }, // 그린 (자연/안내)
+};
 
-// ✅ 본문 인용구 스타일 (회색 세로바)
-const QUOTE_STYLE = `
-  display: block;
-  border-left: 3px solid #ccc; /* 회색 세로바 */
-  padding-left: 15px;
-  margin: 20px 0;
-  color: #555;
-  line-height: 1.6;
-`;
+const getHeadingStyle = (persona: string) => {
+  const theme = PERSONA_THEMES[persona] || PERSONA_THEMES.informative;
+  return `
+    display: block;
+    border-left: 6px solid ${theme.color};
+    padding: 12px 15px;
+    margin-top: 45px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: ${theme.color};
+    line-height: 1.4;
+    background-color: ${theme.bgColor};
+    border-radius: 0 8px 8px 0;
+  `;
+};
+
+const getQuoteStyle = (persona: string) => {
+  const theme = PERSONA_THEMES[persona] || PERSONA_THEMES.informative;
+  return `
+    display: block;
+    border-left: 4px solid ${theme.color};
+    padding: 15px 20px;
+    margin: 25px 0;
+    color: #444;
+    line-height: 1.7;
+    background-color: white;
+    font-style: italic;
+  `;
+};
 
 export class NaverEditor {
   private pexelsService = new PexelsService();
@@ -143,8 +159,8 @@ export class NaverEditor {
           case "heading":
             if (!block.text) break;
             await this.page.keyboard.press("Enter");
-            // h3 태그 대신 스타일이 입혀진 p 태그를 사용 (네이버가 더 잘 받아들임)
-            const styledHeading = `<p style="${HEADING_STYLE}">${block.text}</p>`;
+            // 페르소나별 스타일 적용
+            const styledHeading = `<p style="${getHeadingStyle(this.persona)}">${block.text}</p>`;
             await this.pasteHtml(styledHeading);
             await this.page.keyboard.press("Enter");
             break;
@@ -157,7 +173,7 @@ export class NaverEditor {
             const quoteContent = block.html
               .replace(/<\/?blockquote>/g, "")
               .replace(/<\/?p>/g, "");
-            const styledQuote = `<blockquote style="${QUOTE_STYLE}">${quoteContent}</blockquote>`;
+            const styledQuote = `<blockquote style="${getQuoteStyle(this.persona)}">${quoteContent}</blockquote>`;
             await this.pasteHtml(styledQuote);
             await this.page.keyboard.press("Enter");
             break;
