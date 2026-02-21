@@ -73,17 +73,39 @@ export class NaverPublisher implements IBlogPublisher {
 
   /**
    * 본문 하단에 출처(References) 링크 섹션을 추가합니다.
+   * 개인 블로그(네이버, 티스토리 등)는 홍보 방지를 위해 엄격히 필터링합니다.
    */
   private appendReferences(
     html: string,
     references?: { name: string; url: string }[],
   ): string {
-    // 유효한 출처만 필터링 (이름과 URL이 모두 있어야 함)
-    const validRefs = (references || []).filter(
-      (ref) => ref && ref.name?.trim() && ref.url?.trim(),
-    );
+    // 🛡️ 필터링할 블로그 및 커뮤니티 도메인 확장 목록
+    const blogDomains = [
+      "blog.naver.com", "tistory.com", "brunch.co.kr", "egloos.com", 
+      "post.naver.com", "m.blog.naver.com", "naver.me", "daum.net/blog",
+      "tistory.io", "velog.io", "medium.com", "story.kakao.com"
+    ];
+
+    // 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그 제외)
+    const validRefs = (references || []).filter((ref) => {
+      if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
+      
+      const url = ref.url.toLowerCase();
+      // 1. 명시적인 블로그 도메인 체크
+      const isBlogDomain = blogDomains.some(domain => url.includes(domain));
+      // 2. URL 경로에 'blog'가 포함된 경우 체크 (예: naver.com/blog/...)
+      const hasBlogPath = url.includes("/blog/") || url.includes(".blog.");
+      
+      return !isBlogDomain && !hasBlogPath;
+    });
 
     if (validRefs.length === 0) return html;
+
+    // 본문 내에 이미 '참고 자료' 섹션이 있는지 확인 (중복 방지)
+    if (html.includes("참고 자료") || html.includes("뉴스 출처") || html.includes("References")) {
+      console.log("ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.");
+      return html;
+    }
 
     const refHtml = `
       <br><hr><br>

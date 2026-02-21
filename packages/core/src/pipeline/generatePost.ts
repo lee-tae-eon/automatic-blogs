@@ -179,11 +179,43 @@ ${naverResult}
       onProgress?.("AI 포스팅 초안 생성 중...");
       const aiPost = await generatePostSingleCall(client, inputParams);
 
+      // [v5.0] NotebookLM 기반 자가 검증(Self-Critic) 로직
+      // NotebookLM 사용을 선택했고, 모드가 '자동(auto)'일 경우에만 수행
+      let finalAiPost = aiPost;
+      if (task.useNotebookLM && task.notebookMode === "auto") {
+        onProgress?.("🧠 NotebookLM 전략 기반 품질 고도화 중...");
+        const criticPrompt = `
+          당신은 NotebookLM의 분석 기법을 완벽히 마스터한 콘텐츠 교정 전문가입니다. 
+          아래 작성된 블로그 초안을 **'편집 신뢰(Editorial Trust)'**와 **'인과관계의 끈(Golden Thread)'** 원칙에 따라 대폭 개선하세요.
+          
+          [초안 본문]:
+          ${aiPost.content}
+
+          [교정 지침]:
+          1. **편집 신뢰(Editorial Trust)**: 인용된 정보의 출처가 왜 신뢰할 수 있는지 맥락을 보강하고, 단순히 사실을 나열하는 것이 아니라 비판적으로 검증된 느낌을 주도록 다듬으세요.
+          2. **인과관계의 끈(Golden Thread)**: 상위 주제와 하위 실행 과제 간의 논리적 연결 고리를 강화하여 독자가 글의 흐름을 명확히 추적할 수 있게 하세요.
+          3. **문장 정제**: 기계적인 문투를 제거하고, 전문가의 깊이 있는 통찰이 느껴지는 세련된 한국어 문체로 교정하세요.
+          4. **구조 최적화**: 모바일 가독성을 유지하면서도 논리적 구조가 돋보이도록 문단을 재배치하세요.
+          
+          최종 수정된 본문(Markdown)만 응답하세요.
+        `;
+        
+        try {
+          const refinedContent = await client.generateText(criticPrompt);
+          if (refinedContent && refinedContent.length > 100) {
+            finalAiPost = { ...aiPost, content: refinedContent };
+            onProgress?.("✨ NotebookLM 자동 검증 완료: 품질이 대폭 개선되었습니다.");
+          }
+        } catch (e) {
+          console.warn("⚠️ NotebookLM 자가 검증 실패 (원본 유지):", e);
+        }
+      }
+
       // 출처 복구
-      if ((!aiPost.references || aiPost.references.length === 0) && newsContext) {
+      if ((!finalAiPost.references || finalAiPost.references.length === 0) && newsContext) {
         const recentNews = db.getRecentNews(task.topic);
         if (recentNews?.references?.length) {
-          aiPost.references = recentNews.references.map(ref => ({
+          finalAiPost.references = recentNews.references.map(ref => ({
             name: ref.name.replace(/ [-|] /g, " (") + (ref.name.includes(" - ") || ref.name.includes(" | ") ? ")" : ""),
             url: ref.url
           })).slice(0, 3);
@@ -191,7 +223,7 @@ ${naverResult}
       }
 
       const rawPublication: Publication = {
-        ...aiPost,
+        ...finalAiPost,
         category: task.category,
         persona: task.persona,
         tone: task.tone,

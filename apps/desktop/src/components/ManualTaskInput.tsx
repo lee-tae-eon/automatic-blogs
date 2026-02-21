@@ -18,6 +18,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
   const [persona, setPersona] = useState<Persona>("informative");
   const [tone, setTone] = useState<Tone>("professional");
   const [useImage, setUseImage] = useState(true); // v4.7: 이미지 사용 기본값 true
+  const [useNotebookLM, setUseNotebookLM] = useState(false); // v5.0: NotebookLM 사용 여부
+  const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // v5.0: 검수 모드
   
   const [trends, setTrends] = useState<TrendTopic[]>([]);
   const [trendQuery, setTrendQuery] = useState("");
@@ -76,6 +78,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
       persona,
       tone,
       useImage,
+      useNotebookLM, // 추가
+      notebookMode, // 추가
       status: "대기",
     };
 
@@ -348,15 +352,48 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({ onAddTask }) =
             </select>
           </div>
 
-          <div className="form-group" style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: "10px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.9rem", color: "#495057", fontWeight: "600" }}>
+          <div className="form-group" style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "15px", padding: "15px", backgroundColor: "#f8faff", borderRadius: "10px", border: "1px solid #e1e8ff" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.95rem", color: "#4338ca", fontWeight: "bold" }}>
+              <input
+                type="checkbox"
+                checked={useNotebookLM}
+                onChange={(e) => setUseNotebookLM(e.target.checked)}
+                style={{ width: "18px", height: "18px" }}
+              />
+              NotebookLM 전략적 고도화 사용
+            </label>
+
+            {useNotebookLM && (
+              <div style={{ display: "flex", gap: "20px", marginLeft: "26px", padding: "10px", backgroundColor: "#fff", borderRadius: "8px", border: "1px solid #d0d7ff" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", cursor: "pointer" }}>
+                  <input 
+                    type="radio" 
+                    name="nb-mode" 
+                    checked={notebookMode === "auto"} 
+                    onChange={() => setNotebookMode("auto")} 
+                  />
+                  AI 자동 검수 (NotebookLM 엔진)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", cursor: "pointer" }}>
+                  <input 
+                    type="radio" 
+                    name="nb-mode" 
+                    checked={notebookMode === "manual"} 
+                    onChange={() => setNotebookMode("manual")} 
+                  />
+                  사용자 직접 검수
+                </label>
+              </div>
+            )}
+            
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.85rem", color: "#495057", marginLeft: "5px" }}>
               <input
                 type="checkbox"
                 checked={useImage}
                 onChange={(e) => setUseImage(e.target.checked)}
-                style={{ width: "18px", height: "18px" }}
+                style={{ width: "16px", height: "16px" }}
               />
-              이미지 자동 삽입 (최대 2장)
+              이미지 자동 삽입
             </label>
           </div>
 
