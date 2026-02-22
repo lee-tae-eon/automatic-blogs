@@ -5,13 +5,16 @@ interface TaskTableProps {
   tasks: BatchTask[];
   onPersonaChange: (taskIndex: number, newPersona: Persona) => void;
   onToneChnage: (taskIndex: number, newTone: Tone) => void;
-  onUseImageChange: (taskIndex: number, useImage: boolean) => void; // 추가
+  onUseImageChange: (taskIndex: number, useImage: boolean) => void;
+  onApprove: (taskIndex: number) => void; // 추가
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
   { label: "분석가 (정보)", value: "informative" },
   { label: "리뷰어 (후기)", value: "experiential" },
   { label: "리포터 (뉴스)", value: "reporter" },
+  { label: "엔터형 (팬)", value: "entertainment" },
+  { label: "여행 가이드", value: "travel" },
 ];
 
 const toneOptions: { label: string; value: Tone }[] = [
@@ -102,8 +105,8 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         padding: "4px 8px",
                         borderRadius: "4px",
                         fontSize: "0.85rem",
-                        backgroundColor: task.status === "완료" ? "#d4edda" : task.status === "진행" ? "#cce5ff" : "#e2e3e5",
-                        color: task.status === "완료" ? "#155724" : task.status === "진행" ? "#004085" : "#383d41"
+                        backgroundColor: task.status === "완료" ? "#d4edda" : task.status === "진행" ? "#cce5ff" : task.status === "검수중" ? "#fff3cd" : "#e2e3e5",
+                        color: task.status === "완료" ? "#155724" : task.status === "진행" ? "#004085" : task.status === "검수중" ? "#856404" : "#383d41"
                       }}>
                         {task.status}
                       </span>
@@ -155,7 +158,27 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                             <span style={{ fontSize: "0.9rem" }}>{task.category || "미지정"}</span>
                           </div>
 
-                          <div className="form-group" style={{ marginLeft: "auto" }}>
+                          <div className="form-group" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "15px" }}>
+                            {task.status === "검수중" && (
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onApprove(idx);
+                                }}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#007aff",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: "bold",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                ✅ 검수 완료 및 발행
+                              </button>
+                            )}
                             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#495057" }}>
                               <input
                                 type="checkbox"

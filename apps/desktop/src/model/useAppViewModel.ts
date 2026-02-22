@@ -160,6 +160,18 @@ export const useAppViewModel = () => {
     await updateTaskState(taskIndex, { useImage });
   };
 
+  const handleApproveTask = async (index: number) => {
+    // 1. 검수 완료 상태로 변경
+    setTasks(prev => prev.map((t, i) => i === index ? { ...t, isReviewed: true, status: "진행" } : t));
+    addLog(`✅ 검수 완료 승인: ${tasks[index].topic}. 곧 발행을 시작합니다.`);
+    
+    // 2. 발행 프로세스 재실행 (이미 'isReviewed: true'이므로 검수 단계를 건너뛰고 발행함)
+    // handlePublishAll을 호출하면 '진행' 상태인 것부터 순차적으로 다시 처리함
+    setTimeout(() => {
+      handlePublishAll(true); // 자동 승인 모드로 재실행
+    }, 500);
+  };
+
   const processFile = async (file: File) => {
     if (typeof window.ipcRenderer?.getFilePath !== "function") {
       alert("Electron 초기화 오류: 앱을 재시작해주세요.");
@@ -363,9 +375,9 @@ export const useAppViewModel = () => {
     }
   };
 
-  const handlePublishAll = async () => {
+  const handlePublishAll = async (isResume = false) => {
     if (isManualProcessing || tasks.length === 0) return;
-    if (!confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
+    if (!isResume && !confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
 
     setIsManualProcessing(true);
     shouldStopManualRef.current = false;
@@ -392,7 +404,7 @@ export const useAppViewModel = () => {
         // 생성
         const genResult = await window.ipcRenderer.invoke("generate-post", {
           ...tasks[i],
-          modelType: credentials.modelType, // 글로벌 설정값 적용
+          modelType: credentials.modelType,
         });
 
         if (
@@ -404,6 +416,14 @@ export const useAppViewModel = () => {
           break;
         }
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
+
+        // [v5.0] NotebookLM 검수 로직: 사용자가 '직접 검수'를 선택했고 아직 검수 전이라면 여기서 멈춤
+        if (task.useNotebookLM && task.notebookMode === "manual" && !task.isReviewed) {
+          addLog(`[${i + 1}] NotebookLM 사용자 검수 대기 중: ${task.topic}`);
+          await updateTaskState(i, { status: "검수중" });
+          setIsManualProcessing(false);
+          return; 
+        }
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
         // 발행
@@ -495,6 +515,7 @@ export const useAppViewModel = () => {
       handleStopAutoPilot, // 추가
       handleStartWithKeyword,
       handleFetchRecommendations, // 추가
+      handleApproveTask, // 추가
     },
   };
 };

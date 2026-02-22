@@ -77,6 +77,8 @@ export interface BlogPostInput {
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
   useImage?: boolean; // v4.7: 이미지 사용 여부
+  useNotebookLM?: boolean; // v5.0: NotebookLM 고도화 사용 여부
+  notebookMode?: "manual" | "auto"; // v5.0: 직접 검수 vs 자동 검수
 }
 
 export interface AiGeneratedPost {
@@ -116,9 +118,12 @@ export interface BatchTask {
   tone: Tone;
   category: string;
   keywords?: string[];
-  status: "대기" | "진행" | "완료" | "실패";
+  status: "대기" | "진행" | "검수중" | "완료" | "실패";
   additionalInstructions?: string;
   mode?: "manual" | "auto";
   strategy?: AutoPilotStrategy;
   useImage?: boolean; // v4.7: 이미지 사용 여부
+  useNotebookLM?: boolean; // v5.0: NotebookLM 고도화 사용 여부
+  notebookMode?: "manual" | "auto"; // v5.0: 직접 검수 vs 자동 검수
+  isReviewed?: boolean; // v5.0: 검수 완료 여부
 }

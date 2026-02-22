@@ -73,17 +73,44 @@ export class NaverPublisher implements IBlogPublisher {
 
   /**
    * 본문 하단에 출처(References) 링크 섹션을 추가합니다.
+   * 개인 블로그(네이버, 티스토리 등)는 홍보 방지를 위해 엄격히 필터링합니다.
    */
   private appendReferences(
     html: string,
     references?: { name: string; url: string }[],
   ): string {
-    // 유효한 출처만 필터링 (이름과 URL이 모두 있어야 함)
-    const validRefs = (references || []).filter(
-      (ref) => ref && ref.name?.trim() && ref.url?.trim(),
-    );
+    // 🛡️ 필터링할 블로그, 커뮤니티 및 소셜 미디어 도메인 (정규표현식용)
+    const blockedPatterns = [
+      /blog\.naver\.com/i, /tistory\.com/i, /brunch\.co\.kr/i, /egloos\.com/i,
+      /post\.naver\.com/i, /m\.blog\.naver\.com/i, /naver\.me/i, /daum\.net\/blog/i,
+      /tistory\.io/i, /velog\.io/i, /medium\.com/i, /story\.kakao\.com/i,
+      /cafe\.naver\.com/i, /cafe\.daum\.net/i, /dcinside\.com/i, /ruliweb\.com/i,
+      /theqoo\.net/i, /instiz\.net/i, /fmkorea\.com/i, /clien\.net/i,
+      /youtube\.com/i, /youtu\.be/i, /facebook\.com/i, /instagram\.com/i, /twitter\.com/i, /x\.com/i
+    ];
+
+    // 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그/커뮤니티 제외)
+    const validRefs = (references || []).filter((ref) => {
+      if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
+      
+      const url = ref.url.toLowerCase();
+      
+      // 1. 차단 패턴 매칭 (도메인 및 경로 체크)
+      const isBlocked = blockedPatterns.some(pattern => pattern.test(url));
+      // 2. 일반적인 블로그/뉴스 키워드 경로 체크
+      const hasBlockedPath = url.includes("/blog/") || url.includes(".blog.") || url.includes("/post/");
+      
+      return !isBlocked && !hasBlockedPath;
+    });
 
     if (validRefs.length === 0) return html;
+
+    // 본문 내에 이미 '참고 자료' 섹션이 있는지 확인 (중복 방지)
+    const lowerHtml = html.toLowerCase();
+    if (lowerHtml.includes("참고 자료") || lowerHtml.includes("뉴스 출처") || lowerHtml.includes("references")) {
+      console.log("ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.");
+      return html;
+    }
 
     const refHtml = `
       <br><hr><br>

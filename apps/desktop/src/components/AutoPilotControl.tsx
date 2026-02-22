@@ -49,6 +49,8 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const [persona, setPersona] = useState<string>("informative");
   const [tone, setTone] = useState<string>("professional");
   const [useImage, setUseImage] = useState(true);
+  const [useNotebookLM, setUseNotebookLM] = useState(false); // 추가
+  const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // 추가
 
   const isAnalyzing = isSearching && candidates.length === 0;
   const isProcessing = isSearching || isPublishing;
@@ -111,7 +113,9 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
       category: categoryInput.trim(),
       persona,
       tone,
-      useImage
+      useImage,
+      useNotebookLM, // 추가
+      notebookMode // 추가
     });
     setSelectedCandidate(null);
   };
@@ -459,16 +463,40 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <input 
-                type="checkbox" 
-                id="modal-use-image"
-                checked={useImage} 
-                onChange={(e) => setUseImage(e.target.checked)}
-              />
-              <label htmlFor="modal-use-image" style={{ fontSize: "0.85rem", color: "#333", cursor: "pointer" }}>
-                AI 자동 이미지 삽입
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px", backgroundColor: "#f8faff", borderRadius: "10px", border: "1px solid #e1e8ff" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.9rem", color: "#4338ca", fontWeight: "bold" }}>
+                <input 
+                  type="checkbox" 
+                  checked={useNotebookLM} 
+                  onChange={(e) => setUseNotebookLM(e.target.checked)}
+                />
+                NotebookLM 전략적 고도화
               </label>
+
+              {useNotebookLM && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginLeft: "24px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", cursor: "pointer" }}>
+                    <input type="radio" checked={notebookMode === "auto"} onChange={() => setNotebookMode("auto")} />
+                    AI 자동 검수
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", cursor: "pointer" }}>
+                    <input type="radio" checked={notebookMode === "manual"} onChange={() => setNotebookMode("manual")} />
+                    사용자 직접 검수
+                  </label>
+                </div>
+              )}
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "5px" }}>
+                <input 
+                  type="checkbox" 
+                  id="modal-use-image"
+                  checked={useImage} 
+                  onChange={(e) => setUseImage(e.target.checked)}
+                />
+                <label htmlFor="modal-use-image" style={{ fontSize: "0.85rem", color: "#333", cursor: "pointer" }}>
+                  이미지 자동 삽입
+                </label>
+              </div>
             </div>
 
             <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
