@@ -171,3 +171,6 @@ playwright/.cache/
 #cli-test
 apps/cli/data/data/blog_automation.db
 data/blog_automation.db
+
+#vscode
+.vscode/
