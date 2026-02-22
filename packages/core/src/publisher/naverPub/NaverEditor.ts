@@ -46,6 +46,23 @@ const getQuoteStyle = (persona: string) => {
   `;
 };
 
+// ✅ [v5.1] 포스트잇/체크포인트 스타일 정의 (사용자 요청 스타일)
+const getCheckpointStyle = () => {
+  return `
+    display: block;
+    border: 10px solid #f2f2f2;
+    padding: 40px 30px;
+    margin: 40px auto;
+    color: #333;
+    line-height: 1.8;
+    background-color: white;
+    text-align: center;
+    font-size: 16px;
+    word-break: keep-all;
+    border-radius: 4px;
+  `;
+};
+
 export class NaverEditor {
   private pexelsService = new PexelsService();
   private chartService = new ChartService();
@@ -178,6 +195,15 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
+          // ✅ [v5.1] 체크포인트 블록 처리 추가
+          case "checkpoint":
+            if (!block.html) break;
+            const checkpointHtml = `<div style="${getCheckpointStyle()}">${block.html}</div>`;
+            await this.pasteHtml(checkpointHtml);
+            await this.page.keyboard.press("Enter");
+            await this.page.keyboard.press("Enter");
+            break;
+
           case "table":
             if (!block.html) break;
             await this.pasteHtml(block.html);
@@ -226,33 +252,30 @@ export class NaverEditor {
             }
             break;
 
+          // 📊 [v4.9] 차트 전용 블록 처리
+          case "chart":
+            if (!block.data) break;
+            try {
+              const chartData = JSON.parse(block.data);
+              const chartPath = await this.chartService.generateChartImage(
+                chartData,
+                this.tempDir,
+              );
+              if (chartPath) {
+                await this.page.keyboard.press("Enter");
+                await this.uploadImage(this.page, chartPath);
+                await this.page.waitForTimeout(500);
+                await this.page.keyboard.press("ArrowDown");
+                await this.page.keyboard.press("Enter");
+              }
+            } catch (e) {
+              console.error("❌ 차트 파싱/생성 에러:", e);
+            }
+            break;
+
           case "paragraph":
           default:
             if (!block.html) break;
-
-            // 📊 [v4.9] 차트 태그 감지 및 처리
-            const chartRegex = /\[차트:\s*({.*?})\]/i;
-            const chartMatch = block.text?.match(chartRegex);
-
-            if (chartMatch) {
-              try {
-                const chartData = JSON.parse(chartMatch[1]);
-                const chartPath = await this.chartService.generateChartImage(
-                  chartData,
-                  this.tempDir,
-                );
-                if (chartPath) {
-                  await this.page.keyboard.press("Enter");
-                  await this.uploadImage(this.page, chartPath);
-                  await this.page.waitForTimeout(500);
-                  await this.page.keyboard.press("ArrowDown");
-                  await this.page.keyboard.press("Enter");
-                  break; // 차트 업로드 후 단락 처리 종료
-                }
-              } catch (e) {
-                console.error("❌ 차트 파싱/생성 에러:", e);
-              }
-            }
 
             // 문단은 p 태그로 감싸고 스타일 지정
             // margin-bottom 등을 인라인으로 줘서 청킹 효과 유지
@@ -277,18 +300,34 @@ export class NaverEditor {
     // .post-content가 있으면 그 내부를, 없으면 body 전체를 대상으로 함
     const $target = $(".post-content").length > 0 ? $(".post-content") : $("body");
 
-    // target의 직계 자식뿐만 아니라, target이 body일 경우 최상위 노드들을 모두 순회
-    const elements = $target.children().length > 0 ? $target.children() : $target;
-
+    // 📊 [v5.1] 차트 태그 전역 검색 및 추출 (더 안정적인 방식)
+    const fullHtml = $target.html() || "";
+    const chartGlobalRegex = /\[차트:\s*(\{[\s\S]*?\})\]/gi;
+    
     $target.contents().each((_, element) => {
       const $el = $(element);
       const nodeType = element.type;
-      
-      // Element 타입인 경우에만 tagName에 접근
       const tagName = 'tagName' in element ? (element as any).tagName.toLowerCase() : undefined;
       const textContent = $el.text().trim();
+      const rawHtml = $el.html() || "";
 
-      // 텍스트 노드 처리 (태그 없이 생으로 들어온 경우)
+      // 1. 이미지 태그 처리
+      const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
+      const imageMatch = textContent.match(imageRegex);
+      if (imageMatch) {
+        blocks.push({ type: "image", keyword: imageMatch[1].trim() });
+        return;
+      }
+
+      // 2. 차트 태그 처리 (중복 방지를 위해 매칭된 차트 텍스트는 이후 문단에서 제거됨)
+      const chartRegex = /\[차트:\s*(\{[\s\S]*?\})\]/i;
+      const chartMatch = textContent.match(chartRegex);
+      if (chartMatch) {
+        blocks.push({ type: "chart", data: chartMatch[1].trim() });
+        return;
+      }
+
+      // 텍스트 노드 처리
       if (nodeType === 'text') {
         if (textContent) {
           blocks.push({ type: "paragraph", text: textContent, html: textContent });
@@ -296,22 +335,12 @@ export class NaverEditor {
         return;
       }
 
-      const rawHtml = $el.html() || "";
-      const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
-      const imageMatch = textContent.match(imageRegex);
-
-      if (imageMatch) {
-        blocks.push({ type: "image", keyword: imageMatch[1].trim() });
-        return;
-      }
-
       if (tagName === "hr") {
         blocks.push({ type: "separator", text: "" });
+      } else if (tagName === "div" && $el.hasClass("checkpoint")) {
+        blocks.push({ type: "checkpoint", html: rawHtml });
       } else if (tagName === "blockquote") {
-        blocks.push({
-          type: "blockquote-paragraph",
-          html: rawHtml,
-        });
+        blocks.push({ type: "blockquote-paragraph", html: rawHtml });
       } else if (tagName?.match(/^h[1-6]$/)) {
         blocks.push({ type: "heading", text: textContent, html: rawHtml });
       } else if (tagName === "ul" || tagName === "ol") {
@@ -319,7 +348,11 @@ export class NaverEditor {
       } else if (tagName === "table") {
         blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
       } else {
-        blocks.push({ type: "paragraph", text: textContent, html: rawHtml });
+        // 일반 문단 내부에 차트 태그가 잔여물로 남는 경우 방지
+        const cleanedHtml = rawHtml.replace(/\[차트:\s*\{[\s\S]*?\}\]/gi, "").trim();
+        if (cleanedHtml || $el.find('img, iframe, video').length > 0) {
+          blocks.push({ type: "paragraph", text: textContent.replace(/\[차트:\s*\{[\s\S]*?\}\]/gi, "").trim(), html: cleanedHtml });
+        }
       }
     });
     return blocks;

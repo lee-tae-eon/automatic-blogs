@@ -79,30 +79,35 @@ export class NaverPublisher implements IBlogPublisher {
     html: string,
     references?: { name: string; url: string }[],
   ): string {
-    // 🛡️ 필터링할 블로그 및 커뮤니티 도메인 확장 목록
-    const blogDomains = [
-      "blog.naver.com", "tistory.com", "brunch.co.kr", "egloos.com", 
-      "post.naver.com", "m.blog.naver.com", "naver.me", "daum.net/blog",
-      "tistory.io", "velog.io", "medium.com", "story.kakao.com"
+    // 🛡️ 필터링할 블로그, 커뮤니티 및 소셜 미디어 도메인 (정규표현식용)
+    const blockedPatterns = [
+      /blog\.naver\.com/i, /tistory\.com/i, /brunch\.co\.kr/i, /egloos\.com/i,
+      /post\.naver\.com/i, /m\.blog\.naver\.com/i, /naver\.me/i, /daum\.net\/blog/i,
+      /tistory\.io/i, /velog\.io/i, /medium\.com/i, /story\.kakao\.com/i,
+      /cafe\.naver\.com/i, /cafe\.daum\.net/i, /dcinside\.com/i, /ruliweb\.com/i,
+      /theqoo\.net/i, /instiz\.net/i, /fmkorea\.com/i, /clien\.net/i,
+      /youtube\.com/i, /youtu\.be/i, /facebook\.com/i, /instagram\.com/i, /twitter\.com/i, /x\.com/i
     ];
 
-    // 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그 제외)
+    // 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그/커뮤니티 제외)
     const validRefs = (references || []).filter((ref) => {
       if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
       
       const url = ref.url.toLowerCase();
-      // 1. 명시적인 블로그 도메인 체크
-      const isBlogDomain = blogDomains.some(domain => url.includes(domain));
-      // 2. URL 경로에 'blog'가 포함된 경우 체크 (예: naver.com/blog/...)
-      const hasBlogPath = url.includes("/blog/") || url.includes(".blog.");
       
-      return !isBlogDomain && !hasBlogPath;
+      // 1. 차단 패턴 매칭 (도메인 및 경로 체크)
+      const isBlocked = blockedPatterns.some(pattern => pattern.test(url));
+      // 2. 일반적인 블로그/뉴스 키워드 경로 체크
+      const hasBlockedPath = url.includes("/blog/") || url.includes(".blog.") || url.includes("/post/");
+      
+      return !isBlocked && !hasBlockedPath;
     });
 
     if (validRefs.length === 0) return html;
 
     // 본문 내에 이미 '참고 자료' 섹션이 있는지 확인 (중복 방지)
-    if (html.includes("참고 자료") || html.includes("뉴스 출처") || html.includes("References")) {
+    const lowerHtml = html.toLowerCase();
+    if (lowerHtml.includes("참고 자료") || lowerHtml.includes("뉴스 출처") || lowerHtml.includes("references")) {
       console.log("ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.");
       return html;
     }
