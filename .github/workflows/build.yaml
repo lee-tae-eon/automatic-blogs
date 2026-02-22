@@ -13,7 +13,6 @@ on:
         options:
           - all
           - mac
-          - windows
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true # 새로운 푸시가 오면 이전 빌드 자동 취소
@@ -23,91 +22,7 @@ permissions:
 
 jobs:
   # ----------------------------------------------------------------------------
-  # [작업 1] 윈도우용 빌드
-  # ----------------------------------------------------------------------------
-  build-windows:
-    if: ${{ github.event_name == 'push' || github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'windows' }}
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".node-version"
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
-      - name: Generate .env file
-        run: echo "$ENV_FILE" > .env
-        env:
-          ENV_FILE: ${{ secrets.AUTO_BLOG_ENV_FILE }}
-
-      - name: Enable Long Paths
-        run: git config --system core.longpaths true
-
-      - name: Force Hoisted Node Linker for Windows (MAX_PATH fix)
-        run: |
-          echo "node-linker=hoisted" > .npmrc
-          echo "symlink=true" >> .npmrc
-
-      - name: Install Dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Core Package
-        run: pnpm --filter @blog-automation/core build
-
-      # ✅ [추가] Playwright 브라우저 설치 및 복사 (Windows)
-      - name: Install & Copy Playwright Browsers
-        shell: bash
-        run: |
-          # 1. 브라우저 설치 (프로젝트 루트 기준)
-          pnpm exec playwright install chromium
-
-          # 2. 브라우저 경로 찾기 및 복사 대상 폴더 생성
-          # Windows의 경우 기본 경로는 %USERPROFILE%\AppData\Local\ms-playwright
-          PLAYWRIGHT_DIR="$USERPROFILE/AppData/Local/ms-playwright"
-          DEST_DIR="apps/desktop/ms-playwright"
-          mkdir -p "$DEST_DIR"
-
-          # 3. Chromium만 복사 (용량 최적화)
-          echo "Copying Chromium from $PLAYWRIGHT_DIR to $DEST_DIR..."
-          cp -r "$PLAYWRIGHT_DIR/chromium-"* "$DEST_DIR/"
-
-          # 복사 확인
-          ls -R "$DEST_DIR"
-
-      - name: Build Main Process (TSC)
-        run: pnpm --filter @blog-automation/desktop electron:build
-
-      - name: Build Renderer (Vite)
-        run: pnpm --filter @blog-automation/desktop vite build
-
-      - name: Package Windows App (Electron Builder)
-        run: pnpm --filter @blog-automation/desktop run build:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Debug - List Files
-        run: ls -R apps/desktop
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: BlogAutomation-Windows
-          path: apps/desktop/release/*.exe
-          retention-days: 1
-
-  # ----------------------------------------------------------------------------
-  # [작업 2] 맥용 빌드
+  # [작업 1] 맥용 빌드
   # ----------------------------------------------------------------------------
   build-mac:
     if: ${{ github.event_name == 'push' || github.event.inputs.build_target == 'all' || github.event.inputs.build_target == 'mac' }}
