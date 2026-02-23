@@ -37,6 +37,16 @@ export interface IStorage {
   getCachedPost(topic: string, persona: string, tone: string): any | null;
 
   /**
+   * ✅ [v5.2] 발행된 포스트 정보 저장
+   */
+  savePublishedPost(title: string, url: string, keywords: string[], category: string): void;
+
+  /**
+   * ✅ [v5.2] 연관된 포스트 추천 조회
+   */
+  getRelatedPosts(keywords: string[], limit?: number): { title: string; url: string }[];
+
+  /**
    * 연결 종료
    */
   close(): void;

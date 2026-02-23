@@ -79,6 +79,7 @@ export interface BlogPostInput {
   useImage?: boolean; // v4.7: 이미지 사용 여부
   useNotebookLM?: boolean; // v5.0: NotebookLM 고도화 사용 여부
   notebookMode?: "manual" | "auto"; // v5.0: 직접 검수 vs 자동 검수
+  internalLinkSuggestions?: { title: string; url: string }[]; // ✅ [v5.2] 내부 링크 추천 데이터
 }
 
 export interface AiGeneratedPost {

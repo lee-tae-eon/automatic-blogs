@@ -92,11 +92,16 @@ export class NaverEditor {
     return content.replace(garbageRegex, "").trim();
   }
 
-  // ✅ [v5.1.2] 강조 문법 변환 (핵심 데이터용 파스텔 파랑)
-  // 감성적 문구가 아닌 수치, 날짜, 핵심 명사에만 적용되도록 유도됨
+  // ✅ [v5.1.4] 최종 스타일 변환 (마크다운 볼드, 빨강, 파랑 강조)
+  // 기호가 본문에 그대로 노출되는 문제를 방지하기 위한 최종 렌더링 로직
   private applyColoringGrammar(html: string): string {
     return html
-      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>'); // 파스텔 파랑 (데이터/팩트)
+      // 1. 마크다운 볼드 변환 (**텍스트**)
+      .replace(/\*\*([\s\S]+?)\*\*/g, '<strong style="font-weight: bold;">$1</strong>')
+      // 2. 파스텔 빨강 (!!주의!!) - 복구
+      .replace(/!!([^!+]+)!!/g, '<span style="color: #ef9a9a; font-weight: bold; display: inline;">$1</span>')
+      // 3. 파스텔 파랑 (++핵심++)
+      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>');
   }
 
   // ✅ HTML 붙여넣기 함수 (스타일 보존을 위해 div로 감싸기 옵션 추가)
@@ -344,45 +349,47 @@ export class NaverEditor {
         blocks.push({ type: "list", text: textContent, html: $.html($el) });
       } else if (tagName === "table") {
         blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
-      } else {
-        // 📊 [v5.1] 차트 포함 문단 처리 (태그 내 찌꺼기 텍스트가 있어도 인식 가능하도록 개선)
-        // [차트: {JSON} - 설명] 형태에서 {JSON}만 골라냄
-        const chartRegex = /\[차트:\s*(\{[\s\S]*?\})[\s\S]*?\]/gi;
-        let lastIndex = 0;
-        let match;
-        const text = textContent;
-
-        // 문단 내의 모든 차트 태그를 찾아서 분리
-        let foundChart = false;
-        while ((match = chartRegex.exec(text)) !== null) {
-          foundChart = true;
-          // 차트 이전의 텍스트가 있다면 추가
-          const beforeText = text.substring(lastIndex, match.index).trim();
-          if (beforeText) {
-            blocks.push({ type: "paragraph", text: beforeText, html: beforeText });
-          }
-          // 차트 블록 추가
-          blocks.push({ type: "chart", data: match[1].trim() });
-          lastIndex = chartRegex.lastIndex;
-        }
-
-        if (foundChart) {
-          // 남은 텍스트가 있다면 추가
-          const afterText = text.substring(lastIndex).trim();
-          if (afterText) {
-            blocks.push({ type: "paragraph", text: afterText, html: afterText });
-          }
-        } else {
-          // 차트가 없는 일반 문단
-          blocks.push({ type: "paragraph", text: textContent, html: rawHtml });
-        }
-      }
-    });
-    return blocks;
-  }
-
-  private async uploadImage(page: Page, imagePath: string | null) {
-    if (!imagePath || !fs.existsSync(imagePath)) return;
+            } else {
+              // 📊 [v5.1] 차트 포함 문단 처리 (태그 내 찌꺼기 텍스트가 있어도 인식 가능하도록 개선)
+              const chartTagRegex = /\[차트:\s*(\{[\s\S]*?\})[\s\S]*?\]/gi;
+              // ✅ [추가] 태그 없이 생 JSON만 들어온 경우 감지 (예: { "type": "bar", ... })
+              const nakedChartRegex = /^\{\s*"type":\s*"(bar|horizontalBar|pie|doughnut|line)"[\s\S]*?"data":\s*\[[\s\S]*?\}\s*$/i;
+      
+              let lastIndex = 0;
+              let match;
+              const text = textContent;
+      
+              // 1. 표준 [차트: ] 태그 검색 및 분리
+              let foundChart = false;
+              while ((match = chartTagRegex.exec(text)) !== null) {
+                foundChart = true;
+                const beforeText = text.substring(lastIndex, match.index).trim();
+                if (beforeText) {
+                  blocks.push({ type: "paragraph", text: beforeText, html: beforeText });
+                }
+                blocks.push({ type: "chart", data: match[1].trim() });
+                lastIndex = chartTagRegex.lastIndex;
+              }
+      
+              if (foundChart) {
+                const afterText = text.substring(lastIndex).trim();
+                if (afterText) {
+                  blocks.push({ type: "paragraph", text: afterText, html: afterText });
+                }
+              } else if (nakedChartRegex.test(text)) {
+                // 2. ✅ 태그는 없지만 내용이 차트 JSON인 경우 처리
+                blocks.push({ type: "chart", data: text.trim() });
+              } else {
+                // 3. 차트가 없는 일반 문단 처리
+                if (textContent || $el.find('img, iframe, video').length > 0) {
+                  blocks.push({ type: "paragraph", text: textContent, html: rawHtml || textContent });
+                }
+              }
+            }              });
+              return blocks;
+            }
+          
+            private async uploadImage(page: Page, imagePath: string | null) {    if (!imagePath || !fs.existsSync(imagePath)) return;
     try {
       await page.keyboard.press("Escape");
       await this.clearPopups();

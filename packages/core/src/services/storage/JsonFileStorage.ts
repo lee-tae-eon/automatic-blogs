@@ -82,6 +82,14 @@ export class JsonFileStorage implements IStorage {
     return this.data.posts[key]?.content || null;
   }
 
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = ""): void {
+    // JSON 저장소는 구현 생략
+  }
+
+  getRelatedPosts(keywords: string[], limit: number = 2): { title: string; url: string }[] {
+    return [];
+  }
+
   close(): void {
     // 파일 기반이므로 별도 종료 없음
   }

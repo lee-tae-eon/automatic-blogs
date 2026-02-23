@@ -41,6 +41,45 @@ export class SqliteStorage implements IStorage {
     `;
     this.db.exec(createPostTable);
     this.db.exec("CREATE INDEX IF NOT EXISTS idx_post_cache_keys ON post_cache (topic, persona, tone)");
+
+    // ✅ [v5.2] 발행된 포스팅 추적 테이블 추가
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS published_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        url TEXT UNIQUE NOT NULL,
+        keywords TEXT,
+        category TEXT,
+        published_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  }
+
+  // ✅ [v5.2] 발행 성공 정보 저장
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = ""): void {
+    const stmt = this.db.prepare(`
+      INSERT OR IGNORE INTO published_posts (title, url, keywords, category)
+      VALUES (?, ?, ?, ?)
+    `);
+    stmt.run(title, url, keywords.join(","), category);
+  }
+
+  // ✅ [v5.2] 연관 포스팅 검색 (키워드 기반)
+  getRelatedPosts(queryKeywords: string[], limit: number = 2): { title: string; url: string }[] {
+    if (!queryKeywords || queryKeywords.length === 0) return [];
+    
+    // 키워드가 하나라도 포함된 포스팅 검색
+    const conditions = queryKeywords.map(() => "keywords LIKE ?").join(" OR ");
+    const params = queryKeywords.map(k => `%${k}%`);
+    
+    const stmt = this.db.prepare(`
+      SELECT title, url FROM published_posts
+      WHERE ${conditions}
+      ORDER BY published_at DESC
+      LIMIT ?
+    `);
+    
+    return stmt.all(...params, limit) as { title: string; url: string }[];
   }
 
   saveNews(topic: string, content: string, references: { name: string; url: string }[]): void {

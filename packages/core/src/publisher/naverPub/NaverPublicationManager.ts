@@ -229,21 +229,24 @@ export class NaverPublicationManager {
 
       // 6. 결과 확인 (URL 변화로 확실히 검증)
       await this.page.waitForTimeout(3000);
-      const currentUrl = this.page.url();
+      let currentUrl = this.page.url();
 
       if (
         !currentUrl.includes("postwrite") &&
         !currentUrl.includes("nid.naver.com")
       ) {
         console.log("✅ 발행 성공! (페이지 이동 완료)");
+        return currentUrl; // ✅ [v5.2] URL 반환
       } else {
         // 아직 글쓰기 페이지라면 한 번 더 클릭 시도 (팝업 등이 원인일 수 있음)
         console.warn("   ⚠️ 아직 글쓰기 페이지에 체류 중. 재시도합니다...");
         await this.page.keyboard.press("Enter"); // 엔터로 발행 시도
         await this.page.waitForTimeout(5000);
+        currentUrl = this.page.url();
 
-        if (!this.page.url().includes("postwrite")) {
+        if (!currentUrl.includes("postwrite")) {
           console.log("✅ 발행 성공! (2차 시도 완료)");
+          return currentUrl; // ✅ [v5.2] URL 반환
         } else {
           throw new Error(
             "최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)",

@@ -130,6 +130,14 @@ export async function generatePost({
       const dbPath = projectRoot || process.cwd();
       const db = new DbService(dbPath);
 
+      // ✅ [v5.2] 내부 링크(Internal Linking) 추천 데이터 확보
+      // 현재 분석된 세만틱 키워드를 기반으로 과거 포스팅 조회
+      const internalLinks = db.getRelatedPosts(semanticKeywords, 2);
+      if (internalLinks && internalLinks.length > 0) {
+        inputParams.internalLinkSuggestions = internalLinks;
+        console.log(`🔗 [InternalLink] ${internalLinks.length}개의 연관 포스팅을 발견했습니다.`);
+      }
+
       // 캐시 확인
       const cachedPost = db.getCachedPost(task.topic, task.persona, task.tone);
       if (cachedPost) {
@@ -233,15 +241,36 @@ ${naverResult}
       onProgress?.("🛡️ 안전 가이드라인 검수 중...");
       const sanitizedPublication = sanitizeContent(rawPublication, task.topic);
 
-      // [v4.1] 출처(References)를 본문 하단에 클릭 가능한 링크 형식으로 추가
-      // (단, AI가 이미 본문에 '참고' 관련 섹션을 포함했다면 중복 추가 방지)
+      // ✅ [v5.2.1] 출처(References) 정밀 필터링 및 본문 추가
+      // 블로그, 카페, 커뮤니티 성격의 링크는 여기서 원천 차단합니다.
       if (sanitizedPublication.references && sanitizedPublication.references.length > 0) {
+        const blockedPatterns = [
+          /blog/i, /cafe/i, /tistory/i, /brunch/i, /egloos/i, /post\.naver/i, /naver\.me/i,
+          /daum\.net\/blog/i, /velog/i, /medium/i, /kakao/i, /dcinside/i, /ruliweb/i, /theqoo/i,
+          /instiz/i, /fmkorea/i, /clien/i, /youtube/i, /youtu\.be/i, /facebook/i, /instagram/i,
+          /twitter/i, /x\.com/i, /pstatic/i, /kakaocdn/i
+        ];
+
+        const filteredRefs = sanitizedPublication.references.filter(ref => {
+          const name = ref.name.toLowerCase();
+          const url = ref.url.toLowerCase();
+          
+          // 1. URL 패턴 체크
+          const isBlockedUrl = blockedPatterns.some(p => p.test(url)) || url.includes("/blog/") || url.includes(".blog.");
+          // 2. 이름 체크 (블로그, 카페 등의 단어가 들어간 매체 제외)
+          const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(name);
+          
+          return !isBlockedUrl && !isBlockedName;
+        });
+
         const hasRefSection = /참고\s*(자료|문헌|사이트)|References|출처/i.test(sanitizedPublication.content);
-        if (!hasRefSection) {
+        if (!hasRefSection && filteredRefs.length > 0) {
           const refSection = "\n\n## 참고 자료\n" + 
-            sanitizedPublication.references.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
+            filteredRefs.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
           sanitizedPublication.content += refSection;
         }
+        // 원본 reference 배열도 필터링된 버전으로 교체
+        sanitizedPublication.references = filteredRefs;
       }
 
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);

@@ -18,9 +18,13 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
   const examples = getPersonaExamples(input.persona);
   const toneInstruction = getToneInstruction(input.tone);
 
-  // 1. 뉴스 및 실시간 정보 (Language Lock 및 출처 필터링 적용)
+  // 1. 뉴스 및 내부 링크 지침 (v5.2 적용)
   let newsInstruction = "";
-  if (input.latestNews) {
+  if (input.latestNews || (input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0)) {
+    const internalLinkText = (input.internalLinkSuggestions || [])
+      .map(link => `- [${link.title}](${link.url})`)
+      .join("\n");
+
     newsInstruction = `
 # 📰 실시간 최신 정보 및 출처 원칙 (2026년 2월 기준)
 당신의 내장 지식보다 아래 정보를 최우선순위로 반영하되, 다음 원칙을 **절대 준수**하세요.
@@ -30,7 +34,13 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
 2. **본문 내 출처 기재 금지**: 본문(\`content\`) 내에 \`(매체명)\`, \`[뉴스]\`, \`[1]\`, \`출처: ...\` 등 어떠한 형태의 출처 마커도 붙이지 마세요. 출처는 오직 JSON의 \`references\` 필드에만 포함해야 합니다.
 3. **언어 원칙**: 제공된 정보가 영어라도 **반드시 100% 한국어**로만 작성하세요.
 
-${input.latestNews}
+${input.latestNews || ""}
+
+${internalLinkText ? `
+# 🔗 함께 읽으면 좋은 관련 글 (내부 링크)
+글의 맨 마지막 섹션(결론 뒤)에 아래 링크들을 '함께 읽으면 좋은 글'이라는 소제목과 함께 자연스럽게 포함하세요.
+${internalLinkText}
+` : ""}
 `;
   }
 
@@ -159,12 +169,12 @@ ${input.useImage !== false ? `
 
 ## ✨ 시각적 요소 및 컬러링 강조 규칙
 ${input.useImage === false ? "- **이미지 생성 금지**: 본문에 어떠한 이미지 관련 태그(`![...]`, `[이미지:...]`)도 **포함하지 마세요.**" : ""}
-- **데이터 강조 문법**: 핵심 데이터(++파스텔 파랑++)를 사용하여 정보의 가독성을 높이세요.
+- **데이터 및 키워드 강조**: 핵심 수치나 중요한 고유명사(++파스텔 파랑++)를 사용하여 가독성을 높이세요.
 - **[ULTRA CRITICAL] 강조 대상 및 규칙**:
-  1. **팩트 위주 강조**: '심각한 상황', '놀라운 결과' 같은 **감성적/형용사적 표현에는 절대 사용하지 마세요.** 
-  2. **대상 지정**: 오직 **정확한 수치(예: 15.4%), 날짜(예: 2월 21일), 핵심 통계** 등에만 적용하세요.
-  3. **사용 빈도**: 포스팅 전체에서 **딱 2회 이내**로 극도로 아껴서 사용하세요.
-  4. **형식**: `++데이터++` 형식을 사용하며, 한 번에 **5자 이내**로 짧게 끊으세요.
+  1. **대상**: **정확한 수치**(예: 15.4%), **날짜**, 그리고 글의 핵심이 되는 **고유명사**(예: 지역명, 비자 종류, 주요 인물)에만 적용하세요.
+  2. **금지**: '놀라운', '심각한' 같은 일반적인 감성 표현이나 형용사에는 절대 사용하지 마세요.
+  3. **사용 빈도**: 포스팅 전체에서 **딱 3회 이내**로 제한하세요.
+  4. **형식**: \`++키워드++\` 형식을 사용하며, 한 번에 **최대 10자 이내**로 짧게 유지하세요.
 `.trim();
 
   // 4. 작성 미션 및 체크리스트

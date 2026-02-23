@@ -7,6 +7,7 @@ import { NaverEditor } from "./NaverEditor";
 import { NaverPublicationManager } from "./NaverPublicationManager";
 import { IBlogPublisher, PublishOptions } from "../interface";
 import { Persona, Publication, Tone } from "../../types/blog";
+import { DbService } from "../../services/dbService";
 
 /**
  * 네이버 블로그 발행을 위한 입력 데이터 인터페이스 (Legacy Support)
@@ -33,11 +34,13 @@ export class NaverPublisher implements IBlogPublisher {
   private userDataDir: string;
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
+  private db: DbService;
 
   constructor(customProjectRoot?: string, userId: string = "default") {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
     // 유저별로 별도의 인증 디렉토리 설정
     this.userDataDir = path.join(this.projectRoot, `.auth/naver_${userId}`);
+    this.db = new DbService(this.projectRoot);
 
     this.ensureAuthDirectory();
   }
@@ -81,13 +84,10 @@ export class NaverPublisher implements IBlogPublisher {
   ): string {
     // 🛡️ 필터링할 블로그, 커뮤니티 및 소셜 미디어 도메인 (정규표현식용)
     const blockedPatterns = [
-      /blog\.naver\.com/i, /tistory\.com/i, /brunch\.co\.kr/i, /egloos\.com/i,
-      /post\.naver\.com/i, /m\.blog\.naver\.com/i, /naver\.me/i, /daum\.net\/blog/i,
-      /tistory\.io/i, /velog\.io/i, /medium\.com/i, /story\.kakao\.com/i,
-      /cafe\.naver\.com/i, /cafe\.daum\.net/i, /dcinside\.com/i, /ruliweb\.com/i,
-      /theqoo\.net/i, /instiz\.net/i, /fmkorea\.com/i, /clien\.net/i,
-      /youtube\.com/i, /youtu\.be/i, /facebook\.com/i, /instagram\.com/i, /twitter\.com/i, /x\.com/i,
-      /kakaocdn\.net/i, /pstatic\.net/i // 정적 자산 서버 중 블로그 성격 차단
+      /blog/i, /cafe/i, /tistory/i, /brunch/i, /egloos/i, /post\.naver/i, /naver\.me/i,
+      /daum\.net\/blog/i, /velog/i, /medium/i, /kakao/i, /dcinside/i, /ruliweb/i, /theqoo/i,
+      /instiz/i, /fmkorea/i, /clien/i, /youtube/i, /youtu\.be/i, /facebook/i, /instagram/i,
+      /twitter/i, /x\.com/i, /pstatic/i, /kakaocdn/i, /blogme\.me/i
     ];
 
     // 1. [v5.1] 본문 내부의 출처 마커 제거 (예: [1], [뉴스], (매체명) 등)
@@ -98,13 +98,15 @@ export class NaverPublisher implements IBlogPublisher {
     const validRefs = (references || []).filter((ref) => {
       if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
       
+      const name = ref.name.toLowerCase();
       const url = ref.url.toLowerCase();
       
-      // 차단 패턴 매칭 (도메인 및 경로 체크)
-      const isBlocked = blockedPatterns.some(pattern => pattern.test(url));
-      const hasBlockedPath = url.includes("/blog/") || url.includes(".blog.") || url.includes("/post/");
+      // 차단 패턴 매칭 (도메인, 경로 및 매체명 체크)
+      const isBlockedUrl = blockedPatterns.some(pattern => pattern.test(url)) || 
+                           url.includes("/blog/") || url.includes(".blog.") || url.includes("naver.com/blog");
+      const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(name);
       
-      return !isBlocked && !hasBlockedPath;
+      return !isBlockedUrl && !isBlockedName;
     });
 
     if (validRefs.length === 0) return cleanHtml;
@@ -357,7 +359,12 @@ export class NaverPublisher implements IBlogPublisher {
       // 5. 최종 발행
       onProgress?.("태그 설정 및 최종 발행 중...");
       const publicationManager = new NaverPublicationManager(page);
-      await publicationManager.publish(tags, category);
+      const publishedUrl = await publicationManager.publish(tags, category);
+
+      // ✅ [v5.2] 발행 성공 정보 DB 저장
+      if (publishedUrl) {
+        this.db.savePublishedPost(title, publishedUrl, tags, category || "");
+      }
 
       onProgress?.("블로그 발행 완료");
       console.log("✅ 작성 및 발행 완료!");

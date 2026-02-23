@@ -20,14 +20,25 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   const targetAudience = inferTargetAudience(input.topic, persona);
   const contentGoal = inferContentGoal(persona);
 
-  // 1. 실시간 정보 지침
+  // 1. 실시간 정보 및 내부 링크 지침
   let newsInstruction = "";
-  if (input.latestNews) {
+  const internalLinkText = (input.internalLinkSuggestions || [])
+    .map(link => `- [${link.title}](${link.url})`)
+    .join("\n");
+
+  if (input.latestNews || internalLinkText) {
     newsInstruction = `
-# 📰 실시간 정보 (Source Material)
+# 📰 실시간 정보 및 내부 링크 (Context)
 아래 정보를 바탕으로 글을 작성하되, **반드시 한국어로 자연스럽게 가공**하세요.
 - **절대 금지**: 본문 내에 \`(출처)\`, \`[1]\` 등 마커를 붙이지 마세요. 자연스럽게 녹여내세요.
-${input.latestNews}
+
+${input.latestNews || ""}
+
+${internalLinkText ? `
+## 🔗 추천 관련 글
+글의 마지막 부분에 아래 링크들을 '함께 읽어보세요' 섹션으로 자연스럽게 삽입하세요.
+${internalLinkText}
+` : ""}
 `;
   }
 
@@ -84,6 +95,7 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 ## 📊 데이터 시각화 및 구조화 (List, Table & Chart)
 - **리스트 최우선**: 정보형 콘텐츠에서는 서술형 문단보다 **마크다운 리스트(\`-\`)**를 최우선으로 사용하세요. 3개 이상의 항목 나열 시 반드시 리스트를 사용해야 합니다.
 - **차트 삽입**: 수치 데이터(비교, 통계 등)가 포함된 경우 반드시 **[차트: {JSON 데이터}]** 태그를 삽입하세요.
+  - **[규칙]**: 마크다운 코드 블록(\` ```json \`)으로 감싸지 마세요. 오직 \`[차트: {...}]\` 형식만 허용합니다.
   - 유형 가이드: \`bar\`(세로 비교), \`horizontalBar\`(가로 순위), \`pie\`/\`doughnut\`(비율), \`line\`(추세)
   - 형식: { "type": "bar" | "horizontalBar" | "pie" | "doughnut" | "line", "title": "제목", "labels": ["항목1", "항목2"], "data": [수치1, 수치2] }
   - **[CRITICAL]**: 차트 태그 바로 앞뒤에 텍스트를 붙여 쓰지 말고, 독립적인 문단으로 배치하세요.
@@ -97,11 +109,12 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 
 ## ✨ 시각적 강조 및 컬러링
 - **굵게 (Bold)**: 문맥상 가장 중요한 단어만 처리하세요 (한 문장에 최대 2단어).
-- **데이터 강조 문법**: 핵심 수치/날짜(++파스텔 파랑++)를 사용하여 시각적 포인트를 만드세요.
+- **키워드 강조 문법**: 핵심 수치나 중요한 고유명사(++파스텔 파랑++)를 사용하여 시각적 포인트를 만드세요.
 - **[CRITICAL] 강조 규칙**: 
-  1. **팩트 중심**: '심각한', '중요한' 같은 형용사가 아닌 **정확한 수치나 날짜**에만 사용하세요.
-  2. **빈도 제한**: 포스팅 전체에서 **최대 2회**만 사용하세요.
-  3. **단어 단위**: 한 번에 **5자 이내**로 적용하며, 다른 기호와 중첩하지 마세요.
+  1. **대상**: **수치, 날짜**, 그리고 글의 주제를 관통하는 **핵심 고유명사**(지역명, 고유 명칭 등)에만 사용하세요.
+  2. **금지**: 형용사나 감성적인 문구에는 사용을 엄격히 금지합니다.
+  3. **빈도 제한**: 포스팅 전체에서 **최대 3회**만 사용하세요.
+  4. **단어 단위**: 한 번에 **10자 이내**로 적용하며, 다른 기호와 중첩하지 마세요.
 `;
 
   // 4. 최종 미션
