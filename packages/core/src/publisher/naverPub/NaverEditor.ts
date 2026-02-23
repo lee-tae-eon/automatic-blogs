@@ -92,12 +92,11 @@ export class NaverEditor {
     return content.replace(garbageRegex, "").trim();
   }
 
-  // ✅ [v5.1] 강조 문법 변환 (!!파스텔빨강!!, ++파스텔파랑++)
-  // 색상 종류를 줄이고 파스텔톤으로 변경하여 가독성 및 미관 개선
+  // ✅ [v5.1.2] 강조 문법 변환 (핵심 데이터용 파스텔 파랑)
+  // 감성적 문구가 아닌 수치, 날짜, 핵심 명사에만 적용되도록 유도됨
   private applyColoringGrammar(html: string): string {
     return html
-      .replace(/!!([^!+]+)!!/g, '<span style="color: #ef9a9a; font-weight: bold; display: inline;">$1</span>') // 파스텔 빨강 (부정/주의)
-      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>'); // 파스텔 파랑 (긍정/핵심)
+      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>'); // 파스텔 파랑 (데이터/팩트)
   }
 
   // ✅ HTML 붙여넣기 함수 (스타일 보존을 위해 div로 감싸기 옵션 추가)
@@ -287,10 +286,10 @@ export class NaverEditor {
           default:
             if (!block.html) break;
 
-            // 문단은 p 태그로 감싸고 스타일 지정
+            // 문단은 p 태그로 감싸고 스타일 지정 (상속 방지를 위해 color 명시)
             // margin-bottom 등을 인라인으로 줘서 청킹 효과 유지
             await this.pasteHtml(
-              `<p style="font-size: 15px; line-height: 1.8;">${block.html}</p>`,
+              `<p style="font-size: 15px; line-height: 1.8; color: #333;">${block.html}</p>`,
             );
             await this.page.keyboard.press("Enter");
             await this.page.keyboard.press("Enter");
