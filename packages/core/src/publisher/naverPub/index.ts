@@ -86,30 +86,34 @@ export class NaverPublisher implements IBlogPublisher {
       /tistory\.io/i, /velog\.io/i, /medium\.com/i, /story\.kakao\.com/i,
       /cafe\.naver\.com/i, /cafe\.daum\.net/i, /dcinside\.com/i, /ruliweb\.com/i,
       /theqoo\.net/i, /instiz\.net/i, /fmkorea\.com/i, /clien\.net/i,
-      /youtube\.com/i, /youtu\.be/i, /facebook\.com/i, /instagram\.com/i, /twitter\.com/i, /x\.com/i
+      /youtube\.com/i, /youtu\.be/i, /facebook\.com/i, /instagram\.com/i, /twitter\.com/i, /x\.com/i,
+      /kakaocdn\.net/i, /pstatic\.net/i // 정적 자산 서버 중 블로그 성격 차단
     ];
 
-    // 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그/커뮤니티 제외)
+    // 1. [v5.1] 본문 내부의 출처 마커 제거 (예: [1], [뉴스], (매체명) 등)
+    // AI가 지시를 어기고 본문에 남긴 찌꺼기를 정제합니다.
+    const cleanHtml = html.replace(/\[\d+\]|\[뉴스\]|\[출처:.*?\]|\(\w+ 뉴스\)/gi, "").trim();
+
+    // 2. 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그/커뮤니티 제외)
     const validRefs = (references || []).filter((ref) => {
       if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
       
       const url = ref.url.toLowerCase();
       
-      // 1. 차단 패턴 매칭 (도메인 및 경로 체크)
+      // 차단 패턴 매칭 (도메인 및 경로 체크)
       const isBlocked = blockedPatterns.some(pattern => pattern.test(url));
-      // 2. 일반적인 블로그/뉴스 키워드 경로 체크
       const hasBlockedPath = url.includes("/blog/") || url.includes(".blog.") || url.includes("/post/");
       
       return !isBlocked && !hasBlockedPath;
     });
 
-    if (validRefs.length === 0) return html;
+    if (validRefs.length === 0) return cleanHtml;
 
     // 본문 내에 이미 '참고 자료' 섹션이 있는지 확인 (중복 방지)
-    const lowerHtml = html.toLowerCase();
+    const lowerHtml = cleanHtml.toLowerCase();
     if (lowerHtml.includes("참고 자료") || lowerHtml.includes("뉴스 출처") || lowerHtml.includes("references")) {
       console.log("ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.");
-      return html;
+      return cleanHtml;
     }
 
     const refHtml = `
@@ -126,7 +130,7 @@ export class NaverPublisher implements IBlogPublisher {
           .join("")}
       </ul>
     `;
-    return html + refHtml;
+    return cleanHtml + refHtml;
   }
 
   /**

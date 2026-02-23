@@ -92,10 +92,19 @@ export class NaverEditor {
     return content.replace(garbageRegex, "").trim();
   }
 
+  // ✅ [v5.1] 강조 문법 변환 (!!파스텔빨강!!, ++파스텔파랑++)
+  // 색상 종류를 줄이고 파스텔톤으로 변경하여 가독성 및 미관 개선
+  private applyColoringGrammar(html: string): string {
+    return html
+      .replace(/!!([^!+]+)!!/g, '<span style="color: #ef9a9a; font-weight: bold; display: inline;">$1</span>') // 파스텔 빨강 (부정/주의)
+      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>'); // 파스텔 파랑 (긍정/핵심)
+  }
+
   // ✅ HTML 붙여넣기 함수 (스타일 보존을 위해 div로 감싸기 옵션 추가)
   private async pasteHtml(htmlContent: string) {
-    // 네이버 에디터가 스타일을 잘 먹도록 <div>로 한 번 감싸서 클립보드에 복사
-    const wrapper = `<div style="text-align: left;">${htmlContent}</div>`;
+    // 강조 문법 적용
+    const coloredHtml = this.applyColoringGrammar(htmlContent);
+    const wrapper = `<div style="text-align: left;">${coloredHtml}</div>`;
 
     await this.page.evaluate((html) => {
       const type = "text/html";
@@ -198,6 +207,7 @@ export class NaverEditor {
           // ✅ [v5.1] 체크포인트 블록 처리 추가
           case "checkpoint":
             if (!block.html) break;
+            // 내부 HTML 유지 (줄바꿈 등 보존)
             const checkpointHtml = `<div style="${getCheckpointStyle()}">${block.html}</div>`;
             await this.pasteHtml(checkpointHtml);
             await this.page.keyboard.press("Enter");
@@ -300,10 +310,6 @@ export class NaverEditor {
     // .post-content가 있으면 그 내부를, 없으면 body 전체를 대상으로 함
     const $target = $(".post-content").length > 0 ? $(".post-content") : $("body");
 
-    // 📊 [v5.1] 차트 태그 전역 검색 및 추출 (더 안정적인 방식)
-    const fullHtml = $target.html() || "";
-    const chartGlobalRegex = /\[차트:\s*(\{[\s\S]*?\})\]/gi;
-    
     $target.contents().each((_, element) => {
       const $el = $(element);
       const nodeType = element.type;
@@ -316,14 +322,6 @@ export class NaverEditor {
       const imageMatch = textContent.match(imageRegex);
       if (imageMatch) {
         blocks.push({ type: "image", keyword: imageMatch[1].trim() });
-        return;
-      }
-
-      // 2. 차트 태그 처리 (중복 방지를 위해 매칭된 차트 텍스트는 이후 문단에서 제거됨)
-      const chartRegex = /\[차트:\s*(\{[\s\S]*?\})\]/i;
-      const chartMatch = textContent.match(chartRegex);
-      if (chartMatch) {
-        blocks.push({ type: "chart", data: chartMatch[1].trim() });
         return;
       }
 
@@ -348,10 +346,36 @@ export class NaverEditor {
       } else if (tagName === "table") {
         blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
       } else {
-        // 일반 문단 내부에 차트 태그가 잔여물로 남는 경우 방지
-        const cleanedHtml = rawHtml.replace(/\[차트:\s*\{[\s\S]*?\}\]/gi, "").trim();
-        if (cleanedHtml || $el.find('img, iframe, video').length > 0) {
-          blocks.push({ type: "paragraph", text: textContent.replace(/\[차트:\s*\{[\s\S]*?\}\]/gi, "").trim(), html: cleanedHtml });
+        // 📊 [v5.1] 차트 포함 문단 처리 (태그 내 찌꺼기 텍스트가 있어도 인식 가능하도록 개선)
+        // [차트: {JSON} - 설명] 형태에서 {JSON}만 골라냄
+        const chartRegex = /\[차트:\s*(\{[\s\S]*?\})[\s\S]*?\]/gi;
+        let lastIndex = 0;
+        let match;
+        const text = textContent;
+
+        // 문단 내의 모든 차트 태그를 찾아서 분리
+        let foundChart = false;
+        while ((match = chartRegex.exec(text)) !== null) {
+          foundChart = true;
+          // 차트 이전의 텍스트가 있다면 추가
+          const beforeText = text.substring(lastIndex, match.index).trim();
+          if (beforeText) {
+            blocks.push({ type: "paragraph", text: beforeText, html: beforeText });
+          }
+          // 차트 블록 추가
+          blocks.push({ type: "chart", data: match[1].trim() });
+          lastIndex = chartRegex.lastIndex;
+        }
+
+        if (foundChart) {
+          // 남은 텍스트가 있다면 추가
+          const afterText = text.substring(lastIndex).trim();
+          if (afterText) {
+            blocks.push({ type: "paragraph", text: afterText, html: afterText });
+          }
+        } else {
+          // 차트가 없는 일반 문단
+          blocks.push({ type: "paragraph", text: textContent, html: rawHtml });
         }
       }
     });

@@ -114,9 +114,14 @@ export class ChartService {
         }
       };
 
-      const url = `${this.baseUrl}?c=${encodeURIComponent(JSON.stringify(chartConfig))}&width=800&height=450&format=png&backgroundColor=white`;
-      
-      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      // 📊 [v5.1] POST 방식으로 변경 (긴 데이터셋 안정성 확보)
+      const response = await axios.post(this.baseUrl, {
+        chart: chartConfig,
+        width: 800,
+        height: 450,
+        format: 'png',
+        backgroundColor: 'white'
+      }, { responseType: 'arraybuffer' });
       
       const fileName = `chart_${Date.now()}.png`;
       const filePath = path.join(outputDir, fileName);
