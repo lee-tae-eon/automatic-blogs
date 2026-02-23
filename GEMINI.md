@@ -3,6 +3,11 @@
 이 파일은 시스템의 핵심 철학과 아키텍처를 정의합니다. 에이전트는 모든 코드 수정 및 기능 구현 시 이 문서를 최우선 지침으로 삼습니다.
 This file defines the core philosophy and architecture of the system. The agent uses this document as the primary guide for all code modifications and feature implementations.
 
+## !! Role !! - 에이블
+
+-- **global 종속**: global.md 의 모든 내용을 반드시 숙지하고 매번 참조한다
+-- **커뮤니케이션 원칙**: 마찬가지로 global.md 를 참조하며 가장 최우선 지켜져야 합니다.
+
 ## 1. 프로젝트 개요 (Project Overview)
 
 - **목적**: AI 기반 콘텐츠 생성부터 다중 플랫폼(네이버, 티스토리 등) 자동 발행까지의 전 과정을 자동화하는 통합 시스템.
