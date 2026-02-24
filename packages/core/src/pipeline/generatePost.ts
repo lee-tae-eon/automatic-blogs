@@ -26,7 +26,8 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
-  const safeReferenceRegex = /(\[(뉴스|출처|Reference)\s*\d*\]|\((출처|Source):.*?\))/gi;
+  const safeReferenceRegex =
+    /(\[(뉴스|출처|Reference)\s*\d*\]|\((출처|Source):.*?\))/gi;
   if (safeReferenceRegex.test(content)) {
     console.log("🧹 [Sanitizer] 본문 내 뉴스 참조 마커 정밀 제거");
     content = content.replace(safeReferenceRegex, "");
@@ -42,23 +43,31 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
   const oldContent = content;
 
   // [v4.8] 강조(Bold) 내부에 불필요하게 포함된 따옴표 제거 (**'텍스트'** -> **텍스트**)
-  content = content.replace(/\*\*['"](.*?)['"]\*\*/g, "**$1**")
-                   .replace(/<strong>['"](.*?)['"]<\/strong>/g, "<strong>$1</strong>");
+  content = content
+    .replace(/\*\*['"](.*?)['"]\*\*/g, "**$1**")
+    .replace(/<strong>['"](.*?)['"]<\/strong>/g, "<strong>$1</strong>");
 
   const refineSpacing = (text: string): string => {
-    return text.split("\n").map(line => {
-      // 리스트, 표, 헤딩 등은 건드리지 않음
-      if (line.trim().length === 0 || line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)) return line;
-      
-      // [v4.4] AI가 의도한 단일 줄바꿈(쉼표 뒤 등)은 보존하고,
-      // 문장이 완전히 끝나는 지점(. ! ?) 뒤에 공백이 있을 때만 문단 나눔 수행
-      return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
-    }).join("\n");
+    return text
+      .split("\n")
+      .map((line) => {
+        // 리스트, 표, 헤딩 등은 건드리지 않음
+        if (
+          line.trim().length === 0 ||
+          line.match(/^(\s*[-*>]|\s*\d+\.|\||#|\[)/)
+        )
+          return line;
+
+        // [v4.4] AI가 의도한 단일 줄바꿈(쉼표 뒤 등)은 보존하고,
+        // 문장이 완전히 끝나는 지점(. ! ?) 뒤에 공백이 있을 때만 문단 나눔 수행
+        return line.replace(/(\.|!|\?)\s+(?=[가-힣a-zA-Z])/g, "$1\n\n");
+      })
+      .join("\n");
   };
 
   content = refineSpacing(content);
   // 연속된 엔터 3개 이상만 정리 (AI의 의도적 엔터 2개는 보존)
-  content = content.replace(/\n{4,}/g, "\n\n\n"); 
+  content = content.replace(/\n{4,}/g, "\n\n\n");
 
   if (content !== oldContent) {
     console.log("📱 [Mobile] 문단 간격을 넓혀 가독성을 최적화했습니다.");
@@ -105,16 +114,24 @@ export async function generatePost({
             searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
             adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
             adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-            adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+            adCustomerId:
+              process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
           });
           // [v4.3] 너무 긴 주제는 API에서 에러가 나므로 앞의 2~3단어만 추출하여 분석
           const cleanTopic = task.topic.split("\n")[0].trim();
-          const scoutKeyword = cleanTopic.split(" ").slice(0, 3).join(" "); 
+          const scoutKeyword = cleanTopic.split(" ").slice(0, 3).join(" ");
           const volumeData = await scout.getMonthlySearchVolume(scoutKeyword);
           if (volumeData.related && volumeData.related.length > 0) {
-            semanticKeywords = [...new Set([...semanticKeywords, ...volumeData.related.slice(0, 5)])];
+            semanticKeywords = [
+              ...new Set([
+                ...semanticKeywords,
+                ...volumeData.related.slice(0, 5),
+              ]),
+            ];
           }
-        } catch (e) { console.warn("⚠️ 키워드 분석 실패:", e); }
+        } catch (e) {
+          console.warn("⚠️ 키워드 분석 실패:", e);
+        }
       }
 
       const inputParams: BlogPostInput = {
@@ -132,10 +149,12 @@ export async function generatePost({
 
       // ✅ [v5.2] 내부 링크(Internal Linking) 추천 데이터 확보
       // 현재 분석된 세만틱 키워드를 기반으로 과거 포스팅 조회
-      const internalLinks = db.getRelatedPosts(semanticKeywords, 2);
+      const internalLinks = db.getRelatedPosts(semanticKeywords, 5); // ✅ [v5.3] SEO: 내부 링크 최대 5개로 확장
       if (internalLinks && internalLinks.length > 0) {
         inputParams.internalLinkSuggestions = internalLinks;
-        console.log(`🔗 [InternalLink] ${internalLinks.length}개의 연관 포스팅을 발견했습니다.`);
+        console.log(
+          `🔗 [InternalLink] ${internalLinks.length}개의 연관 포스팅을 발견했습니다.`,
+        );
       }
 
       // 캐시 확인
@@ -164,7 +183,7 @@ export async function generatePost({
         // 두 API 병렬 호출 (속도 최적화)
         const [tavilyResult, naverResult] = await Promise.all([
           tavily.searchLatestNews(cleanTopic),
-          naverSearch.searchBlog(cleanTopic, 3)
+          naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
         // 데이터 통합
@@ -193,9 +212,9 @@ ${naverResult}
       if (task.useNotebookLM && task.notebookMode === "auto") {
         onProgress?.("🧠 NotebookLM 전략 기반 품질 고도화 중...");
         const criticPrompt = `
-          당신은 NotebookLM의 분석 기법을 완벽히 마스터한 콘텐츠 교정 전문가입니다. 
+          당신은 NotebookLM의 분석 기법을 완벽히 마스터한 콘텐츠 교정 전문가입니다.
           아래 작성된 블로그 초안을 **'편집 신뢰(Editorial Trust)'**와 **'인과관계의 끈(Golden Thread)'** 원칙에 따라 대폭 개선하세요.
-          
+
           [초안 본문]:
           ${aiPost.content}
 
@@ -204,15 +223,17 @@ ${naverResult}
           2. **인과관계의 끈(Golden Thread)**: 상위 주제와 하위 실행 과제 간의 논리적 연결 고리를 강화하여 독자가 글의 흐름을 명확히 추적할 수 있게 하세요.
           3. **문장 정제**: 기계적인 문투를 제거하고, 전문가의 깊이 있는 통찰이 느껴지는 세련된 한국어 문체로 교정하세요.
           4. **구조 최적화**: 모바일 가독성을 유지하면서도 논리적 구조가 돋보이도록 문단을 재배치하세요.
-          
+
           최종 수정된 본문(Markdown)만 응답하세요.
         `;
-        
+
         try {
           const refinedContent = await client.generateText(criticPrompt);
           if (refinedContent && refinedContent.length > 100) {
             finalAiPost = { ...aiPost, content: refinedContent };
-            onProgress?.("✨ NotebookLM 자동 검증 완료: 품질이 대폭 개선되었습니다.");
+            onProgress?.(
+              "✨ NotebookLM 자동 검증 완료: 품질이 대폭 개선되었습니다.",
+            );
           }
         } catch (e) {
           console.warn("⚠️ NotebookLM 자가 검증 실패 (원본 유지):", e);
@@ -220,13 +241,22 @@ ${naverResult}
       }
 
       // 출처 복구
-      if ((!finalAiPost.references || finalAiPost.references.length === 0) && newsContext) {
+      if (
+        (!finalAiPost.references || finalAiPost.references.length === 0) &&
+        newsContext
+      ) {
         const recentNews = db.getRecentNews(task.topic);
         if (recentNews?.references?.length) {
-          finalAiPost.references = recentNews.references.map(ref => ({
-            name: ref.name.replace(/ [-|] /g, " (") + (ref.name.includes(" - ") || ref.name.includes(" | ") ? ")" : ""),
-            url: ref.url
-          })).slice(0, 3);
+          finalAiPost.references = recentNews.references
+            .map((ref) => ({
+              name:
+                ref.name.replace(/ [-|] /g, " (") +
+                (ref.name.includes(" - ") || ref.name.includes(" | ")
+                  ? ")"
+                  : ""),
+              url: ref.url,
+            }))
+            .slice(0, 3);
         }
       }
 
@@ -243,30 +273,62 @@ ${naverResult}
 
       // ✅ [v5.2.1] 출처(References) 정밀 필터링 및 본문 추가
       // 블로그, 카페, 커뮤니티 성격의 링크는 여기서 원천 차단합니다.
-      if (sanitizedPublication.references && sanitizedPublication.references.length > 0) {
+      if (
+        sanitizedPublication.references &&
+        sanitizedPublication.references.length > 0
+      ) {
         const blockedPatterns = [
-          /blog/i, /cafe/i, /tistory/i, /brunch/i, /egloos/i, /post\.naver/i, /naver\.me/i,
-          /daum\.net\/blog/i, /velog/i, /medium/i, /kakao/i, /dcinside/i, /ruliweb/i, /theqoo/i,
-          /instiz/i, /fmkorea/i, /clien/i, /youtube/i, /youtu\.be/i, /facebook/i, /instagram/i,
-          /twitter/i, /x\.com/i, /pstatic/i, /kakaocdn/i
+          /blog/i,
+          /cafe/i,
+          /tistory/i,
+          /brunch/i,
+          /egloos/i,
+          /post\.naver/i,
+          /naver\.me/i,
+          /daum\.net\/blog/i,
+          /velog/i,
+          /medium/i,
+          /kakao/i,
+          /dcinside/i,
+          /ruliweb/i,
+          /theqoo/i,
+          /instiz/i,
+          /fmkorea/i,
+          /clien/i,
+          /youtube/i,
+          /youtu\.be/i,
+          /facebook/i,
+          /instagram/i,
+          /twitter/i,
+          /x\.com/i,
+          /pstatic/i,
+          /kakaocdn/i,
         ];
 
-        const filteredRefs = sanitizedPublication.references.filter(ref => {
+        const filteredRefs = sanitizedPublication.references.filter((ref) => {
           const name = ref.name.toLowerCase();
           const url = ref.url.toLowerCase();
-          
+
           // 1. URL 패턴 체크
-          const isBlockedUrl = blockedPatterns.some(p => p.test(url)) || url.includes("/blog/") || url.includes(".blog.");
+          const isBlockedUrl =
+            blockedPatterns.some((p) => p.test(url)) ||
+            url.includes("/blog/") ||
+            url.includes(".blog.");
           // 2. 이름 체크 (블로그, 카페 등의 단어가 들어간 매체 제외)
-          const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(name);
-          
+          const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(
+            name,
+          );
+
           return !isBlockedUrl && !isBlockedName;
         });
 
-        const hasRefSection = /참고\s*(자료|문헌|사이트)|References|출처/i.test(sanitizedPublication.content);
+        const hasRefSection = /참고\s*(자료|문헌|사이트)|References|출처/i.test(
+          sanitizedPublication.content,
+        );
         if (!hasRefSection && filteredRefs.length > 0) {
-          const refSection = "\n\n## 참고 자료\n" + 
-            filteredRefs.map(ref => `- [${ref.name}](${ref.url})`).join("\n");
+          const refSection =
+            "\n\n## 참고 자료\n" +
+            filteredRefs.map((ref) => `- [${ref.name}](${ref.url})`).join("\n");
           sanitizedPublication.content += refSection;
         }
         // 원본 reference 배열도 필터링된 버전으로 교체

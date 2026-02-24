@@ -23,7 +23,7 @@ export function generateBlogPrompt(input: BlogPostInput): string {
   // 1. 실시간 정보 및 내부 링크 지침
   let newsInstruction = "";
   const internalLinkText = (input.internalLinkSuggestions || [])
-    .map(link => `- [${link.title}](${link.url})`)
+    .map((link) => `- [${link.title}](${link.url})`)
     .join("\n");
 
   if (input.latestNews || internalLinkText) {
@@ -34,11 +34,15 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 
 ${input.latestNews || ""}
 
-${internalLinkText ? `
+${
+  internalLinkText
+    ? `
 ## 🔗 추천 관련 글
 글의 마지막 부분에 아래 링크들을 '함께 읽어보세요' 섹션으로 자연스럽게 삽입하세요.
 ${internalLinkText}
-` : ""}
+`
+    : ""
+}
 `;
   }
 
@@ -55,8 +59,8 @@ ${toneInstruction}
 
 ## ✅ 작문 스타일 및 모범 사례 (Style Examples)
 글을 쓸 때 아래 예시의 느낌과 리듬을 반드시 반영하세요:
-${examples.goodSentences.map(s => `- "${s}"`).join('\n')}
-${examples.transitions.length > 0 ? `\n**자연스러운 연결 방식**:\n${examples.transitions.map(t => `- "${t}..."`).join('\n')}` : ''}
+${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}
+${examples.transitions.length > 0 ? `\n**자연스러운 연결 방식**:\n${examples.transitions.map((t) => `- "${t}..."`).join("\n")}` : ""}
 
 ## ✍️ [CRITICAL] 작법 규칙 (Anti-Machine)
 1. **마이크로 브리딩 (Micro-Breathing) [ULTRA CRITICAL]**: 한 문장이 **40~50자**를 넘지 않도록 짧게 끊으세요. 길어질 경우 반드시 **쉼표(,) 뒤에서 줄바꿈(\n)**을 하여 시각적 리듬을 조절하세요. (종결 어미가 다음 줄로 툭 떨어지는 현상 방지)
@@ -64,19 +68,23 @@ ${examples.transitions.length > 0 ? `\n**자연스러운 연결 방식**:\n${exa
 3. **리듬감**: 문장의 길이를 짧게, 길게, 아주 짧게 섞어서 리듬감을 만드세요.
 4. **패턴 파괴**: 어떤 종결 어미든 **3번 이상 연속으로 같은 계열을 쓰면 실패**입니다.
 5. **단어 보존**: 단어 중간이나 고유명사 내부에 불필요한 공백이나 줄바꿈을 넣지 마세요.
-${personaDetail.writingTips ? personaDetail.writingTips.map(tip => `- ${tip}`).join('\n') : ''}
+${personaDetail.writingTips ? personaDetail.writingTips.map((tip) => `- ${tip}`).join("\n") : ""}
 `;
 
   // 3. 구조 가이드
   const structureGuide = `
 # 📑 구조 및 가독성 가이드
 
-${input.useImage !== false ? `
+${
+  input.useImage !== false
+    ? `
 ## 🖼️ [CRITICAL] 이미지 삽입 규칙
 - 본문 중간에 관련성 높은 이미지가 들어갈 위치를 선정하여 **[이미지: 검색 키워드]** 형식으로 태그를 삽입하세요.
 - **최대 2개**의 이미지만 삽입해야 합니다.
 - 키워드는 구체적인 사물이나 장소여야 합니다. (예: [이미지: 청년도약계좌 상담 창구])
-` : ""}
+`
+    : ""
+}
 
 ## 🏗️ [CRITICAL] 글의 전개 구조 (Persona Structure)
 당신은 **${personaDetail.role}**입니다. 반드시 아래 구조에 맞춰 글을 전개하세요:
@@ -95,7 +103,7 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 ## 📊 데이터 시각화 및 구조화 (List, Table & Chart)
 - **리스트 최우선**: 정보형 콘텐츠에서는 서술형 문단보다 **마크다운 리스트(\`-\`)**를 최우선으로 사용하세요. 3개 이상의 항목 나열 시 반드시 리스트를 사용해야 합니다.
 - **차트 삽입**: 수치 데이터(비교, 통계 등)가 포함된 경우 반드시 **[차트: {JSON 데이터}]** 태그를 삽입하세요.
-  - **[규칙]**: 마크다운 코드 블록(\` ```json \`)으로 감싸지 마세요. 오직 \`[차트: {...}]\` 형식만 허용합니다.
+  - **[규칙]**: 마크다운 코드 블록(\` \`\`\`json \`)으로 감싸지 마세요. 오직 \`[차트: {...}]\` 형식만 허용합니다.
   - 유형 가이드: \`bar\`(세로 비교), \`horizontalBar\`(가로 순위), \`pie\`/\`doughnut\`(비율), \`line\`(추세)
   - 형식: { "type": "bar" | "horizontalBar" | "pie" | "doughnut" | "line", "title": "제목", "labels": ["항목1", "항목2"], "data": [수치1, 수치2] }
   - **[CRITICAL]**: 차트 태그 바로 앞뒤에 텍스트를 붙여 쓰지 말고, 독립적인 문단으로 배치하세요.
@@ -110,11 +118,20 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 ## ✨ 시각적 강조 및 컬러링
 - **굵게 (Bold)**: 문맥상 가장 중요한 단어만 처리하세요 (한 문장에 최대 2단어).
 - **키워드 강조 문법**: 핵심 수치나 중요한 고유명사(++파스텔 파랑++)를 사용하여 시각적 포인트를 만드세요.
-- **[CRITICAL] 강조 규칙**: 
+- **[CRITICAL] 강조 규칙**:
   1. **대상**: **수치, 날짜**, 그리고 글의 주제를 관통하는 **핵심 고유명사**(지역명, 고유 명칭 등)에만 사용하세요.
   2. **금지**: 형용사나 감성적인 문구에는 사용을 엄격히 금지합니다.
   3. **빈도 제한**: 포스팅 전체에서 **최대 3회**만 사용하세요.
   4. **단어 단위**: 한 번에 **10자 이내**로 적용하며, 다른 기호와 중첩하지 마세요.
+
+## 🔍 [v5.3] SEO 최적화 규칙 (Naver SEO Maximization)
+[CRITICAL] 아래 규칙들은 네이버 검색 상위 노출을 위한 핵심 지침입니다. 반드시 준수하세요.
+
+1. **도입부 첫 문장 키워드**: 본문 맨 앞 100자 이내에 핵심 주제인 **'${input.topic}'** 키워드를 자연스럽게 포함시키세요. 네이버 검색 미리보기에 직접 영향을 미칩니다.
+2. **소제목 키워드 의무 포함**: 각 소제목(###)에는 반드시 핵심 키워드 또는 관련 유의어(LSI 키워드)가 포함되어야 합니다. (예: '아파트 시세' → 소제목에 '매매가', '전세가', '부동산' 중 하나 포함)
+3. **LSI 키워드 자연 삽입**: 본문 전체에 핵심 주제와 관련된 **유의어·연관어 5~7개**를 자연스럽게 녹여 쓰세요. 검색 엔진이 글의 주제 범위를 더 넓게 인식하게 합니다.
+4. **최소 본문 길이**: content 필드의 본문은 반드시 **한글 기준 2,000자 이상**이어야 합니다. 짧은 글은 검색 노출에 불리합니다.
+5. **LSI 키워드 목록 출력**: 본문에서 실제로 사용한 LSI 키워드 5~7개를 JSON의 \`lsiKeywords\` 배열에 담아 반환하세요.
 `;
 
   // 4. 최종 미션
@@ -139,10 +156,11 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 {
   "title": "클릭을 부르는 제목",
   "outline": ["소제목1", "소제목2", "소제목3", "소제목4", "소제목5"],
-  "content": "마크다운 본문 (도입부 + 소제목 + 본론 + 결론 + 참고자료)",
+  "content": "마크다운 본문 (도입부 + 소제목 + 본론 + 결론 + 참고자료) — 최소 2000자 이상",
   "metaTitle": "SEO 제목",
   "metaDescription": "SEO 설명",
-  "focusKeywords": ["키워드1", "키워드2"],
+  "focusKeywords": ["핵심키워드1", "핵심키워드2"],
+  "lsiKeywords": ["연관어1", "연관어2", "연관어3", "연관어4", "연관어5"],
   "references": [{"name": "뉴스 제목 (매체명)", "url": "URL"}]
 }
 \`\`\`

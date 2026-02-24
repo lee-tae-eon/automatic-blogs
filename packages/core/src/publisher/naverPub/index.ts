@@ -84,28 +84,57 @@ export class NaverPublisher implements IBlogPublisher {
   ): string {
     // 🛡️ 필터링할 블로그, 커뮤니티 및 소셜 미디어 도메인 (정규표현식용)
     const blockedPatterns = [
-      /blog/i, /cafe/i, /tistory/i, /brunch/i, /egloos/i, /post\.naver/i, /naver\.me/i,
-      /daum\.net\/blog/i, /velog/i, /medium/i, /kakao/i, /dcinside/i, /ruliweb/i, /theqoo/i,
-      /instiz/i, /fmkorea/i, /clien/i, /youtube/i, /youtu\.be/i, /facebook/i, /instagram/i,
-      /twitter/i, /x\.com/i, /pstatic/i, /kakaocdn/i, /blogme\.me/i
+      /blog/i,
+      /cafe/i,
+      /tistory/i,
+      /brunch/i,
+      /egloos/i,
+      /post\.naver/i,
+      /naver\.me/i,
+      /daum\.net\/blog/i,
+      /velog/i,
+      /medium/i,
+      /kakao/i,
+      /dcinside/i,
+      /ruliweb/i,
+      /theqoo/i,
+      /instiz/i,
+      /fmkorea/i,
+      /clien/i,
+      /youtube/i,
+      /youtu\.be/i,
+      /facebook/i,
+      /instagram/i,
+      /twitter/i,
+      /x\.com/i,
+      /pstatic/i,
+      /kakaocdn/i,
+      /blogme\.me/i,
     ];
 
     // 1. [v5.1] 본문 내부의 출처 마커 제거 (예: [1], [뉴스], (매체명) 등)
     // AI가 지시를 어기고 본문에 남긴 찌꺼기를 정제합니다.
-    const cleanHtml = html.replace(/\[\d+\]|\[뉴스\]|\[출처:.*?\]|\(\w+ 뉴스\)/gi, "").trim();
+    const cleanHtml = html
+      .replace(/\[\d+\]|\[뉴스\]|\[출처:.*?\]|\(\w+ 뉴스\)/gi, "")
+      .trim();
 
     // 2. 유효한 출처 필터링 (이름/URL 존재 여부 + 블로그/커뮤니티 제외)
     const validRefs = (references || []).filter((ref) => {
       if (!ref || !ref.name?.trim() || !ref.url?.trim()) return false;
-      
+
       const name = ref.name.toLowerCase();
       const url = ref.url.toLowerCase();
-      
+
       // 차단 패턴 매칭 (도메인, 경로 및 매체명 체크)
-      const isBlockedUrl = blockedPatterns.some(pattern => pattern.test(url)) || 
-                           url.includes("/blog/") || url.includes(".blog.") || url.includes("naver.com/blog");
-      const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(name);
-      
+      const isBlockedUrl =
+        blockedPatterns.some((pattern) => pattern.test(url)) ||
+        url.includes("/blog/") ||
+        url.includes(".blog.") ||
+        url.includes("naver.com/blog");
+      const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(
+        name,
+      );
+
       return !isBlockedUrl && !isBlockedName;
     });
 
@@ -113,8 +142,14 @@ export class NaverPublisher implements IBlogPublisher {
 
     // 본문 내에 이미 '참고 자료' 섹션이 있는지 확인 (중복 방지)
     const lowerHtml = cleanHtml.toLowerCase();
-    if (lowerHtml.includes("참고 자료") || lowerHtml.includes("뉴스 출처") || lowerHtml.includes("references")) {
-      console.log("ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.");
+    if (
+      lowerHtml.includes("참고 자료") ||
+      lowerHtml.includes("뉴스 출처") ||
+      lowerHtml.includes("references")
+    ) {
+      console.log(
+        "ℹ️ [NaverPublisher] 본문에 이미 출처 섹션이 포함되어 있어 추가를 건너뜁니다.",
+      );
       return cleanHtml;
     }
 
@@ -305,7 +340,17 @@ export class NaverPublisher implements IBlogPublisher {
    */
   async publish(options: PublishOptions, post: Publication): Promise<void> {
     const { blogId, password, onProgress, headless = false } = options;
-    const { title, content, tags = [], category, references, persona } = post;
+    const { title, content, category, references, persona } = post;
+
+    // ✅ [v5.3] SEO: focusKeywords + lsiKeywords를 병합하여 최대 10개의 최적 태그 구성
+    const rawTags = post.tags || [];
+    const focusKw = post.focusKeywords || [];
+    const lsiKw = post.lsiKeywords || [];
+    const mergedTags = [...new Set([...rawTags, ...focusKw, ...lsiKw])]
+      .map((t) => t.replace(/[^a-zA-Z0-9가-힣]/g, "").trim())
+      .filter((t) => t.length > 0)
+      .slice(0, 10);
+    const tags = mergedTags;
 
     // 마크다운을 HTML로 변환하는 작업은 외부에서 수행되었다고 가정하거나 여기서 수행
     // NaverPublisher는 이미 HTML을 받는 것으로 설계되었으므로, content가 HTML이어야 함을 주의

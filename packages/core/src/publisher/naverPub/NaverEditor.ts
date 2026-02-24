@@ -95,13 +95,24 @@ export class NaverEditor {
   // ✅ [v5.1.4] 최종 스타일 변환 (마크다운 볼드, 빨강, 파랑 강조)
   // 기호가 본문에 그대로 노출되는 문제를 방지하기 위한 최종 렌더링 로직
   private applyColoringGrammar(html: string): string {
-    return html
-      // 1. 마크다운 볼드 변환 (**텍스트**)
-      .replace(/\*\*([\s\S]+?)\*\*/g, '<strong style="font-weight: bold;">$1</strong>')
-      // 2. 파스텔 빨강 (!!주의!!) - 복구
-      .replace(/!!([^!+]+)!!/g, '<span style="color: #ef9a9a; font-weight: bold; display: inline;">$1</span>')
-      // 3. 파스텔 파랑 (++핵심++)
-      .replace(/\+\+([^!+]+)\+\+/g, '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>');
+    return (
+      html
+        // 1. 마크다운 볼드 변환 (**텍스트**)
+        .replace(
+          /\*\*([\s\S]+?)\*\*/g,
+          '<strong style="font-weight: bold;">$1</strong>',
+        )
+        // 2. 파스텔 빨강 (!!주의!!) - 복구
+        .replace(
+          /!!([^!+]+)!!/g,
+          '<span style="color: #ef9a9a; font-weight: bold; display: inline;">$1</span>',
+        )
+        // 3. 파스텔 파랑 (++핵심++)
+        .replace(
+          /\+\+([^!+]+)\+\+/g,
+          '<span style="color: #5d9cec; font-weight: bold; display: inline;">$1</span>',
+        )
+    );
   }
 
   // ✅ HTML 붙여넣기 함수 (스타일 보존을 위해 div로 감싸기 옵션 추가)
@@ -227,7 +238,7 @@ export class NaverEditor {
 
           case "list":
             // 리스트는 글자 크기 등을 본문과 맞춤
-            const styledList = `<div style="font-size: 15px; line-height: 1.8;">${block.html}</div>`;
+            const styledList = `<div style="font-size: 15px; line-height: 1.8; color: #333; font-weight: 400; font-style: normal;">${block.html}</div>`;
             await this.pasteHtml(styledList);
             await this.page.keyboard.press("Enter");
             break;
@@ -291,10 +302,10 @@ export class NaverEditor {
           default:
             if (!block.html) break;
 
-            // 문단은 p 태그로 감싸고 스타일 지정 (상속 방지를 위해 color 명시)
+            // 문단은 p 태그로 감싸고 스타일 지정 (상속 방지를 위해 color, font-weight 등 명시)
             // margin-bottom 등을 인라인으로 줘서 청킹 효과 유지
             await this.pasteHtml(
-              `<p style="font-size: 15px; line-height: 1.8; color: #333;">${block.html}</p>`,
+              `<p style="font-size: 15px; line-height: 1.8; color: #333; font-weight: 400; font-style: normal;">${block.html}</p>`,
             );
             await this.page.keyboard.press("Enter");
             await this.page.keyboard.press("Enter");
@@ -310,14 +321,18 @@ export class NaverEditor {
   private htmlToTextBlocks(html: string) {
     const blocks: any[] = [];
     const $ = cheerio.load(html);
-    
+
     // .post-content가 있으면 그 내부를, 없으면 body 전체를 대상으로 함
-    const $target = $(".post-content").length > 0 ? $(".post-content") : $("body");
+    const $target =
+      $(".post-content").length > 0 ? $(".post-content") : $("body");
 
     $target.contents().each((_, element) => {
       const $el = $(element);
       const nodeType = element.type;
-      const tagName = 'tagName' in element ? (element as any).tagName.toLowerCase() : undefined;
+      const tagName =
+        "tagName" in element
+          ? (element as any).tagName.toLowerCase()
+          : undefined;
       const textContent = $el.text().trim();
       const rawHtml = $el.html() || "";
 
@@ -330,9 +345,13 @@ export class NaverEditor {
       }
 
       // 텍스트 노드 처리
-      if (nodeType === 'text') {
+      if (nodeType === "text") {
         if (textContent) {
-          blocks.push({ type: "paragraph", text: textContent, html: textContent });
+          blocks.push({
+            type: "paragraph",
+            text: textContent,
+            html: textContent,
+          });
         }
         return;
       }
@@ -349,47 +368,113 @@ export class NaverEditor {
         blocks.push({ type: "list", text: textContent, html: $.html($el) });
       } else if (tagName === "table") {
         blocks.push({ type: "table", text: $el.text(), html: $.html($el) });
-            } else {
-              // 📊 [v5.1] 차트 포함 문단 처리 (태그 내 찌꺼기 텍스트가 있어도 인식 가능하도록 개선)
-              const chartTagRegex = /\[차트:\s*(\{[\s\S]*?\})[\s\S]*?\]/gi;
-              // ✅ [추가] 태그 없이 생 JSON만 들어온 경우 감지 (예: { "type": "bar", ... })
-              const nakedChartRegex = /^\{\s*"type":\s*"(bar|horizontalBar|pie|doughnut|line)"[\s\S]*?"data":\s*\[[\s\S]*?\}\s*$/i;
-      
-              let lastIndex = 0;
-              let match;
-              const text = textContent;
-      
-              // 1. 표준 [차트: ] 태그 검색 및 분리
-              let foundChart = false;
-              while ((match = chartTagRegex.exec(text)) !== null) {
-                foundChart = true;
-                const beforeText = text.substring(lastIndex, match.index).trim();
-                if (beforeText) {
-                  blocks.push({ type: "paragraph", text: beforeText, html: beforeText });
-                }
-                blocks.push({ type: "chart", data: match[1].trim() });
-                lastIndex = chartTagRegex.lastIndex;
-              }
-      
-              if (foundChart) {
-                const afterText = text.substring(lastIndex).trim();
-                if (afterText) {
-                  blocks.push({ type: "paragraph", text: afterText, html: afterText });
-                }
-              } else if (nakedChartRegex.test(text)) {
-                // 2. ✅ 태그는 없지만 내용이 차트 JSON인 경우 처리
-                blocks.push({ type: "chart", data: text.trim() });
-              } else {
-                // 3. 차트가 없는 일반 문단 처리
-                if (textContent || $el.find('img, iframe, video').length > 0) {
-                  blocks.push({ type: "paragraph", text: textContent, html: rawHtml || textContent });
-                }
-              }
-            }              });
-              return blocks;
+      } else {
+        // 📊 [v5.1] 차트 포함 문단 처리 (태그 내 찌꺼기 텍스트가 있어도 인식 가능하도록 개선)
+        const chartPrefixRegex = /\[\s*차트\s*:/gi;
+        // ✅ [추가] 태그 없이 생 JSON만 들어온 경우 감지 (예: { "type": "bar", ... })
+        const nakedChartRegex =
+          /^\{\s*"type":\s*"(bar|horizontalBar|pie|doughnut|line)"[\s\S]*?"data":\s*\[[\s\S]*?\}\s*$/i;
+
+        let lastIndex = 0;
+        let match;
+        const text = textContent;
+
+        // 1. 표준 [차트: ] 태그 검색 및 분리
+        let foundChart = false;
+        while ((match = chartPrefixRegex.exec(text)) !== null) {
+          const startIndex = match.index;
+          const jsonStartIndex = text.indexOf("{", startIndex);
+          if (jsonStartIndex === -1) continue;
+
+          const beforeText = text.substring(lastIndex, startIndex).trim();
+          if (beforeText) {
+            blocks.push({
+              type: "paragraph",
+              text: beforeText,
+              html: beforeText,
+            });
+          }
+
+          let depth = 0;
+          let inString = false;
+          let escape = false;
+          let jsonEndIndex = -1;
+
+          for (let i = jsonStartIndex; i < text.length; i++) {
+            const char = text[i];
+            if (escape) {
+              escape = false;
+              continue;
             }
-          
-            private async uploadImage(page: Page, imagePath: string | null) {    if (!imagePath || !fs.existsSync(imagePath)) return;
+            if (char === "\\") {
+              escape = true;
+              continue;
+            }
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+
+            if (!inString) {
+              if (char === "{") depth++;
+              else if (char === "}") {
+                depth--;
+                if (depth === 0) {
+                  jsonEndIndex = i;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (jsonEndIndex !== -1) {
+            foundChart = true;
+            const jsonStr = text.substring(jsonStartIndex, jsonEndIndex + 1);
+            blocks.push({ type: "chart", data: jsonStr });
+
+            let closeBracketIndex = text.indexOf("]", jsonEndIndex);
+            if (closeBracketIndex !== -1) {
+              lastIndex = closeBracketIndex + 1;
+              chartPrefixRegex.lastIndex = lastIndex;
+            } else {
+              lastIndex = jsonEndIndex + 1;
+              chartPrefixRegex.lastIndex = lastIndex;
+            }
+          } else {
+            lastIndex = startIndex + 1;
+            chartPrefixRegex.lastIndex = lastIndex;
+          }
+        }
+
+        if (foundChart) {
+          const afterText = text.substring(lastIndex).trim();
+          if (afterText) {
+            blocks.push({
+              type: "paragraph",
+              text: afterText,
+              html: afterText,
+            });
+          }
+        } else if (nakedChartRegex.test(text)) {
+          // 2. ✅ 태그는 없지만 내용이 차트 JSON인 경우 처리
+          blocks.push({ type: "chart", data: text.trim() });
+        } else {
+          // 3. 차트가 없는 일반 문단 처리
+          if (textContent || $el.find("img, iframe, video").length > 0) {
+            blocks.push({
+              type: "paragraph",
+              text: textContent,
+              html: rawHtml || textContent,
+            });
+          }
+        }
+      }
+    });
+    return blocks;
+  }
+
+  private async uploadImage(page: Page, imagePath: string | null) {
+    if (!imagePath || !fs.existsSync(imagePath)) return;
     try {
       await page.keyboard.press("Escape");
       await this.clearPopups();
