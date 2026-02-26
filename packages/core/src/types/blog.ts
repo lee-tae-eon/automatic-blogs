@@ -35,6 +35,7 @@ export interface PersonaDetail {
   closingStyle: string; // 마무리 방식
   forbidden: string[]; // 금지 표현 리스트
   writingTips?: string[]; // [v3.5] 가독성을 높이는 작문 팁
+  topicGuidance?: Record<string, { focus: string; avoidOverEmphasis: string }>; // [v5.3] 주제별 강조점
 }
 
 export interface PersonaExamples {

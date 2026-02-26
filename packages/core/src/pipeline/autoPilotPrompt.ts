@@ -20,9 +20,12 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
 
   // 1. 뉴스 및 내부 링크 지침 (v5.2 적용)
   let newsInstruction = "";
-  if (input.latestNews || (input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0)) {
+  if (
+    input.latestNews ||
+    (input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0)
+  ) {
     const internalLinkText = (input.internalLinkSuggestions || [])
-      .map(link => `- [${link.title}](${link.url})`)
+      .map((link) => `- [${link.title}](${link.url})`)
       .join("\n");
 
     newsInstruction = `
@@ -36,11 +39,15 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
 
 ${input.latestNews || ""}
 
-${internalLinkText ? `
+${
+  internalLinkText
+    ? `
 # 🔗 함께 읽으면 좋은 관련 글 (내부 링크)
 글의 맨 마지막 섹션(결론 뒤)에 아래 링크들을 '함께 읽으면 좋은 글'이라는 소제목과 함께 자연스럽게 포함하세요.
 ${internalLinkText}
-` : ""}
+`
+    : ""
+}
 `;
   }
 
@@ -63,8 +70,9 @@ ${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}
 ${examples.transitions.length > 0 ? `\n**자연스러운 문장 연결 예시**:\n${examples.transitions.map((t) => `- "${t}..."`).join("\n")}` : ""}
 `;
 
-  const listInstruction = (input.topic.includes("리스트") || input.persona === "informative")
-    ? `
+  const listInstruction =
+    input.topic.includes("리스트") || input.persona === "informative"
+      ? `
 ## 📋 [CRITICAL] 정보 구조화 및 리스트(List) 중심 구성 지시
 - **리스트 중심 작법**: 정보를 긴 문단으로 서술하지 마세요. 핵심 데이터, 절차, 특징 등은 반드시 **마크다운 리스트(\`-\`)**를 활용하여 시각적으로 분리하세요.
 - **계층 구조(Depth) 활용**: 단순히 나열하지 말고 하위 항목(들여쓰기)을 사용하여 정보의 인과관계나 세부 내용을 구조화하세요.
@@ -75,7 +83,7 @@ ${examples.transitions.length > 0 ? `\n**자연스러운 문장 연결 예시**:
     - 세부 기능 2: 실제 활용 사례
 - 본문의 핵심 정보 중 50% 이상을 리스트와 표를 적절히 섞어 시각적으로 배치하세요.
 `
-    : "";
+      : "";
 
   const strategicCore = `
 # 🎭 역할 및 전략 지침 (필수 준수)
@@ -102,7 +110,7 @@ ${strategy.differentiationStrategy}
 
 ## 3. 문체 및 스타일 DNA
 ${strategy.styleDNA}
-- **정체성 숨기기 [ULTRA CRITICAL]**: 
+- **정체성 숨기기 [ULTRA CRITICAL]**:
   - 당신이 누구인지 밝히지 마세요. "안녕하세요, 리포터입니다", "전문가로서 말씀드리면" 같은 모든 형태의 자기소개를 절대 금지합니다.
   - "리포터", "분석가", "리뷰어" 등 당신의 **페르소나 명칭을 본문에 단 한 번도 쓰지 마세요.**
   - 오직 정보와 분석에만 집중하여 글 자체로 당신의 전문성을 증명하세요.
@@ -117,11 +125,15 @@ ${(strategy.suggestedOutline || []).join(" -> ")}
   const layoutRules = `
 # 🎨 레이아웃 및 [CRITICAL] 강조 규칙
 
-${input.useImage !== false ? `
+${
+  input.useImage !== false
+    ? `
 ## 🖼️ [CRITICAL] 이미지 삽입 규칙
 - 본문 중간에 이미지가 들어갈 위치에 **[이미지: 검색 키워드]** 태그를 삽입하세요. (최대 2개)
 - 키워드는 Pexels에서 검색 가능하도록 구체적으로 작성하세요.
-` : ""}
+`
+    : ""
+}
 
 당신의 글은 텍스트로만 이루어져 지루합니다. 반드시 **볼드체(**...**)**를 사용하여 시각적 포인트를 만드세요.
 - **핵심 강조**: 문맥상 가장 중요한 **단어**나 **짧은 구**만 굵게(Bold) 처리하세요.
@@ -157,15 +169,20 @@ ${input.useImage !== false ? `
 2. **단문 위주**: 접속사를 줄이고 문장을 짧게 끊어치세요.
 
 ## 📊 데이터 시각화 및 차트 규칙
-- **차트 삽입**: 본문 내용 중 비교, 통계, 추이 등 **수치 데이터가 포함된 경우에만** [차트: {JSON 데이터}] 태그를 삽입하세요.
-- **제외 대상**: 연예 소식, 방송 리뷰, 가벼운 에세이 등 수치 데이터가 중요하지 않은 주제는 차트를 절대 넣지 마세요.
+- **[ULTRA CRITICAL] 차트 삽입 의무**: 수치 데이터(퍼센트, 금액, 온도, 인구, 증감률 등)가 단 1건이라도 포함되면 **최소 1개 이상의 차트를 반드시 본문에 삽입**해야 합니다. 삽입하지 않으면 실패로 간주합니다.
+- **제외 대상**: 연예 소식, 방송 리뷰, 가벼운 에세이 등 수치 데이터가 완전히 0(Zero)인 주제는 차트를 넣지 마세요.
 - **차트 유형별 권장 사용**:
   - \`bar\`: 항목 간의 일반적인 수치 비교 (세로형)
   - \`horizontalBar\`: 항목 이름이 길거나 순위(Rank)를 보여줄 때 (가로형)
   - \`pie\` 또는 \`doughnut\`: 전체 대비 비율을 보여줄 때
   - \`line\`: 시간에 따른 변화 추이를 보여줄 때
-- **데이터 형식**: { "type": "bar" | "horizontalBar" | "pie" | "doughnut" | "line", "title": "차트 제목", "labels": ["항목1", "항목2"], "data": [10, 20] }
-- **위치**: 해당 수치를 설명하는 문단 바로 아래에 배치하세요. (최대 1개)
+- **[CRITICAL] 데이터 형식**: { "type": "bar" | "horizontalBar" | "pie" | "doughnut" | "line", "title": "차트 제목", "labels": ["항목1", "항목2"], "data": [10, 20] }
+- **위치**: 글 중간에 해당 수치를 설명하는 문단 바로 아래에 독립적인 줄로 **[차트: {JSON 데이터}]** 형식으로 배치하세요. 앞뒤에 다른 텍스트를 절대로 붙이지 마세요.
+  - ✅ 올바른 예시:
+    문단 텍스트 작성 중...
+    [차트: {"type":"bar","title":"전세가 추이","labels":["상반기","하반기"],"data":[5.2, 3.1]}]
+    다음 문단 시작...
+- **구체적 예시**: 글 내용에 "GDP 2% 성장", "매출 100억 당기순이익 30억" 같은 비교 수치가 등장하면 무조건 bar/line 차트를 그려야 합니다.
 
 ## ✨ 시각적 요소 및 컬러링 강조 규칙
 ${input.useImage === false ? "- **이미지 생성 금지**: 본문에 어떠한 이미지 관련 태그(`![...]`, `[이미지:...]`)도 **포함하지 마세요.**" : ""}
@@ -194,6 +211,7 @@ ${input.useImage === false ? "- **이미지 생성 금지**: 본문에 어떠한
 - [ ] 모든 소제목이 \`##\` (H2)로 작성되었는가? (볼드 처리 아님)
 - [ ] 문단당 2~3문장으로 끊어져 있고, 문단 사이 빈 줄이 있는가?
 - [ ] 표(Table)가 3열 이내이며 단답형으로 작성되었는가?
+- [ ] 수치 데이터가 있다면 반드시 \`[차트: {...}]\` 태그를 본문에 1개 이상 삽입했는가?
 - [ ] 본문에 \`(매체명)\`이나 \`[뉴스]\` 같은 찌꺼기가 없는가?
 
 ## 📤 출력 형식 (순수 JSON)

@@ -229,9 +229,36 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
+          // ✅ [v5.3] 표(Table) 스타일 강제 적용 (네이버 블로그에 맞게 시각화)
           case "table":
             if (!block.html) break;
-            await this.pasteHtml(block.html);
+
+            // cheerio를 사용해 <table> 내부에 직접 인라인 스타일 추가
+            const $table = cheerio.load(block.html, null, false);
+
+            $table("table").css({
+              width: "100%",
+              "border-collapse": "collapse",
+              "margin-bottom": "20px",
+              "font-size": "14px",
+              "text-align": "center",
+            });
+
+            $table("th").css({
+              "background-color": "#f8f9fa",
+              border: "1px solid #dee2e6",
+              padding: "10px",
+              "font-weight": "bold",
+              color: "#333",
+            });
+
+            $table("td").css({
+              border: "1px solid #dee2e6",
+              padding: "10px",
+              color: "#444",
+            });
+
+            await this.pasteHtml($table.html());
             await this.page.keyboard.press("Enter");
             await this.page.keyboard.press("Enter");
             break;
