@@ -369,14 +369,10 @@ ${naverResult}
             );
 
             if (chartPath && fs.existsSync(chartPath)) {
-              const base64Data = fs.readFileSync(chartPath, {
-                encoding: "base64",
-              });
-              const base64Src = `data:image/png;base64,${base64Data}`;
               sanitizedPublication.content =
                 sanitizedPublication.content.replace(
                   m.full,
-                  `\n![차트 이미지](${base64Src})\n`,
+                  `\n\n> 📊 **[차트 이미지 첨부 안내]**\n> 차트 이미지가 생성되었습니다. 아래 경로의 파일을 복사하거나 드래그해서 본문에 직접 추가해 주세요.\n> \`${chartPath}\`\n\n`,
                 );
             }
           } catch (e) {
