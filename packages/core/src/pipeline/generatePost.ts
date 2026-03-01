@@ -8,6 +8,7 @@ import { analyzeTopicIntent } from "../util/autoInference";
 import { KeywordScoutService } from "../services/KeywordScoutService";
 import { ChartService } from "../services/chartService";
 import path from "path";
+import fs from "fs";
 
 /**
  * 🛡️ [Safety] 콘텐츠 안전 검수 및 강제 수정 함수 (Sanitizer)
@@ -367,11 +368,15 @@ ${naverResult}
               tempDir,
             );
 
-            if (chartPath) {
+            if (chartPath && fs.existsSync(chartPath)) {
+              const base64Data = fs.readFileSync(chartPath, {
+                encoding: "base64",
+              });
+              const base64Src = `data:image/png;base64,${base64Data}`;
               sanitizedPublication.content =
                 sanitizedPublication.content.replace(
                   m.full,
-                  `\n![차트 이미지](${chartPath})\n`,
+                  `\n![차트 이미지](${base64Src})\n`,
                 );
             }
           } catch (e) {
