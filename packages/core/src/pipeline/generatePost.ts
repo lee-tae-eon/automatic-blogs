@@ -359,20 +359,20 @@ ${naverResult}
         for (const m of extractMatches) {
           try {
             const chartData = JSON.parse(m.jsonStr);
-            const tempDir = path.join(
-              projectRoot || process.cwd(),
-              "temp_images",
-            );
-            const chartPath = await chartService.generateChartImage(
-              chartData,
-              tempDir,
-            );
+            const chartUrl = await chartService.generateChartUrl(chartData);
 
-            if (chartPath && fs.existsSync(chartPath)) {
+            if (chartUrl) {
               sanitizedPublication.content =
                 sanitizedPublication.content.replace(
                   m.full,
-                  `\n\n> 📊 **[차트 이미지 첨부 안내]**\n> 차트 이미지가 생성되었습니다. 아래 경로의 파일을 복사하거나 드래그해서 본문에 직접 추가해 주세요.\n> \`${chartPath}\`\n\n`,
+                  `\n\n![차트 이미지](${chartUrl})\n\n`,
+                );
+            } else {
+              // fallback if URL generation fails
+              sanitizedPublication.content =
+                sanitizedPublication.content.replace(
+                  m.full,
+                  `\n\n> 📊 **[차트 생성 오류]** 차트 URL을 생성하지 못했습니다.\n\n`,
                 );
             }
           } catch (e) {

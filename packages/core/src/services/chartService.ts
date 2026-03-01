@@ -23,22 +23,38 @@ export class ChartService {
   /**
    * 차트 데이터를 이미지 파일로 저장합니다.
    */
-  async generateChartImage(chartData: ChartData, outputDir: string): Promise<string | null> {
+  async generateChartImage(
+    chartData: ChartData,
+    outputDir: string,
+  ): Promise<string | null> {
     try {
-      const isMultiColor = chartData.type === 'pie' || chartData.type === 'doughnut';
-      const isHorizontal = chartData.type === 'horizontalBar';
-      
+      const isMultiColor =
+        chartData.type === "pie" || chartData.type === "doughnut";
+      const isHorizontal = chartData.type === "horizontalBar";
+
       // ✅ 1. 데이터셋 통합 처리 (data, data2, datasets 지원)
       let finalDatasets: any[] = [];
-      
+
       if (chartData.datasets && chartData.datasets.length > 0) {
         // 이미 datasets 형식이면 그대로 사용하되 스타일 보완
         finalDatasets = chartData.datasets.map((ds, idx) => ({
           label: ds.label || `데이터 ${idx + 1}`,
           data: ds.data,
-          backgroundColor: ds.backgroundColor || (isMultiColor 
-            ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF']
-            : (idx === 0 ? '#42A5F5' : '#66BB6A'))
+          backgroundColor:
+            ds.backgroundColor ||
+            (isMultiColor
+              ? [
+                  "#FF6384",
+                  "#36A2EB",
+                  "#FFCE56",
+                  "#4BC0C0",
+                  "#9966FF",
+                  "#FF9F40",
+                  "#C9CBCF",
+                ]
+              : idx === 0
+                ? "#42A5F5"
+                : "#66BB6A"),
         }));
       } else if (chartData.data) {
         // 단일 data 처리
@@ -46,16 +62,24 @@ export class ChartService {
           label: chartData.title || "값",
           data: chartData.data,
           backgroundColor: isMultiColor
-            ? ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF']
-            : '#36A2EB'
+            ? [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+                "#FF9F40",
+                "#C9CBCF",
+              ]
+            : "#36A2EB",
         });
-        
+
         // data2가 있으면 추가
         if (chartData.data2) {
           finalDatasets.push({
             label: "비교값",
             data: chartData.data2,
-            backgroundColor: '#FF6384'
+            backgroundColor: "#FF6384",
           });
         }
       }
@@ -63,69 +87,80 @@ export class ChartService {
       if (finalDatasets.length === 0) return null;
 
       // 0부터 시작하도록 강제하고 상단 여백 확보를 위한 최대값 계산
-      const allValues = finalDatasets.flatMap(ds => ds.data);
+      const allValues = finalDatasets.flatMap((ds) => ds.data);
       const maxVal = Math.max(...allValues);
       const suggestedMax = maxVal > 0 ? maxVal * 1.25 : 10; // 25% 여유 공간
 
       const chartConfig = {
-        type: chartData.type === 'horizontalBar' ? 'horizontalBar' : chartData.type,
+        type:
+          chartData.type === "horizontalBar" ? "horizontalBar" : chartData.type,
         data: {
           labels: chartData.labels,
-          datasets: finalDatasets
+          datasets: finalDatasets,
         },
         options: {
           title: {
             display: true,
             text: chartData.title,
             fontSize: 22,
-            fontColor: '#333',
-            padding: 20
+            fontColor: "#333",
+            padding: 20,
           },
           legend: {
             display: finalDatasets.length > 1 || isMultiColor,
-            position: 'bottom',
-            labels: { fontSize: 13 }
+            position: "bottom",
+            labels: { fontSize: 13 },
           },
-          scales: isMultiColor ? {} : {
-            [isHorizontal ? 'xAxes' : 'yAxes']: [{
-              ticks: {
-                beginAtZero: true,
-                suggestedMax: suggestedMax,
-                fontSize: 12
+          scales: isMultiColor
+            ? {}
+            : {
+                [isHorizontal ? "xAxes" : "yAxes"]: [
+                  {
+                    ticks: {
+                      beginAtZero: true,
+                      suggestedMax: suggestedMax,
+                      fontSize: 12,
+                    },
+                    gridLines: { color: "#eee" },
+                  },
+                ],
+                [isHorizontal ? "yAxes" : "xAxes"]: [
+                  {
+                    ticks: { fontSize: 12 },
+                    gridLines: { display: false },
+                  },
+                ],
               },
-              gridLines: { color: '#eee' }
-            }],
-            [isHorizontal ? 'yAxes' : 'xAxes']: [{
-              ticks: { fontSize: 12 },
-              gridLines: { display: false }
-            }]
-          },
           plugins: {
             datalabels: {
               display: true,
-              anchor: 'end',
-              align: isHorizontal ? 'right' : 'top',
-              color: '#333',
-              font: { weight: 'bold', size: 12 },
+              anchor: "end",
+              align: isHorizontal ? "right" : "top",
+              color: "#333",
+              font: { weight: "bold", size: 12 },
               formatter: (value: number) => value.toLocaleString(),
-              offset: 4
-            }
-          }
-        }
+              offset: 4,
+            },
+          },
+        },
       };
 
       // 📊 [v5.1] POST 방식으로 변경 (긴 데이터셋 안정성 확보)
-      const response = await axios.post(this.baseUrl, {
-        chart: chartConfig,
-        width: 800,
-        height: 450,
-        format: 'png',
-        backgroundColor: 'white'
-      }, { responseType: 'arraybuffer' });
-      
+      const response = await axios.post(
+        this.baseUrl,
+        {
+          chart: chartConfig,
+          width: 800,
+          height: 450,
+          format: "png",
+          backgroundColor: "white",
+        },
+        { responseType: "arraybuffer" },
+      );
+
       const fileName = `chart_${Date.now()}.png`;
       const filePath = path.join(outputDir, fileName);
-      
+
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
       }
@@ -134,6 +169,141 @@ export class ChartService {
       return filePath;
     } catch (error) {
       console.error("❌ 차트 이미지 생성 실패:", error);
+      return null;
+    }
+  }
+
+  /**
+   * 매뉴얼 모드용: 차트 데이터를 QuickChart 단축 URL로 생성하여 반환합니다.
+   */
+  async generateChartUrl(chartData: ChartData): Promise<string | null> {
+    try {
+      const isMultiColor =
+        chartData.type === "pie" || chartData.type === "doughnut";
+      const isHorizontal = chartData.type === "horizontalBar";
+
+      let finalDatasets: any[] = [];
+
+      if (chartData.datasets && chartData.datasets.length > 0) {
+        finalDatasets = chartData.datasets.map((ds, idx) => ({
+          label: ds.label || `데이터 ${idx + 1}`,
+          data: ds.data,
+          backgroundColor:
+            ds.backgroundColor ||
+            (isMultiColor
+              ? [
+                  "#FF6384",
+                  "#36A2EB",
+                  "#FFCE56",
+                  "#4BC0C0",
+                  "#9966FF",
+                  "#FF9F40",
+                  "#C9CBCF",
+                ]
+              : idx === 0
+                ? "#42A5F5"
+                : "#66BB6A"),
+        }));
+      } else if (chartData.data) {
+        finalDatasets.push({
+          label: chartData.title || "값",
+          data: chartData.data,
+          backgroundColor: isMultiColor
+            ? [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+                "#FF9F40",
+                "#C9CBCF",
+              ]
+            : "#36A2EB",
+        });
+
+        if (chartData.data2) {
+          finalDatasets.push({
+            label: "비교값",
+            data: chartData.data2,
+            backgroundColor: "#FF6384",
+          });
+        }
+      }
+
+      if (finalDatasets.length === 0) return null;
+
+      const allValues = finalDatasets.flatMap((ds) => ds.data);
+      const maxVal = Math.max(...allValues);
+      const suggestedMax = maxVal > 0 ? maxVal * 1.25 : 10;
+
+      const chartConfig = {
+        type:
+          chartData.type === "horizontalBar" ? "horizontalBar" : chartData.type,
+        data: {
+          labels: chartData.labels,
+          datasets: finalDatasets,
+        },
+        options: {
+          title: {
+            display: true,
+            text: chartData.title,
+            fontSize: 22,
+            fontColor: "#333",
+            padding: 20,
+          },
+          legend: {
+            display: finalDatasets.length > 1 || isMultiColor,
+            position: "bottom",
+            labels: { fontSize: 13 },
+          },
+          scales: isMultiColor
+            ? {}
+            : {
+                [isHorizontal ? "xAxes" : "yAxes"]: [
+                  {
+                    ticks: {
+                      beginAtZero: true,
+                      suggestedMax: suggestedMax,
+                      fontSize: 12,
+                    },
+                    gridLines: { color: "#eee" },
+                  },
+                ],
+                [isHorizontal ? "yAxes" : "xAxes"]: [
+                  {
+                    ticks: { fontSize: 12 },
+                    gridLines: { display: false },
+                  },
+                ],
+              },
+          plugins: {
+            datalabels: {
+              display: true,
+              anchor: "end",
+              align: isHorizontal ? "right" : "top",
+              color: "#333",
+              font: { weight: "bold", size: 12 },
+              formatter: (value: number) => value.toLocaleString(),
+              offset: 4,
+            },
+          },
+        },
+      };
+
+      const response = await axios.post(`${this.baseUrl}/create`, {
+        chart: chartConfig,
+        width: 800,
+        height: 450,
+        format: "png",
+        backgroundColor: "white",
+      });
+
+      if (response.data && response.data.success && response.data.url) {
+        return response.data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error("❌ 차트 URL 생성 실패:", error);
       return null;
     }
   }
