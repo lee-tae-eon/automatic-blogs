@@ -6,6 +6,8 @@ import { NaverSearchService } from "../services/naverSearchService";
 import { DbService } from "../services/dbService";
 import { analyzeTopicIntent } from "../util/autoInference";
 import { KeywordScoutService } from "../services/KeywordScoutService";
+import { ChartService } from "../services/chartService";
+import path from "path";
 
 /**
  * 🛡️ [Safety] 콘텐츠 안전 검수 및 강제 수정 함수 (Sanitizer)
@@ -333,6 +335,49 @@ ${naverResult}
         }
         // 원본 reference 배열도 필터링된 버전으로 교체
         sanitizedPublication.references = filteredRefs;
+      }
+
+      // ✅ [v5.3] 매뉴얼 모드(Manual) 전용: 차트 태그 파싱 및 실제 이미지 생성
+      if (
+        (task.mode === "manual" || !task.mode) &&
+        sanitizedPublication.content.includes("[차트:")
+      ) {
+        onProgress?.("📊 매뉴얼 모드 - 차트 이미지 생성 중...");
+        const chartService = new ChartService();
+        const content = sanitizedPublication.content;
+
+        // 정규식을 통해 [차트: {...}] 형식 추출 (줄바꿈 포함 가능)
+        const chartRegex = /\[\s*차트\s*:\s*(\{[\s\S]*?\})\s*\]/g;
+        let match;
+        const extractMatches = [];
+
+        while ((match = chartRegex.exec(content)) !== null) {
+          extractMatches.push({ full: match[0], jsonStr: match[1] });
+        }
+
+        for (const m of extractMatches) {
+          try {
+            const chartData = JSON.parse(m.jsonStr);
+            const tempDir = path.join(
+              projectRoot || process.cwd(),
+              "temp_images",
+            );
+            const chartPath = await chartService.generateChartImage(
+              chartData,
+              tempDir,
+            );
+
+            if (chartPath) {
+              sanitizedPublication.content =
+                sanitizedPublication.content.replace(
+                  m.full,
+                  `\n![차트 이미지](${chartPath})\n`,
+                );
+            }
+          } catch (e) {
+            console.error("❌ 매뉴얼 모드 차트 생성 에러:", e);
+          }
+        }
       }
 
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);
