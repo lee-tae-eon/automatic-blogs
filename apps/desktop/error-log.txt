@@ -15,3 +15,17 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/eongon/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 3. 2. 오후 10:00:23]
+📍 대상 포스트: 중동 위기, 한국 경제에 심각한 타격 경고…전략적 대응 시급
+❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
+🔗 발생 URL: https://section.blog.naver.com/BlogHome.naver?directoryNo=0&currentPage=1&groupId=0
+--------------------------------------------------
+
+==================================================
+[2026. 3. 2. 오후 10:02:08]
+📍 대상 포스트: 중동 위기, 한국 경제에 심각한 타격 경고…전략적 대응 시급
+❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/eongon
+--------------------------------------------------
