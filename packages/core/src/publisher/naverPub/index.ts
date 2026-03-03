@@ -264,6 +264,21 @@ export class NaverPublisher implements IBlogPublisher {
 
     await page.waitForTimeout(2000);
 
+    // 로그인이 안 되어 있거나 권한이 없는 경우, /postwrite 가 블로그 홈 등으로 리디렉션 됨
+    if (
+      !page.url().includes("postwrite") &&
+      !page.url().includes("nid.naver.com")
+    ) {
+      onProgress?.(
+        "세션이 없거나 권한이 없습니다. 로그인 페이지로 이동합니다...",
+      );
+      await page.goto("https://nid.naver.com/nidlogin.login", {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+      });
+      await page.waitForTimeout(2000);
+    }
+
     if (page.url().includes("nid.naver.com")) {
       onProgress?.("네이버 로그인 진행 중...");
       if (password) {
@@ -292,6 +307,17 @@ export class NaverPublisher implements IBlogPublisher {
         waitUntil: "domcontentloaded",
         timeout: 30000,
       });
+      await page.waitForTimeout(2000);
+    }
+
+    // 최종적으로 현재 URL이 postwrite 에 들어왔는지 검증
+    if (!page.url().includes("postwrite")) {
+      console.warn(
+        `⚠️ [NaverPublisher] '/postwrite' 권한 없음 또는 리디렉션 됨: ${page.url()}`,
+      );
+      throw new Error(
+        `에디터 접속 실패. (현재 URL: ${page.url()}) 세션이 만료되었거나 권한이 없습니다. 계정 연결을 초기화하고 다시 로그인해주세요.`,
+      );
     }
   }
 

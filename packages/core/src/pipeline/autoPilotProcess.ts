@@ -1,4 +1,7 @@
-import { KeywordScoutService, ScoutConfig } from "../services/KeywordScoutService";
+import {
+  KeywordScoutService,
+  ScoutConfig,
+} from "../services/KeywordScoutService";
 import { TopicExpanderService } from "../services/TopicExpanderService";
 import { CompetitorAnalyzerService } from "../services/CompetitorAnalyzerService";
 import { generatePost } from "./generatePost";
@@ -16,7 +19,8 @@ export interface AutoPilotOptions {
   geminiClient: any;
   publishPlatforms: ("naver" | "tistory")[];
   credentials: {
-    naver?: { id: string; pw: string };
+    naver?: { id: string; pw: string; category?: string }; // Legacy support
+    navers?: { id: string; pw: string; category?: string }[];
     tistory?: { id: string; pw: string };
   };
   persona?: Persona;
@@ -31,24 +35,26 @@ export interface AutoPilotOptions {
  * 주제 확장 -> 키워드 선정 -> 경쟁사 분석 -> 전략적 생성 -> 발행
  */
 export async function runAutoPilot(options: AutoPilotOptions) {
-  const { 
-    broadTopic, 
-    blogBoardName, 
-    config, 
-    userDataPath, 
-    geminiClient, 
-    publishPlatforms, 
-    credentials, 
-    persona = "informative", 
-    tone = "professional", 
+  const {
+    broadTopic,
+    blogBoardName,
+    config,
+    userDataPath,
+    geminiClient,
+    publishPlatforms,
+    credentials,
+    persona = "informative",
+    tone = "professional",
     useImage = true,
-    headless, 
-    onProgress 
+    headless,
+    onProgress,
   } = options;
   const log = (msg: string) => onProgress?.(msg);
 
   if (!blogBoardName || blogBoardName.trim() === "") {
-    throw new Error("블로그 게시판 이름(blogBoardName)은 필수 입력값입니다. 기본값을 사용할 수 없습니다.");
+    throw new Error(
+      "블로그 게시판 이름(blogBoardName)은 필수 입력값입니다. 기본값을 사용할 수 없습니다.",
+    );
   }
 
   try {
@@ -56,11 +62,11 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     log(`🧠 주제 '${broadTopic}' 분석 및 키워드 확장 중...`);
     const expander = new TopicExpanderService(geminiClient);
     let candidates = await expander.expandTopic(broadTopic);
-    
+
     // [Safety] 과거 연도 키워드 강제 필터링
     const currentYear = new Date().getFullYear().toString();
-    candidates = candidates.filter(c => 
-      !c.keyword.includes("2024") && !c.keyword.includes("2025")
+    candidates = candidates.filter(
+      (c) => !c.keyword.includes("2024") && !c.keyword.includes("2025"),
     );
 
     log(`✅ ${candidates.length}개의 최신 후보 키워드 발굴 완료`);
@@ -72,23 +78,27 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       candidates.map(async (c) => {
         const analysis = await scout.analyzeKeyword(c.keyword);
         return { ...c, ...analysis };
-      })
+      }),
     );
 
     // 점수가 가장 높은 키워드 선정
     const bestTarget = analyzedCandidates.sort((a, b) => b.score - a.score)[0];
-    log(`🎯 최종 황금 키워드 선정: [${bestTarget.keyword}] (점수: ${bestTarget.score})`);
+    log(
+      `🎯 최종 황금 키워드 선정: [${bestTarget.keyword}] (점수: ${bestTarget.score})`,
+    );
     log(`💡 선정 이유: ${bestTarget.reason}`);
 
     // 3. 경쟁사 구조 분석 (Strategy)
     log(`📊 상위 노출 블로그 구조 분석 중...`);
     const analyzer = new CompetitorAnalyzerService();
     const strategy = await analyzer.analyzeStructure(bestTarget);
-    log(`📝 전략 수립: 목표 분량 ${strategy.estimatedLength}자, 표 포함 여부: ${strategy.hasTable}`);
+    log(
+      `📝 전략 수립: 목표 분량 ${strategy.estimatedLength}자, 표 포함 여부: ${strategy.hasTable}`,
+    );
 
     // 4. 전략 기반 콘텐츠 생성 (Strategic Generation)
     log(`🤖 맞춤형 콘텐츠 생성 중...`);
-    
+
     // v3.13: 오토파일럿 전용 모드 및 전략 데이터 전달
     const task: BatchTask = {
       topic: bestTarget.keyword,
@@ -96,7 +106,7 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       tone,
       useImage,
       status: "진행",
-      category: "정보/리뷰", 
+      category: "정보/리뷰",
       keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], // 세만틱 키워드 주입
       mode: "auto",
       strategy: {
@@ -105,8 +115,8 @@ export async function runAutoPilot(options: AutoPilotOptions) {
         differentiationStrategy: strategy.differentiationStrategy,
         styleDNA: strategy.styleDNA,
         estimatedLength: strategy.estimatedLength,
-        hasTable: strategy.hasTable
-      }
+        hasTable: strategy.hasTable,
+      },
     };
 
     const publication = await generatePost({
@@ -120,35 +130,55 @@ export async function runAutoPilot(options: AutoPilotOptions) {
 
     // 5. 블로그 발행 (Publishing)
     const htmlContent = await markdownToHtml(publication.content);
-    
+
     for (const platform of publishPlatforms) {
       log(`🚀 ${platform.toUpperCase()} 발행 시작...`);
-      
-      let publisher: IBlogPublisher | null = null;
-      let pubCreds: any = {};
 
-      if (platform === "naver" && credentials.naver) {
-        // 유저 ID를 기반으로 퍼블리셔 생성 (세션 분리)
-        publisher = new NaverPublisher(userDataPath, credentials.naver.id);
-        pubCreds = { blogId: credentials.naver.id, password: credentials.naver.pw, headless };
+      if (platform === "naver") {
+        const naverAccounts =
+          credentials.navers && credentials.navers.length > 0
+            ? credentials.navers
+            : credentials.naver
+              ? [credentials.naver]
+              : [];
+
+        for (const account of naverAccounts) {
+          log(`🚀 NAVER 발행 중... (계정: ${account.id})`);
+          const publisher = new NaverPublisher(userDataPath, account.id);
+          const pubCreds = {
+            blogId: account.id,
+            password: account.pw,
+            headless,
+          };
+
+          await publisher.publish(pubCreds, {
+            ...publication,
+            content: htmlContent,
+            category: account.category || blogBoardName,
+            tags: publication.tags || bestTarget.keyword.split(" "),
+          });
+          log(`✅ NAVER 발행 완료! (${account.id})`);
+        }
       } else if (platform === "tistory" && credentials.tistory) {
-        publisher = new TistoryPublisher(userDataPath);
-        pubCreds = { blogId: credentials.tistory.id, password: credentials.tistory.pw, headless };
-      }
+        log(`🚀 TISTORY 발행 중... (계정: ${credentials.tistory.id})`);
+        const publisher = new TistoryPublisher(userDataPath);
+        const pubCreds = {
+          blogId: credentials.tistory.id,
+          password: credentials.tistory.pw,
+          headless,
+        };
 
-      if (publisher) {
         await publisher.publish(pubCreds, {
           ...publication,
           content: htmlContent,
-          category: blogBoardName, // 실제 블로그 게시판 이름 전달
+          category: blogBoardName,
           tags: publication.tags || bestTarget.keyword.split(" "),
         });
-        log(`✅ ${platform.toUpperCase()} 발행 완료!`);
+        log(`✅ TISTORY 발행 완료!`);
       }
     }
 
     return { success: true, analysis: bestTarget, publication };
-
   } catch (error: any) {
     log(`❌ 에러 발생: ${error.message}`);
     return { success: false, error: error.message };

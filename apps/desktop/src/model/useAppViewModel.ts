@@ -3,7 +3,7 @@ import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
 
 export const useAppViewModel = () => {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
-  
+
   // 상태 세분화 (v3.23)
   const [isManualProcessing, setIsManualProcessing] = useState(false);
   const [isAutoSearching, setIsAutoSearching] = useState(false);
@@ -11,13 +11,15 @@ export const useAppViewModel = () => {
 
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<any[]>([]); 
-  const [recommendations, setRecommendations] = useState<Record<string, any[]>>({}); // 추가
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<Record<string, any[]>>(
+    {},
+  ); // 추가
   const [isFetchingRecs, setIsFetchingRecs] = useState(false); // 추가
-  
+
   const shouldStopManualRef = useRef(false);
   const manualAbortControllerRef = useRef<AbortController | null>(null);
-  
+
   const shouldStopAutoRef = useRef(false);
   const autoAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -31,6 +33,10 @@ export const useAppViewModel = () => {
   const [credentials, setCredentials] = useState({
     naverId: "",
     naverPw: "",
+    naverCategory: "",
+    naverId2: "",
+    naverPw2: "",
+    naverCategory2: "",
     tistoryId: "",
     tistoryPw: "",
     geminiKey: "",
@@ -39,6 +45,7 @@ export const useAppViewModel = () => {
     headless: false,
     modelType: "normal" as "fast" | "normal",
     enableNaver: true,
+    enableNaver2: false,
     enableTistory: false,
   });
 
@@ -56,9 +63,14 @@ export const useAppViewModel = () => {
           headless: storedCreds.headless ?? false,
           modelType: storedCreds.modelType ?? "normal",
           enableNaver: storedCreds.enableNaver ?? true,
+          enableNaver2: storedCreds.enableNaver2 ?? false,
           enableTistory: storedCreds.enableTistory ?? false,
           thirdGemini: storedCreds.thirdGemini || "",
           tistoryPw: storedCreds.tistoryPw || storedCreds.tistoryToken || "", // 마이그레이션 호환성
+          naverCategory: storedCreds.naverCategory || "일상정보",
+          naverId2: storedCreds.naverId2 || "",
+          naverPw2: storedCreds.naverPw2 || "",
+          naverCategory2: storedCreds.naverCategory2 || "일상정보",
         }));
       }
       setIsStoreLoaded(true);
@@ -110,7 +122,12 @@ export const useAppViewModel = () => {
 
   const updateTaskState = async (
     index: number,
-    updates: { status?: BatchTask["status"]; persona?: Persona; tone?: Tone },
+    updates: {
+      status?: BatchTask["status"];
+      persona?: Persona;
+      tone?: Tone;
+      useImage?: boolean;
+    },
   ) => {
     // 1. 상태 먼저 업데이트 (메모리)
     setTasks((prevTasks) =>
@@ -162,9 +179,13 @@ export const useAppViewModel = () => {
 
   const handleApproveTask = async (index: number) => {
     // 1. 검수 완료 상태로 변경
-    setTasks(prev => prev.map((t, i) => i === index ? { ...t, isReviewed: true, status: "진행" } : t));
+    setTasks((prev) =>
+      prev.map((t, i) =>
+        i === index ? { ...t, isReviewed: true, status: "진행" } : t,
+      ),
+    );
     addLog(`✅ 검수 완료 승인: ${tasks[index].topic}. 곧 발행을 시작합니다.`);
-    
+
     // 2. 발행 프로세스 재실행 (이미 'isReviewed: true'이므로 검수 단계를 건너뛰고 발행함)
     // handlePublishAll을 호출하면 '진행' 상태인 것부터 순차적으로 다시 처리함
     setTimeout(() => {
@@ -225,7 +246,9 @@ export const useAppViewModel = () => {
       manualAbortControllerRef.current.abort();
     }
     window.ipcRenderer.send("abort-process", "manual"); // 'manual' 인자 추가
-    addLog("중단 요청을 보냈습니다. 현재 수동 작업이 마무리되는 대로 중단됩니다.");
+    addLog(
+      "중단 요청을 보냈습니다. 현재 수동 작업이 마무리되는 대로 중단됩니다.",
+    );
   };
 
   /**
@@ -235,9 +258,12 @@ export const useAppViewModel = () => {
     setIsFetchingRecs(true);
     addLog(`📡 [추천 시스템] '${category}' 카테고리 최신 트렌드 분석 시작...`);
     try {
-      const result = await window.ipcRenderer.invoke("fetch-recommended-topics", category);
+      const result = await window.ipcRenderer.invoke(
+        "fetch-recommended-topics",
+        category,
+      );
       if (result.success) {
-        setRecommendations(prev => ({ ...prev, [category]: result.data }));
+        setRecommendations((prev) => ({ ...prev, [category]: result.data }));
       } else {
         addLog(`❌ 추천 토픽 수집 실패: ${result.error}`);
       }
@@ -268,7 +294,9 @@ export const useAppViewModel = () => {
       });
 
       if (result.success) {
-        addLog(`✨ [Auto-Pilot] 성공적으로 완료되었습니다! (점수: ${result.analysis.score})`);
+        addLog(
+          `✨ [Auto-Pilot] 성공적으로 완료되었습니다! (점수: ${result.analysis.score})`,
+        );
         alert(`발행 성공! (키워드 점수: ${result.analysis.score})`);
       } else {
         if (result.error === "AbortError") {
@@ -311,14 +339,19 @@ export const useAppViewModel = () => {
     addLog(`🔍 [Auto-Pilot] 주제 '${broadTopic}' 분석 중...`);
 
     try {
-      const result = await window.ipcRenderer.invoke("fetch-keyword-candidates", {
-        broadTopic,
-        modelType: credentials.modelType,
-      });
+      const result = await window.ipcRenderer.invoke(
+        "fetch-keyword-candidates",
+        {
+          broadTopic,
+          modelType: credentials.modelType,
+        },
+      );
 
       if (result.success) {
         setCandidates(result.data);
-        addLog(`✅ [Auto-Pilot] ${result.data.length}개의 키워드 후보를 찾았습니다.`);
+        addLog(
+          `✅ [Auto-Pilot] ${result.data.length}개의 키워드 후보를 찾았습니다.`,
+        );
       } else {
         if (result.error === "AbortError") {
           addLog("🛑 [Auto-Pilot] 분석이 중단되었습니다.");
@@ -337,18 +370,28 @@ export const useAppViewModel = () => {
   /**
    * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
    */
-  const handleStartWithKeyword = async (analysis: any, options: { category: string; persona: Persona; tone: Tone; useImage: boolean }) => {
+  const handleStartWithKeyword = async (
+    analysis: any,
+    options: {
+      category: string;
+      persona: Persona;
+      tone: Tone;
+      useImage: boolean;
+    },
+  ) => {
     if (isAutoPublishing) return;
 
     setIsAutoPublishing(true);
     shouldStopAutoRef.current = false;
     autoAbortControllerRef.current = new AbortController();
-    addLog(`🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${options.category}) 발행 시작`);
+    addLog(
+      `🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${options.category}) 발행 시작`,
+    );
 
     try {
       const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
         analysis,
-        category: options.category, 
+        category: options.category,
         persona: options.persona,
         tone: options.tone,
         useImage: options.useImage,
@@ -361,7 +404,9 @@ export const useAppViewModel = () => {
         alert("발행 성공!");
       } else {
         if (result.error === "AbortError") {
-          addLog(`🛑 [Auto-Pilot] '${analysis.keyword}' 작업이 중단되었습니다.`);
+          addLog(
+            `🛑 [Auto-Pilot] '${analysis.keyword}' 작업이 중단되었습니다.`,
+          );
         } else {
           addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
           alert(`실패: ${result.error}`);
@@ -377,7 +422,11 @@ export const useAppViewModel = () => {
 
   const handlePublishAll = async (isResume = false) => {
     if (isManualProcessing || tasks.length === 0) return;
-    if (!isResume && !confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")) return;
+    if (
+      !isResume &&
+      !confirm("모든 항목에 대해 블로그 발행을 시작하시겠습니까?")
+    )
+      return;
 
     setIsManualProcessing(true);
     shouldStopManualRef.current = false;
@@ -386,7 +435,10 @@ export const useAppViewModel = () => {
     addLog("전체 발행 프로세스를 시작합니다.");
 
     for (const [i, task] of tasks.entries()) {
-      if (shouldStopManualRef.current || manualAbortControllerRef.current?.signal.aborted) {
+      if (
+        shouldStopManualRef.current ||
+        manualAbortControllerRef.current?.signal.aborted
+      ) {
         addLog("사용자에 의해 작업이 중단되었습니다.");
         break;
       }
@@ -418,11 +470,15 @@ export const useAppViewModel = () => {
         if (!genResult.success) throw new Error(genResult.error || "생성 실패");
 
         // [v5.0] NotebookLM 검수 로직: 사용자가 '직접 검수'를 선택했고 아직 검수 전이라면 여기서 멈춤
-        if (task.useNotebookLM && task.notebookMode === "manual" && !task.isReviewed) {
+        if (
+          task.useNotebookLM &&
+          task.notebookMode === "manual" &&
+          !task.isReviewed
+        ) {
           addLog(`[${i + 1}] NotebookLM 사용자 검수 대기 중: ${task.topic}`);
           await updateTaskState(i, { status: "검수중" });
           setIsManualProcessing(false);
-          return; 
+          return;
         }
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
@@ -436,6 +492,20 @@ export const useAppViewModel = () => {
               platform: "naver",
               blogId: credentials.naverId,
               password: credentials.naverPw,
+              blogBoardName: credentials.naverCategory,
+              headless: credentials.headless,
+            }),
+          );
+        }
+
+        if (credentials.enableNaver2 && credentials.naverId2) {
+          publishTasks.push(
+            window.ipcRenderer.invoke("publish-post", {
+              ...genResult.data,
+              platform: "naver",
+              blogId: credentials.naverId2,
+              password: credentials.naverPw2,
+              blogBoardName: credentials.naverCategory2,
               headless: credentials.headless,
             }),
           );
@@ -488,17 +558,17 @@ export const useAppViewModel = () => {
   };
 
   return {
-    state: { 
-      tasks, 
-      isManualProcessing, 
-      isAutoSearching, 
-      isAutoPublishing, 
+    state: {
+      tasks,
+      isManualProcessing,
+      isAutoSearching,
+      isAutoPublishing,
       isProcessing: isManualProcessing || isAutoSearching || isAutoPublishing, // 하위 호환성 유지
-      credentials, 
-      logs, 
+      credentials,
+      logs,
       candidates,
       recommendations,
-      isFetchingRecs
+      isFetchingRecs,
     },
     actions: {
       handleCredentialChange,

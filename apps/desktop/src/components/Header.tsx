@@ -4,6 +4,10 @@ interface HeaderProps {
   credentials: {
     naverId: string;
     naverPw: string;
+    naverCategory: string;
+    naverId2: string;
+    naverPw2: string;
+    naverCategory2: string; // This line is already present, no change needed here based on the instruction's intent.
     geminiKey: string;
     subGemini: string;
     thirdGemini: string; // 추가
@@ -12,6 +16,7 @@ interface HeaderProps {
     tistoryId: string;
     tistoryPw: string;
     enableNaver: boolean;
+    enableNaver2: boolean;
     enableTistory: boolean;
   };
   onChange: (
@@ -58,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
             🌐 플랫폼 정보 입력
           </h2>
           <div style={{ display: "flex", gap: "15px" }}>
-            {/* 네이버 그룹 */}
+            {/* 네이버 그룹 1 */}
             <div
               className="platform-group"
               style={{ flex: 1, opacity: credentials.enableNaver ? 1 : 0.6 }}
@@ -84,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
                     fontSize: "0.85rem",
                   }}
                 >
-                  Naver
+                  Naver 1
                 </span>
               </div>
               <input
@@ -109,6 +114,66 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
                 value={credentials.naverPw}
                 onChange={onChange}
                 disabled={!credentials.enableNaver}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  border: "1px solid #ddd",
+                }}
+              />
+            </div>
+
+            {/* 네이버 그룹 2 (v5.3 Multi-Account) */}
+            <div
+              className="platform-group"
+              style={{ flex: 1, opacity: credentials.enableNaver2 ? 1 : 0.6 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "8px",
+                }}
+              >
+                <input
+                  name="enableNaver2"
+                  type="checkbox"
+                  checked={credentials.enableNaver2}
+                  onChange={onChange}
+                />
+                <span
+                  style={{
+                    fontWeight: "bold",
+                    color: "#03c75a",
+                    fontSize: "0.85rem",
+                  }}
+                >
+                  Naver 2
+                </span>
+              </div>
+              <input
+                name="naverId2"
+                type="text"
+                placeholder="네이버 아이디"
+                value={credentials.naverId2}
+                onChange={onChange}
+                disabled={!credentials.enableNaver2}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  marginBottom: "5px",
+                  borderRadius: "4px",
+                  border: "1px solid #ddd",
+                }}
+              />
+              <input
+                name="naverPw2"
+                type="password"
+                placeholder="비밀번호"
+                value={credentials.naverPw2}
+                onChange={onChange}
+                disabled={!credentials.enableNaver2}
                 style={{
                   width: "100%",
                   padding: "8px",

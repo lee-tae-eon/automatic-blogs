@@ -10,17 +10,27 @@ import { AutoPilotControl } from "./components/AutoPilotControl"; // 추가
 
 export const App: React.FC = () => {
   const { state, actions } = useAppViewModel();
-  const { tasks, isManualProcessing, isAutoSearching, isAutoPublishing, credentials, logs } = state;
+  const {
+    tasks,
+    isManualProcessing,
+    isAutoSearching,
+    isAutoPublishing,
+    credentials,
+    logs,
+  } = state;
 
   return (
-    <div className="container" style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
+    <div
+      className="container"
+      style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}
+    >
       <Header
         credentials={credentials}
         onChange={actions.handleCredentialChange}
       />
 
       {/* v2.0 Auto-Pilot 영역 */}
-      <AutoPilotControl 
+      <AutoPilotControl
         isSearching={isAutoSearching}
         isPublishing={isAutoPublishing}
         candidates={state.candidates}
@@ -28,12 +38,18 @@ export const App: React.FC = () => {
         isFetchingRecs={state.isFetchingRecs}
         onFetch={actions.handleFetchCandidates}
         onStop={actions.handleStopAutoPilot}
-        onStart={actions.handleStartWithKeyword} 
+        onStart={actions.handleStartWithKeyword}
         onFetchRecs={actions.handleFetchRecommendations}
+        credentials={credentials}
+        onChange={actions.handleCredentialChange}
       />
 
       {/* 메인 입력 영역: 2단 레이아웃 (트렌드 + 폼) */}
-      <ManualTaskInput onAddTask={actions.handleAddTask} />
+      <ManualTaskInput
+        onAddTask={actions.handleAddTask}
+        credentials={credentials}
+        onChange={actions.handleCredentialChange}
+      />
 
       {/* 제어 영역: 엑셀 업로드 및 실행 버튼 */}
       <ActionButtons

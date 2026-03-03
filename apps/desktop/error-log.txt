@@ -29,3 +29,37 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/eongon
 --------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 12:53:05]
+📍 대상 포스트: 밤 11시 전 잠들면 돈 번다? 2026년 대세 '슬리포노믹스'로 꿀잠 자고 건강 지키기
+❌ 에러 메시지: 최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)
+🔗 발생 URL: https://blog.naver.com/prettyhihihi/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 12:53:06]
+📍 대상 포스트: 밤 11시 전 잠들면 돈 번다? 2026년 대세 '슬리포노믹스'로 꿀잠 자고 건강 지키기
+❌ 에러 메시지: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.se-title-text').first()[22m
+
+🔗 발생 URL: https://blog.naver.com/prettyhihihi
+--------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 8:37:08]
+📍 대상 포스트: 외국인 투자 동향 분석: 대형 반도체주 매도와 소부장 이동의 전략적 의미
+❌ 에러 메시지: 최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)
+🔗 발생 URL: https://blog.naver.com/prettyhihihi/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 8:37:11]
+📍 대상 포스트: 외국인 투자 동향 분석: 대형 반도체주 매도와 소부장 이동의 전략적 의미
+❌ 에러 메시지: locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.se-title-text').first()[22m
+
+🔗 발생 URL: https://blog.naver.com/prettyhihihi
+--------------------------------------------------

@@ -122,10 +122,15 @@ function registerIpcHandlers() {
       process.env.VITE_GEMINI_API_KEY,
     ].filter((k) => !!k && k.trim() !== "");
 
-    if (apiKeys.length === 0) return { success: false, error: "Gemini API Key가 없습니다." };
+    if (apiKeys.length === 0)
+      return { success: false, error: "Gemini API Key가 없습니다." };
 
     let lastError: any;
-    const modelVersions = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const modelVersions = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+    ];
 
     for (const [idx, apiKey] of apiKeys.entries()) {
       for (const modelName of modelVersions) {
@@ -141,8 +146,12 @@ function registerIpcHandlers() {
         } catch (error: any) {
           lastError = error;
           const errorMsg = String(error.message || error);
-          
-          if (errorMsg.includes("429") || errorMsg.includes("quota") || errorMsg.includes("limit")) {
+
+          if (
+            errorMsg.includes("429") ||
+            errorMsg.includes("quota") ||
+            errorMsg.includes("limit")
+          ) {
             const warnMsg = `⚠️ [추천 시스템] 키 #${idx + 1} (${modelName}) 할당량 초과. 다음 모델/키 시도...`;
             console.warn(warnMsg);
             if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
@@ -154,7 +163,8 @@ function registerIpcHandlers() {
     }
 
     const finalError = `모든 API 키가 할당량을 초과했거나 에러가 발생했습니다. (${lastError?.message || lastError})`;
-    if (mainWindow) mainWindow.webContents.send("process-log", `❌ ${finalError}`);
+    if (mainWindow)
+      mainWindow.webContents.send("process-log", `❌ ${finalError}`);
     return { success: false, error: finalError };
   });
 
@@ -256,18 +266,24 @@ function registerIpcHandlers() {
       const trends = await rss.fetchTrendingTopics("KR", query);
 
       if (!trends || trends.length === 0) {
-        return { success: false, error: "현재 가져올 수 있는 한국 트렌드가 없습니다." };
+        return {
+          success: false,
+          error: "현재 가져올 수 있는 한국 트렌드가 없습니다.",
+        };
       }
 
-      const formattedTopics = trends.map(t => ({
+      const formattedTopics = trends.map((t) => ({
         topic: t.title,
         summary: `최신 이슈: ${t.title}`,
-        keywords: t.title.split(" ").slice(0, 2)
+        keywords: t.title.split(" ").slice(0, 2),
       }));
 
       return { success: true, data: formattedTopics };
     } catch (error: any) {
-      return { success: false, error: "트렌드를 가져오는 중 오류가 발생했습니다." };
+      return {
+        success: false,
+        error: "트렌드를 가져오는 중 오류가 발생했습니다.",
+      };
     }
   });
 
@@ -406,14 +422,16 @@ function registerIpcHandlers() {
             process.env.VITE_GEMINI_API_KEY,
           ].filter((k) => !!k && k.trim() !== "");
 
-          if (apiKeys.length === 0) throw new Error("Gemini API Key가 없습니다.");
+          if (apiKeys.length === 0)
+            throw new Error("Gemini API Key가 없습니다.");
 
           let lastError;
           for (const apiKey of apiKeys) {
             try {
               const modelName =
                 modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+                  ? process.env.VITE_GEMINI_MODEL_FAST ||
+                    "gemini-2.5-flash-lite"
                   : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
 
               const geminiClient = new GeminiClient(apiKey, modelName);
@@ -422,7 +440,8 @@ function registerIpcHandlers() {
                 searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
                 adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
                 adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-                adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+                adCustomerId:
+                  process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
               };
 
               const expander = new TopicExpanderService(geminiClient);
@@ -431,7 +450,8 @@ function registerIpcHandlers() {
               const scout = new KeywordScoutService(scoutConfig);
               const analyzed = [];
               for (const c of candidates) {
-                if (globalAbortController?.signal.aborted) throw new Error("AbortError");
+                if (globalAbortController?.signal.aborted)
+                  throw new Error("AbortError");
                 const analysis = await scout.analyzeKeyword(c.keyword);
                 analyzed.push({ ...c, ...analysis });
                 await new Promise((res) => setTimeout(res, 500));
@@ -447,7 +467,8 @@ function registerIpcHandlers() {
           throw lastError;
         }, globalAbortController);
       } catch (error: any) {
-        if (error.message === "AbortError") return { success: false, error: "AbortError" };
+        if (error.message === "AbortError")
+          return { success: false, error: "AbortError" };
         return { success: false, error: error.message };
       } finally {
         globalAbortController = null;
@@ -460,7 +481,10 @@ function registerIpcHandlers() {
   // ----------------------------------------
   ipcMain.handle(
     "run-autopilot-step2",
-    async (event, { analysis, category, persona, tone, useImage, modelType, headless }) => {
+    async (
+      event,
+      { analysis, category, persona, tone, useImage, modelType, headless },
+    ) => {
       globalAbortController = new AbortController();
 
       try {
@@ -472,9 +496,14 @@ function registerIpcHandlers() {
             thirdGemini,
             naverId,
             naverPw,
+            naverCategory,
+            naverId2,
+            naverPw2,
+            naverCategory2,
             tistoryId,
             tistoryPw,
             enableNaver,
+            enableNaver2,
             enableTistory,
           } = credentials || {};
 
@@ -486,14 +515,16 @@ function registerIpcHandlers() {
             process.env.VITE_GEMINI_API_KEY,
           ].filter((k) => !!k && k.trim() !== "");
 
-          if (apiKeys.length === 0) throw new Error("Gemini API Key가 없습니다.");
+          if (apiKeys.length === 0)
+            throw new Error("Gemini API Key가 없습니다.");
 
           let lastError;
           for (const apiKey of apiKeys) {
             try {
               const modelName =
                 modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+                  ? process.env.VITE_GEMINI_MODEL_FAST ||
+                    "gemini-2.5-flash-lite"
                   : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
 
               const geminiClient = new GeminiClient(apiKey, modelName);
@@ -505,17 +536,39 @@ function registerIpcHandlers() {
                 broadTopic: analysis.keyword,
                 blogBoardName: category,
                 config: {
-                  searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
-                  searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+                  searchClientId:
+                    process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+                  searchClientSecret:
+                    process.env.VITE_NAVER_SEARCH_API_KEY || "",
                   adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
                   adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-                  adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+                  adCustomerId:
+                    process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
                 },
                 userDataPath,
                 geminiClient,
                 publishPlatforms,
                 credentials: {
-                  naver: { id: naverId, pw: naverPw },
+                  navers: [
+                    ...(enableNaver && naverId
+                      ? [
+                          {
+                            id: naverId,
+                            pw: naverPw,
+                            category: naverCategory || category,
+                          },
+                        ]
+                      : []),
+                    ...(enableNaver2 && naverId2
+                      ? [
+                          {
+                            id: naverId2,
+                            pw: naverPw2,
+                            category: naverCategory2 || category,
+                          },
+                        ]
+                      : []),
+                  ],
                   tistory: { id: tistoryId, pw: tistoryPw },
                 },
                 persona,
@@ -561,9 +614,14 @@ function registerIpcHandlers() {
             thirdGemini,
             naverId,
             naverPw,
+            naverCategory,
+            naverId2,
+            naverPw2,
+            naverCategory2,
             tistoryId,
             tistoryPw,
             enableNaver,
+            enableNaver2,
             enableTistory,
           } = credentials || {};
 
@@ -575,14 +633,16 @@ function registerIpcHandlers() {
             process.env.VITE_GEMINI_API_KEY,
           ].filter((k) => !!k && k.trim() !== "");
 
-          if (apiKeys.length === 0) throw new Error("Gemini API Key가 없습니다.");
+          if (apiKeys.length === 0)
+            throw new Error("Gemini API Key가 없습니다.");
 
           let lastError;
           for (const apiKey of apiKeys) {
             try {
               const modelName =
                 modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
+                  ? process.env.VITE_GEMINI_MODEL_FAST ||
+                    "gemini-2.5-flash-lite"
                   : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
 
               const geminiClient = new GeminiClient(apiKey, modelName);
@@ -591,7 +651,8 @@ function registerIpcHandlers() {
                 searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
                 adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
                 adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
-                adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+                adCustomerId:
+                  process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
               };
 
               const publishPlatforms: ("naver" | "tistory")[] = [];
@@ -609,7 +670,26 @@ function registerIpcHandlers() {
                 geminiClient,
                 publishPlatforms,
                 credentials: {
-                  naver: { id: naverId, pw: naverPw },
+                  navers: [
+                    ...(enableNaver && naverId
+                      ? [
+                          {
+                            id: naverId,
+                            pw: naverPw,
+                            category: naverCategory || category,
+                          },
+                        ]
+                      : []),
+                    ...(enableNaver2 && naverId2
+                      ? [
+                          {
+                            id: naverId2,
+                            pw: naverPw2,
+                            category: naverCategory2 || category,
+                          },
+                        ]
+                      : []),
+                  ],
                   tistory: { id: tistoryId, pw: tistoryPw },
                 },
                 headless,
@@ -645,13 +725,7 @@ function registerIpcHandlers() {
 
     try {
       return await runWithAbort(async () => {
-        const {
-          platform,
-          blogId,
-          password,
-          headless,
-          ...postData
-        } = payload;
+        const { platform, blogId, password, headless, ...postData } = payload;
 
         const userDataPath = isDev ? rootPath : app.getPath("userData");
         let publisher;

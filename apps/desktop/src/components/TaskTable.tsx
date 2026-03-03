@@ -29,6 +29,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   onPersonaChange,
   onToneChnage,
   onUseImageChange,
+  onApprove,
 }) => {
   // 펼쳐진 행들의 인덱스를 관리
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -49,7 +50,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   useEffect(() => {
     tasks.forEach((task, idx) => {
       if (task.status === "진행") {
-        setExpandedRows(prev => {
+        setExpandedRows((prev) => {
           if (prev.has(idx)) return prev;
           const next = new Set(prev);
           next.add(idx);
@@ -86,49 +87,106 @@ export const TaskTable: React.FC<TaskTableProps> = ({
               const isExpanded = expandedRows.has(idx);
               return (
                 <React.Fragment key={idx}>
-                  <tr 
+                  <tr
                     onClick={() => toggleRow(idx)}
-                    style={{ 
-                      cursor: "pointer", 
+                    style={{
+                      cursor: "pointer",
                       borderBottom: "1px solid #dee2e6",
-                      backgroundColor: isExpanded ? "#fff" : "#f8f9fa"
+                      backgroundColor: isExpanded ? "#fff" : "#f8f9fa",
                     }}
                   >
                     <td style={{ padding: "12px", textAlign: "center" }}>
                       {isExpanded ? "▼" : "▶"}
                     </td>
-                    <td style={{ padding: "12px", fontWeight: isExpanded ? "bold" : "normal" }}>
+                    <td
+                      style={{
+                        padding: "12px",
+                        fontWeight: isExpanded ? "bold" : "normal",
+                      }}
+                    >
                       {task.topic}
                     </td>
                     <td style={{ padding: "12px" }}>
-                      <span className={`status-badge status-${task.status}`} style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "0.85rem",
-                        backgroundColor: task.status === "완료" ? "#d4edda" : task.status === "진행" ? "#cce5ff" : task.status === "검수중" ? "#fff3cd" : "#e2e3e5",
-                        color: task.status === "완료" ? "#155724" : task.status === "진행" ? "#004085" : task.status === "검수중" ? "#856404" : "#383d41"
-                      }}>
+                      <span
+                        className={`status-badge status-${task.status}`}
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "0.85rem",
+                          backgroundColor:
+                            task.status === "완료"
+                              ? "#d4edda"
+                              : task.status === "진행"
+                                ? "#cce5ff"
+                                : task.status === "검수중"
+                                  ? "#fff3cd"
+                                  : "#e2e3e5",
+                          color:
+                            task.status === "완료"
+                              ? "#155724"
+                              : task.status === "진행"
+                                ? "#004085"
+                                : task.status === "검수중"
+                                  ? "#856404"
+                                  : "#383d41",
+                        }}
+                      >
                         {task.status}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", color: "#6c757d", fontSize: "0.9rem" }}>
-                      {Array.isArray(task.keywords) ? task.keywords.join(", ") : task.keywords || "-"}
+                    <td
+                      style={{
+                        padding: "12px",
+                        color: "#6c757d",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {Array.isArray(task.keywords)
+                        ? task.keywords.join(", ")
+                        : task.keywords || "-"}
                     </td>
                   </tr>
-                  
+
                   {isExpanded && (
-                    <tr style={{ backgroundColor: "#fff", borderBottom: "1px solid #dee2e6" }}>
+                    <tr
+                      style={{
+                        backgroundColor: "#fff",
+                        borderBottom: "1px solid #dee2e6",
+                      }}
+                    >
                       <td></td>
-                      <td colSpan={3} style={{ padding: "15px 12px 20px 12px" }}>
-                        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                      <td
+                        colSpan={3}
+                        style={{ padding: "15px 12px 20px 12px" }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "20px",
+                            alignItems: "center",
+                          }}
+                        >
                           <div className="form-group">
-                            <label style={{ display: "block", fontSize: "0.8rem", color: "#adb5bd", marginBottom: "4px" }}>페르소나</label>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "0.8rem",
+                                color: "#adb5bd",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              페르소나
+                            </label>
                             <select
                               value={task.persona}
                               onChange={(e) =>
                                 onPersonaChange(idx, e.target.value as Persona)
                               }
-                              style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ced4da" }}
+                              style={{
+                                padding: "6px",
+                                borderRadius: "4px",
+                                border: "1px solid #ced4da",
+                              }}
                             >
                               {personaOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -137,13 +195,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                               ))}
                             </select>
                           </div>
-                          
+
                           <div className="form-group">
-                            <label style={{ display: "block", fontSize: "0.8rem", color: "#adb5bd", marginBottom: "4px" }}>톤앤매너</label>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "0.8rem",
+                                color: "#adb5bd",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              톤앤매너
+                            </label>
                             <select
                               value={task.tone}
-                              onChange={(e) => onToneChnage(idx, e.target.value as Tone)}
-                              style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ced4da" }}
+                              onChange={(e) =>
+                                onToneChnage(idx, e.target.value as Tone)
+                              }
+                              style={{
+                                padding: "6px",
+                                borderRadius: "4px",
+                                border: "1px solid #ced4da",
+                              }}
                             >
                               {toneOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -154,13 +227,32 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                           </div>
 
                           <div className="info-group">
-                            <label style={{ display: "block", fontSize: "0.8rem", color: "#adb5bd", marginBottom: "4px" }}>카테고리</label>
-                            <span style={{ fontSize: "0.9rem" }}>{task.category || "미지정"}</span>
+                            <label
+                              style={{
+                                display: "block",
+                                fontSize: "0.8rem",
+                                color: "#adb5bd",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              카테고리
+                            </label>
+                            <span style={{ fontSize: "0.9rem" }}>
+                              {task.category || "미지정"}
+                            </span>
                           </div>
 
-                          <div className="form-group" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "15px" }}>
+                          <div
+                            className="form-group"
+                            style={{
+                              marginLeft: "auto",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "15px",
+                            }}
+                          >
                             {task.status === "검수중" && (
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onApprove(idx);
@@ -173,17 +265,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                                   borderRadius: "4px",
                                   fontSize: "0.8rem",
                                   fontWeight: "bold",
-                                  cursor: "pointer"
+                                  cursor: "pointer",
                                 }}
                               >
                                 ✅ 검수 완료 및 발행
                               </button>
                             )}
-                            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.8rem", color: "#495057" }}>
+                            <label
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                cursor: "pointer",
+                                fontSize: "0.8rem",
+                                color: "#495057",
+                              }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={task.useImage !== false} // undefined면 기본 true
-                                onChange={(e) => onUseImageChange(idx, e.target.checked)}
+                                onChange={(e) =>
+                                  onUseImageChange(idx, e.target.checked)
+                                }
                               />
                               이미지 사용
                             </label>
@@ -197,7 +300,14 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             })
           ) : (
             <tr>
-              <td colSpan={4} style={{ padding: "40px", textAlign: "center", color: "#adb5bd" }}>
+              <td
+                colSpan={4}
+                style={{
+                  padding: "40px",
+                  textAlign: "center",
+                  color: "#adb5bd",
+                }}
+              >
                 데이터가 없습니다. 파일을 먼저 업로드해주세요.
               </td>
             </tr>
