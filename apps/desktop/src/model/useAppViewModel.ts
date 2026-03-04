@@ -491,7 +491,7 @@ export const useAppViewModel = () => {
             platform: "naver",
             blogId: credentials.naverId,
             password: credentials.naverPw,
-            category: credentials.naverCategory,
+            category: task.naverCategory || credentials.naverCategory, // 스냅샷 우선 적용 (없으면 폴백)
             headless: credentials.headless,
           });
         }
@@ -502,7 +502,7 @@ export const useAppViewModel = () => {
             platform: "naver",
             blogId: credentials.naverId2,
             password: credentials.naverPw2,
-            category: credentials.naverCategory2,
+            category: task.naverCategory2 || credentials.naverCategory2, // 스냅샷 우선 적용 (없으면 폴백)
             headless: credentials.headless,
           });
         }

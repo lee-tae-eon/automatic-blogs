@@ -304,7 +304,6 @@ export class NaverEditor {
             }
             break;
 
-          // 📊 [v4.9] 차트 전용 블록 처리
           case "chart":
             if (!block.data) break;
             try {
@@ -322,6 +321,21 @@ export class NaverEditor {
               }
             } catch (e) {
               console.error("❌ 차트 파싱/생성 에러:", e);
+            }
+            break;
+
+          // 🔗 [v5.5] 연관 정보 링크 (OG Link Card) 블록 처리
+          case "og_link":
+            if (!block.url) break;
+            try {
+              await this.page.keyboard.press("Enter");
+              // 클립보드 복붙이 아닌 직접 타이핑이어야 네이버 에디터가 링크 카드로 인식할 확률이 높음
+              await this.page.keyboard.type(block.url, { delay: 10 });
+              await this.page.keyboard.press("Enter"); // OG 썸네일 생성 트리거
+              await this.page.waitForTimeout(3000); // 썸네일(카드)이 스크래핑되어 그려질 시간을 충분히 부여
+              await this.page.keyboard.press("Enter"); // 분리 여백
+            } catch (e) {
+              console.error("❌ 링크 카드 자동 생성 에러:", e);
             }
             break;
 
@@ -486,13 +500,49 @@ export class NaverEditor {
           // 2. ✅ 태그는 없지만 내용이 차트 JSON인 경우 처리
           blocks.push({ type: "chart", data: text.trim() });
         } else {
-          // 3. 차트가 없는 일반 문단 처리
-          if (textContent || $el.find("img, iframe, video").length > 0) {
-            blocks.push({
-              type: "paragraph",
-              text: textContent,
-              html: rawHtml || textContent,
-            });
+          // 3. 🔗 연관 정보 링크 [링크: URL] 처리 (OG 태그 블록 파싱)
+          const linkPrefixRegex =
+            /\[\s*링크\s*:\s*(https?:\/\/[^\s\]]+)\s*\]/gi;
+          let linkLastIndex = 0;
+          let linkMatch;
+          let foundLink = false;
+
+          while ((linkMatch = linkPrefixRegex.exec(text)) !== null) {
+            foundLink = true;
+            const linkStartIndex = linkMatch.index;
+            const beforeText = text
+              .substring(linkLastIndex, linkStartIndex)
+              .trim();
+            if (beforeText) {
+              blocks.push({
+                type: "paragraph",
+                text: beforeText,
+                html: beforeText,
+              });
+            }
+
+            blocks.push({ type: "og_link", url: linkMatch[1].trim() });
+            linkLastIndex = linkStartIndex + linkMatch[0].length;
+          }
+
+          if (foundLink) {
+            const afterText = text.substring(linkLastIndex).trim();
+            if (afterText) {
+              blocks.push({
+                type: "paragraph",
+                text: afterText,
+                html: afterText,
+              });
+            }
+          } else {
+            // 4. 차트/링크가 없는 일반 문단 처리
+            if (textContent || $el.find("img, iframe, video").length > 0) {
+              blocks.push({
+                type: "paragraph",
+                text: textContent,
+                html: rawHtml || textContent,
+              });
+            }
           }
         }
       }

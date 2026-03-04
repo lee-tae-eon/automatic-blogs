@@ -130,4 +130,6 @@ export interface BatchTask {
   useNotebookLM?: boolean; // v5.0: NotebookLM 고도화 사용 여부
   notebookMode?: "manual" | "auto"; // v5.0: 직접 검수 vs 자동 검수
   isReviewed?: boolean; // v5.0: 검수 완료 여부
+  naverCategory?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
+  naverCategory2?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
 }

@@ -2,6 +2,7 @@ import { delay } from "../util/delay";
 import { Publication, GeneratePostInput, BlogPostInput } from "../types/blog";
 import { generatePostSingleCall } from "./generatePostSingleCall";
 import { TavilyService } from "../services/tavilyService";
+import { PexelsService } from "../services/pexelImageService";
 import { NaverSearchService } from "../services/naverSearchService";
 import { DbService } from "../services/dbService";
 import { analyzeTopicIntent } from "../util/autoInference";
@@ -382,6 +383,24 @@ ${naverResult}
       }
 
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);
+
+      // ✅ [v5.4] 메모리 누수 방지: 30일 경과된 이미지 캐시 백그라운드 정리
+      try {
+        if (task.useImage !== false) {
+          const pexels = new PexelsService();
+          const deleted = pexels.cleanOldCache(
+            path.join(projectRoot || process.cwd(), "temp_images"),
+            30,
+          );
+          if (deleted > 0) {
+            onProgress?.(
+              `🧹 [캐시 정리] 30일 경과 이미지 ${deleted}장 삭제 완료`,
+            );
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ 자동 캐시 정리 실패:", e);
+      }
 
       onProgress?.("포스팅 생성 완료");
       return sanitizedPublication;
