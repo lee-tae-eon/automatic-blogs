@@ -63,3 +63,70 @@ Call log:
 
 🔗 발생 URL: https://blog.naver.com/prettyhihihi
 --------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 8:47:07]
+📍 대상 포스트: 외국인 투자 동향 분석: 대형 반도체주 매도와 소부장 이동의 전략적 의미
+❌ 에러 메시지: page.waitForURL: Target page, context or browser has been closed
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 3. 오후 8:48:17]
+📍 대상 포스트: 외국인 투자 동향 분석: 대형 반도체주 매도와 소부장 이동의 전략적 의미
+❌ 에러 메시지: 최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)
+🔗 발생 URL: https://blog.naver.com/prettyhihihi/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 3. 4. 오전 8:01:46]
+📍 대상 포스트: SK하이닉스와 삼성전자, 애프터마켓 급락 원인 분석 및 시장 영향 진단
+❌ 에러 메시지: 최종 발행에 실패했습니다. (페이지가 여전히 글쓰기 모드임)
+🔗 발생 URL: https://blog.naver.com/prettyhihihi/postwrite
+--------------------------------------------------
+
+==================================================
+[2026. 3. 4. 오전 8:02:23]
+📍 대상 포스트: SK하이닉스와 삼성전자, 애프터마켓 급락 원인 분석 및 시장 영향 진단
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+  navigated to "https://nid.naver.com/signin/v3/finalize?url=https%3A%2F%2Fwww.naver.com&svctype=1"
+  navigated to "https://www.naver.com/"
+============================================================
+🔗 발생 URL: https://www.naver.com/
+--------------------------------------------------
+
+==================================================
+[2026. 3. 4. 오전 8:14:41]
+📍 대상 포스트: SK하이닉스와 삼성전자, 애프터마켓 급락 원인 분석 및 시장 영향 진단
+❌ 에러 메시지: page.waitForURL: Target page, context or browser has been closed
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 4. 오전 9:00:13]
+📍 대상 포스트: 중동 지정학 리스크 심화, 코스피 급락과 매도 사이드카 발동 분석
+❌ 에러 메시지: page.waitForURL: Target page, context or browser has been closed
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 4. 오전 9:03:49]
+📍 대상 포스트: 트럼프, 걸프 해상 안보 강화: 정부 보험 및 해군 호송 전략 분석
+❌ 에러 메시지: locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for locator('body button').filter({ hasText: /^발행$/ }).last() to be visible[22m
+
+🔗 발생 URL: https://blog.naver.com/PostView.naver?blogId=eongon&Redirect=View&logNo=224203555253&categoryNo=1&isAfterWrite=true&isMrblogPost=false&isHappyBeanLeverage=true&contentLength=46452
+--------------------------------------------------

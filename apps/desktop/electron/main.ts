@@ -555,7 +555,7 @@ function registerIpcHandlers() {
                           {
                             id: naverId,
                             pw: naverPw,
-                            category: naverCategory || category,
+                            category: naverCategory,
                           },
                         ]
                       : []),
@@ -564,7 +564,7 @@ function registerIpcHandlers() {
                           {
                             id: naverId2,
                             pw: naverPw2,
-                            category: naverCategory2 || category,
+                            category: naverCategory2,
                           },
                         ]
                       : []),
@@ -676,7 +676,7 @@ function registerIpcHandlers() {
                           {
                             id: naverId,
                             pw: naverPw,
-                            category: naverCategory || category,
+                            category: naverCategory,
                           },
                         ]
                       : []),
@@ -685,7 +685,7 @@ function registerIpcHandlers() {
                           {
                             id: naverId2,
                             pw: naverPw2,
-                            category: naverCategory2 || category,
+                            category: naverCategory2,
                           },
                         ]
                       : []),
@@ -745,7 +745,7 @@ function registerIpcHandlers() {
           publishOptions.password = password;
           publishOptions.headless = headless;
         } else {
-          currentPublisher = new NaverPublisher(userDataPath);
+          currentPublisher = new NaverPublisher(userDataPath, blogId);
           publisher = currentPublisher;
           publishOptions.password = password;
           publishOptions.headless = headless;

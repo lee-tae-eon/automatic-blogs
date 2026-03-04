@@ -482,53 +482,56 @@ export const useAppViewModel = () => {
         }
 
         addLog(`[${i + 1}] 블로그 발행 중: ${task.topic}`);
-        // 발행
-        const publishTasks: Promise<any>[] = [];
+        // 발행 - 순차 실행 (Sequential Execution)
+        const platformsToPublish = [];
 
-        if (credentials.enableNaver) {
-          publishTasks.push(
-            window.ipcRenderer.invoke("publish-post", {
-              ...genResult.data,
-              platform: "naver",
-              blogId: credentials.naverId,
-              password: credentials.naverPw,
-              blogBoardName: credentials.naverCategory,
-              headless: credentials.headless,
-            }),
-          );
+        if (credentials.enableNaver && credentials.naverId) {
+          platformsToPublish.push({
+            ...genResult.data,
+            platform: "naver",
+            blogId: credentials.naverId,
+            password: credentials.naverPw,
+            category: credentials.naverCategory,
+            headless: credentials.headless,
+          });
         }
 
         if (credentials.enableNaver2 && credentials.naverId2) {
-          publishTasks.push(
-            window.ipcRenderer.invoke("publish-post", {
-              ...genResult.data,
-              platform: "naver",
-              blogId: credentials.naverId2,
-              password: credentials.naverPw2,
-              blogBoardName: credentials.naverCategory2,
-              headless: credentials.headless,
-            }),
-          );
+          platformsToPublish.push({
+            ...genResult.data,
+            platform: "naver",
+            blogId: credentials.naverId2,
+            password: credentials.naverPw2,
+            category: credentials.naverCategory2,
+            headless: credentials.headless,
+          });
         }
 
-        if (credentials.enableTistory) {
-          publishTasks.push(
-            window.ipcRenderer.invoke("publish-post", {
-              ...genResult.data,
-              platform: "tistory",
-              blogId: credentials.tistoryId,
-              password: credentials.tistoryPw,
-            }),
-          );
+        if (credentials.enableTistory && credentials.tistoryId) {
+          platformsToPublish.push({
+            ...genResult.data,
+            platform: "tistory",
+            blogId: credentials.tistoryId,
+            password: credentials.tistoryPw,
+            headless: credentials.headless,
+          });
         }
 
-        if (publishTasks.length === 0) {
+        if (platformsToPublish.length === 0) {
           throw new Error("발행할 플랫폼이 선택되지 않았습니다.");
         }
 
-        const pubResults = await Promise.all(publishTasks);
-        const failedPub = pubResults.find((r) => !r.success);
-        if (failedPub) throw new Error(failedPub.error || "발행 실패");
+        for (const publishConfig of platformsToPublish) {
+          const pubResult = await window.ipcRenderer.invoke(
+            "publish-post",
+            publishConfig,
+          );
+          if (!pubResult.success) {
+            throw new Error(
+              pubResult.error || `${publishConfig.platform} 발행 실패`,
+            );
+          }
+        }
 
         addLog(`[${i + 1}] 완료: ${task.topic}`);
         // 2. 완료 상태 반영
