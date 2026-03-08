@@ -121,30 +121,52 @@ export const CoupangTaskInput: React.FC<CoupangTaskInputProps> = ({
           <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "8px" }}>
             발행 타겟 계정 선택 <span style={{ color: "red" }}>*</span>
           </label>
-          <div style={{ display: "flex", gap: "15px", alignItems: "center", height: "40px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {credentials.enableNaver && credentials.naverId && (
-              <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem", minWidth: "120px" }}>
+                  <input
+                    type="radio"
+                    name="targetAccount"
+                    value="naver1"
+                    checked={targetAccount === "naver1"}
+                    onChange={() => setTargetAccount("naver1")}
+                  />
+                  N-1 ({credentials.naverId})
+                </label>
                 <input
-                  type="radio"
-                  name="targetAccount"
-                  value="naver1"
-                  checked={targetAccount === "naver1"}
-                  onChange={() => setTargetAccount("naver1")}
+                  type="text"
+                  name="naverCategory"
+                  value={credentials.naverCategory}
+                  onChange={onChange}
+                  placeholder="N-1 발행 카테고리"
+                  disabled={targetAccount !== "naver1"}
+                  style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #dee2e6", fontSize: "0.85rem", opacity: targetAccount === "naver1" ? 1 : 0.5 }}
                 />
-                N-1 ({credentials.naverId})
-              </label>
+              </div>
             )}
             {credentials.enableNaver2 && credentials.naverId2 && (
-              <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem", minWidth: "120px" }}>
+                  <input
+                    type="radio"
+                    name="targetAccount"
+                    value="naver2"
+                    checked={targetAccount === "naver2"}
+                    onChange={() => setTargetAccount("naver2")}
+                  />
+                  N-2 ({credentials.naverId2})
+                </label>
                 <input
-                  type="radio"
-                  name="targetAccount"
-                  value="naver2"
-                  checked={targetAccount === "naver2"}
-                  onChange={() => setTargetAccount("naver2")}
+                  type="text"
+                  name="naverCategory2"
+                  value={credentials.naverCategory2}
+                  onChange={onChange}
+                  placeholder="N-2 발행 카테고리"
+                  disabled={targetAccount !== "naver2"}
+                  style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #dee2e6", fontSize: "0.85rem", opacity: targetAccount === "naver2" ? 1 : 0.5 }}
                 />
-                N-2 ({credentials.naverId2})
-              </label>
+              </div>
             )}
             {(!credentials.enableNaver || !credentials.naverId) &&
              (!credentials.enableNaver2 || !credentials.naverId2) && (
