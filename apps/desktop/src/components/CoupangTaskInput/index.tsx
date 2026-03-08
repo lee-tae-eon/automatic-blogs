@@ -14,6 +14,8 @@ export const CoupangTaskInput: React.FC<CoupangTaskInputProps> = ({
 }) => {
   const [coupangLink, setCoupangLink] = useState("");
   const [topic, setTopic] = useState("");
+  const defaultAccount = credentials.enableNaver ? "naver1" : "naver2";
+  const [targetAccount, setTargetAccount] = useState<"naver1" | "naver2">(defaultAccount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +37,7 @@ export const CoupangTaskInput: React.FC<CoupangTaskInputProps> = ({
       tone: "empathetic",
       useImage: true, 
       coupangLink: coupangLink.trim(),
+      targetAccount,
       naverCategory: credentials.naverCategory,
       naverCategory2: credentials.naverCategory2,
       status: "대기",
@@ -116,28 +119,32 @@ export const CoupangTaskInput: React.FC<CoupangTaskInputProps> = ({
 
         <div className="form-group">
           <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "bold", marginBottom: "8px" }}>
-            발행 타겟 계정 카테고리 (수동 계정)
+            발행 타겟 계정 선택 <span style={{ color: "red" }}>*</span>
           </label>
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "15px", alignItems: "center", height: "40px" }}>
             {credentials.enableNaver && credentials.naverId && (
-              <input
-                type="text"
-                name="naverCategory"
-                value={credentials.naverCategory}
-                onChange={onChange}
-                placeholder="N-1 카테고리"
-                style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", fontSize: "0.85rem" }}
-              />
+              <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem" }}>
+                <input
+                  type="radio"
+                  name="targetAccount"
+                  value="naver1"
+                  checked={targetAccount === "naver1"}
+                  onChange={() => setTargetAccount("naver1")}
+                />
+                N-1 ({credentials.naverId})
+              </label>
             )}
             {credentials.enableNaver2 && credentials.naverId2 && (
-              <input
-                type="text"
-                name="naverCategory2"
-                value={credentials.naverCategory2}
-                onChange={onChange}
-                placeholder="N-2 카테고리"
-                style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid #dee2e6", fontSize: "0.85rem" }}
-              />
+              <label style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "0.9rem" }}>
+                <input
+                  type="radio"
+                  name="targetAccount"
+                  value="naver2"
+                  checked={targetAccount === "naver2"}
+                  onChange={() => setTargetAccount("naver2")}
+                />
+                N-2 ({credentials.naverId2})
+              </label>
             )}
             {(!credentials.enableNaver || !credentials.naverId) &&
              (!credentials.enableNaver2 || !credentials.naverId2) && (

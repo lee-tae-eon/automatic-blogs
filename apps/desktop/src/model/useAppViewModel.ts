@@ -485,7 +485,7 @@ export const useAppViewModel = () => {
         // 발행 - 순차 실행 (Sequential Execution)
         const platformsToPublish = [];
 
-        if (credentials.enableNaver && credentials.naverId) {
+        if (credentials.enableNaver && credentials.naverId && (!task.targetAccount || task.targetAccount === "naver1")) {
           platformsToPublish.push({
             ...genResult.data,
             platform: "naver",
@@ -496,7 +496,7 @@ export const useAppViewModel = () => {
           });
         }
 
-        if (credentials.enableNaver2 && credentials.naverId2) {
+        if (credentials.enableNaver2 && credentials.naverId2 && (!task.targetAccount || task.targetAccount === "naver2")) {
           platformsToPublish.push({
             ...genResult.data,
             platform: "naver",
