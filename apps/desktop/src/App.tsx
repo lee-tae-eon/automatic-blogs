@@ -7,6 +7,7 @@ import { ActionButtons } from "./components/ActionButtons";
 import { TaskTable } from "./components/TaskTable";
 import { LogConsole } from "./components/LogConsole";
 import { AutoPilotControl } from "./components/AutoPilotControl"; // 추가
+import { CoupangTaskInput } from "./components/CoupangTaskInput"; // 쿠팡 전용 자동화 패널
 
 export const App: React.FC = () => {
   const { state, actions } = useAppViewModel();
@@ -40,6 +41,13 @@ export const App: React.FC = () => {
         onStop={actions.handleStopAutoPilot}
         onStart={actions.handleStartWithKeyword}
         onFetchRecs={actions.handleFetchRecommendations}
+        credentials={credentials}
+        onChange={actions.handleCredentialChange}
+      />
+
+      {/* 쿠팡 파트너스 전용 입력 패널 (완벽한 격리) */}
+      <CoupangTaskInput
+        onAddTask={actions.handleAddTask}
         credentials={credentials}
         onChange={actions.handleCredentialChange}
       />

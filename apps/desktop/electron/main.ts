@@ -33,6 +33,7 @@ if (app.isPackaged) {
 // ✅ Core 패키지 Import (환경 변수 설정 이후)
 import {
   generatePost,
+  generateCoupangPost,
   ExcelProcessor,
   NaverPublisher,
   TistoryPublisher,
@@ -364,7 +365,7 @@ function registerIpcHandlers() {
 
             const geminiClient = new GeminiClient(apiKey, modelName);
 
-            publication = await generatePost({
+            const generateOptions = {
               client: geminiClient,
               task: task,
               projectRoot: userDataPath,
@@ -373,7 +374,13 @@ function registerIpcHandlers() {
                   mainWindow.webContents.send("process-log", message);
                 }
               },
-            });
+            };
+
+            if (task.coupangLink) {
+              publication = await generateCoupangPost(generateOptions);
+            } else {
+              publication = await generatePost(generateOptions);
+            }
 
             if (publication) break;
           } catch (error: any) {

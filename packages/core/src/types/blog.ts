@@ -82,6 +82,8 @@ export interface BlogPostInput {
   useNotebookLM?: boolean; // v5.0: NotebookLM 고도화 사용 여부
   notebookMode?: "manual" | "auto"; // v5.0: 직접 검수 vs 자동 검수
   internalLinkSuggestions?: { title: string; url: string }[]; // ✅ [v5.2] 내부 링크 추천 데이터
+  coupangLink?: string; // v5.6: 쿠팡 파트너스 단축 링크
+  extractedImages?: string[]; // v5.6: 스크래핑된 쿠팡 상품 이미지 URL 배열
 }
 
 export interface AiGeneratedPost {
@@ -132,4 +134,5 @@ export interface BatchTask {
   isReviewed?: boolean; // v5.0: 검수 완료 여부
   naverCategory?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
   naverCategory2?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
+  coupangLink?: string; // v5.6: 쿠팡 파트너스 단축 링크
 }

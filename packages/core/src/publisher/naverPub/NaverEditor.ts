@@ -304,6 +304,23 @@ export class NaverEditor {
             }
             break;
 
+          // [v5.6] 쿠팡 특정 URL 이미지 다운로드 및 업로드
+          case "coupang_image":
+            if (!block.url) break;
+            try {
+              const imagePath = await this.downloadCoupangImage(block.url);
+              if (imagePath) {
+                await this.page.keyboard.press("Enter");
+                await this.uploadImage(this.page, imagePath);
+                await this.page.waitForTimeout(500);
+                await this.page.keyboard.press("ArrowDown");
+                await this.page.keyboard.press("Enter");
+              }
+            } catch (e) {
+              console.error("❌ 쿠팡 이미지 처리 에러:", e);
+            }
+            break;
+
           case "chart":
             if (!block.data) break;
             try {
@@ -382,6 +399,14 @@ export class NaverEditor {
       const imageMatch = textContent.match(imageRegex);
       if (imageMatch) {
         blocks.push({ type: "image", keyword: imageMatch[1].trim() });
+        return;
+      }
+
+      // 1-B. [v5.6] 쿠팡 이미지 태그 처리
+      const coupangImageRegex = /\[쿠팡이미지\s*:\s*(https?:\/\/[^\s\]]+)\s*\]/i;
+      const coupangImageMatch = textContent.match(coupangImageRegex);
+      if (coupangImageMatch) {
+        blocks.push({ type: "coupang_image", url: coupangImageMatch[1].trim() });
         return;
       }
 
@@ -548,6 +573,28 @@ export class NaverEditor {
       }
     });
     return blocks;
+  }
+
+  // ✅ [v5.6] 쿠팡 이미지 등 외부 URL 이미지 다운로드 로직
+  private async downloadCoupangImage(url: string): Promise<string | null> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`[NaverEditor] 외부 이미지 다운로드 실패: ${response.status}`);
+        return null;
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      let ext = url.split('.').pop()?.split('?')[0] || 'jpg';
+      if (ext.length > 4) ext = 'jpg'; // 예외 처리 방어
+      const fileName = `coupang_${Date.now()}.${ext}`;
+      const filePath = path.join(this.tempDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      return filePath;
+    } catch(e) { 
+      console.error('[NaverEditor] 쿠팡 이미지 수집 예외 발생', e); 
+      return null; 
+    }
   }
 
   private async uploadImage(page: Page, imagePath: string | null) {

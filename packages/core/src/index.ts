@@ -1,5 +1,6 @@
 // 비즈니스 로직 (엔진)
 export * from "./pipeline/generatePost";
+export * from "./pipeline/generateCoupangPost";
 export * from "./pipeline/autoPilotProcess";
 export * from "./util/markdownToHtml";
 
