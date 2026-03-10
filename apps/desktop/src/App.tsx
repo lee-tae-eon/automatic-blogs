@@ -15,7 +15,6 @@ export const App: React.FC = () => {
     tasks,
     isManualProcessing,
     isAutoSearching,
-    isAutoPublishing,
     credentials,
     logs,
   } = state;
@@ -33,13 +32,12 @@ export const App: React.FC = () => {
       {/* v2.0 Auto-Pilot 영역 */}
       <AutoPilotControl
         isSearching={isAutoSearching}
-        isPublishing={isAutoPublishing}
         candidates={state.candidates}
         recommendations={state.recommendations}
         isFetchingRecs={state.isFetchingRecs}
         onFetch={actions.handleFetchCandidates}
         onStop={actions.handleStopAutoPilot}
-        onStart={actions.handleStartWithKeyword}
+        onAddTask={actions.handleAddTask}
         onFetchRecs={actions.handleFetchRecommendations}
         credentials={credentials}
         onChange={actions.handleCredentialChange}

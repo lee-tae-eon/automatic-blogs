@@ -7,8 +7,6 @@ export const useAppViewModel = () => {
   // 상태 세분화 (v3.23)
   const [isManualProcessing, setIsManualProcessing] = useState(false);
   const [isAutoSearching, setIsAutoSearching] = useState(false);
-  const [isAutoPublishing, setIsAutoPublishing] = useState(false);
-
   const [logs, setLogs] = useState<string[]>([]);
   const [currentFilePath, setCurrentFilePath] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -274,45 +272,7 @@ export const useAppViewModel = () => {
     }
   };
 
-  /**
-   * v2.0 Auto-Pilot 실행 핸들러 (Legacy용 - 곧 제거 대상)
-   */
-  const handleAutoPilot = async (keyword: string) => {
-    if (isAutoPublishing || !keyword.trim()) return;
-
-    setIsAutoPublishing(true);
-    shouldStopAutoRef.current = false;
-    autoAbortControllerRef.current = new AbortController();
-    setLogs([]);
-    addLog(`🚀 [Auto-Pilot] 키워드 '${keyword}' 분석 및 발행 시작`);
-
-    try {
-      const result = await window.ipcRenderer.invoke("run-autopilot", {
-        keyword,
-        modelType: credentials.modelType,
-        headless: credentials.headless,
-      });
-
-      if (result.success) {
-        addLog(
-          `✨ [Auto-Pilot] 성공적으로 완료되었습니다! (점수: ${result.analysis.score})`,
-        );
-        alert(`발행 성공! (키워드 점수: ${result.analysis.score})`);
-      } else {
-        if (result.error === "AbortError") {
-          addLog("🛑 사용자에 의해 중단되었습니다.");
-        } else {
-          addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
-          alert(`실패: ${result.error}`);
-        }
-      }
-    } catch (error: any) {
-      addLog(`❌ [Auto-Pilot] 시스템 오류: ${error.message}`);
-    } finally {
-      setIsAutoPublishing(false);
-      autoAbortControllerRef.current = null;
-    }
-  };
+  // (Legacy AutoPilot functions removed)
 
   /**
    * v2.0 오토파일럿 중단 핸들러
@@ -330,7 +290,7 @@ export const useAppViewModel = () => {
    * v2.0 오토파일럿 1단계: 키워드 후보 분석
    */
   const handleFetchCandidates = async (broadTopic: string) => {
-    if (isAutoSearching || isAutoPublishing || !broadTopic.trim()) return;
+    if (isAutoSearching || !broadTopic.trim()) return;
 
     setIsAutoSearching(true);
     shouldStopAutoRef.current = false;
@@ -367,58 +327,7 @@ export const useAppViewModel = () => {
     }
   };
 
-  /**
-   * v2.0 오토파일럿 2단계: 선택된 키워드로 시작
-   */
-  const handleStartWithKeyword = async (
-    analysis: any,
-    options: {
-      category: string;
-      persona: Persona;
-      tone: Tone;
-      useImage: boolean;
-    },
-  ) => {
-    if (isAutoPublishing) return;
-
-    setIsAutoPublishing(true);
-    shouldStopAutoRef.current = false;
-    autoAbortControllerRef.current = new AbortController();
-    addLog(
-      `🚀 [Auto-Pilot] 키워드 '${analysis.keyword}' (카테고리: ${options.category}) 발행 시작`,
-    );
-
-    try {
-      const result = await window.ipcRenderer.invoke("run-autopilot-step2", {
-        analysis,
-        category: options.category,
-        persona: options.persona,
-        tone: options.tone,
-        useImage: options.useImage,
-        modelType: credentials.modelType,
-        headless: credentials.headless,
-      });
-
-      if (result.success) {
-        addLog(`✨ [Auto-Pilot] 성공: ${analysis.keyword}`);
-        alert("발행 성공!");
-      } else {
-        if (result.error === "AbortError") {
-          addLog(
-            `🛑 [Auto-Pilot] '${analysis.keyword}' 작업이 중단되었습니다.`,
-          );
-        } else {
-          addLog(`❌ [Auto-Pilot] 실패: ${result.error}`);
-          alert(`실패: ${result.error}`);
-        }
-      }
-    } catch (error: any) {
-      addLog(`❌ [Auto-Pilot] 오류: ${error.message}`);
-    } finally {
-      setIsAutoPublishing(false);
-      autoAbortControllerRef.current = null;
-    }
-  };
+  // handleStartWithKeyword removed
 
   const handlePublishAll = async (isResume = false) => {
     if (isManualProcessing || tasks.length === 0) return;
@@ -565,8 +474,7 @@ export const useAppViewModel = () => {
       tasks,
       isManualProcessing,
       isAutoSearching,
-      isAutoPublishing,
-      isProcessing: isManualProcessing || isAutoSearching || isAutoPublishing, // 하위 호환성 유지
+      isProcessing: isManualProcessing || isAutoSearching, // 하위 호환성 유지
       credentials,
       logs,
       candidates,
@@ -583,10 +491,8 @@ export const useAppViewModel = () => {
       handlePersonaChange,
       handleToneChange,
       handleUseImageChange,
-      handleAutoPilot,
       handleFetchCandidates,
       handleStopAutoPilot, // 추가
-      handleStartWithKeyword,
       handleFetchRecommendations, // 추가
       handleApproveTask, // 추가
     },

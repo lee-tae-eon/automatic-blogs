@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 
 interface AutoPilotControlProps {
   isSearching: boolean;
-  isPublishing: boolean;
   candidates: any[];
   recommendations: Record<string, any[]>;
   isFetchingRecs: boolean;
   onFetch: (topic: string) => void;
   onStop: () => void;
-  onStart: (analysis: any, options: any) => void;
+  onAddTask: (task: any) => void;
   onFetchRecs: (category: string) => void;
   credentials: any;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -16,13 +15,12 @@ interface AutoPilotControlProps {
 
 export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   isSearching,
-  isPublishing,
   candidates,
   recommendations,
   isFetchingRecs,
   onFetch,
   onStop,
-  onStart,
+  onAddTask,
   onFetchRecs,
   credentials,
   onChange,
@@ -56,7 +54,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // 추가
 
   const isAnalyzing = isSearching && candidates.length === 0;
-  const isProcessing = isSearching || isPublishing;
+  const isProcessing = isSearching;
 
   // 로딩 메시지 순환 효과
   useEffect(() => {
@@ -107,14 +105,16 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const confirmPublish = () => {
     if (!selectedCandidate) return;
 
-    // v4.0: 페르소나, 톤, 이미지 설정 포함하여 시작
-    onStart(selectedCandidate, {
-      category: "동적 카테고리 (계정별)", // This is functionally overridden in the pipeline
+    onAddTask({
+      topic: selectedCandidate.keyword,
+      keywords: [], // Need to set empty tags
+      category: "동적 카테고리 (계정별)",
       persona,
       tone,
       useImage,
-      useNotebookLM, // 추가
-      notebookMode, // 추가
+      useNotebookLM,
+      notebookMode,
+      status: "대기",
     });
     setSelectedCandidate(null);
   };
@@ -333,7 +333,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                   cursor: isProcessing ? "not-allowed" : "pointer",
                 }}
               >
-                이 주제로 발행하기
+                이 주제로 대기열에 추가하기
               </button>
             </div>
           ))
@@ -557,7 +557,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                           cursor: isProcessing ? "not-allowed" : "pointer",
                         }}
                       >
-                        {isProcessing ? "진행 중" : "발행하기"}
+                        {isProcessing ? "진행 중" : "대기열 추가"}
                       </button>
                     </td>
                   </tr>
@@ -596,7 +596,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
               gap: "15px",
             }}
           >
-            <h3 style={{ margin: 0, color: "#333" }}>🚀 발행 설정</h3>
+            <h3 style={{ margin: 0, color: "#333" }}>🚀 대기열 추가 설정</h3>
             <div>
               <label
                 style={{
