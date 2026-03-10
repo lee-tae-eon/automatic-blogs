@@ -34,7 +34,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
   return (
     <div
       className="trends-section"
-      style={{ borderRight: "1px solid #f1f3f5", paddingRight: "20px" }}
+      style={{ borderRight: "1px solid #f1f3f5", paddingRight: "20px", display: "flex", flexDirection: "column" }}
     >
       <div
         style={{
@@ -143,7 +143,8 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
 
       <div
         style={{
-          height: "262px",
+          flex: 1,
+          minHeight: "450px", // Increased base height to better fit items
           overflowY: "auto",
           paddingRight: "5px",
           position: "relative",
