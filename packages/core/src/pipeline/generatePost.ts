@@ -227,12 +227,19 @@ ${naverResult}
           2. **인과관계의 끈(Golden Thread)**: 상위 주제와 하위 실행 과제 간의 논리적 연결 고리를 강화하여 독자가 글의 흐름을 명확히 추적할 수 있게 하세요.
           3. **문장 정제**: 기계적인 문투를 제거하고, 전문가의 깊이 있는 통찰이 느껴지는 세련된 한국어 문체로 교정하세요.
           4. **구조 최적화**: 모바일 가독성을 유지하면서도 논리적 구조가 돋보이도록 문단을 재배치하세요.
-
+          5. **[매우 중요] 絶対 금지 사항**: "여기에 수정된 본문이 있습니다", "NotebookLM 수정 내용", "Here is the fixed content"와 같은 인사말, 서론, 결론, 부가 설명을 **일절 포함하지 마세요**. 오직 블로그 본문 자체(Markdown)만 출력해야 합니다.
+          
           최종 수정된 본문(Markdown)만 응답하세요.
         `;
 
         try {
-          const refinedContent = await client.generateText(criticPrompt);
+          let refinedContent = await client.generateText(criticPrompt);
+          
+          // AI가 지시를 무시하고 덧붙이는 서문/인사말 강제 제거 (Sanitizer)
+          refinedContent = refinedContent
+            .replace(/^[\s\S]*?(?:다음은|수정된|교정된|수정본|Here is|NotebookLM|Notebook LM).*?:?\s*\n\n/i, "")
+            .trim();
+
           if (refinedContent && refinedContent.length > 100) {
             finalAiPost = { ...aiPost, content: refinedContent };
             onProgress?.(
