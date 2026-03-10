@@ -34,7 +34,14 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
   return (
     <div
       className="trends-section"
-      style={{ borderRight: "1px solid #f1f3f5", paddingRight: "20px", display: "flex", flexDirection: "column" }}
+      style={{ 
+        borderRight: "1px solid #f1f3f5", 
+        paddingRight: "20px", 
+        display: "flex", 
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0
+      }}
     >
       <div
         style={{
@@ -144,7 +151,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
       <div
         style={{
           flex: 1,
-          minHeight: "450px", // Increased base height to better fit items
+          minHeight: 0, // Allows the flex item to shrink and trigger the scrollbar
           overflowY: "auto",
           paddingRight: "5px",
           position: "relative",
