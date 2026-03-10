@@ -227,18 +227,28 @@ ${naverResult}
           2. **인과관계의 끈(Golden Thread)**: 상위 주제와 하위 실행 과제 간의 논리적 연결 고리를 강화하여 독자가 글의 흐름을 명확히 추적할 수 있게 하세요.
           3. **문장 정제**: 기계적인 문투를 제거하고, 전문가의 깊이 있는 통찰이 느껴지는 세련된 한국어 문체로 교정하세요.
           4. **구조 최적화**: 모바일 가독성을 유지하면서도 논리적 구조가 돋보이도록 문단을 재배치하세요.
-          5. **[매우 중요] 絶対 금지 사항**: "여기에 수정된 본문이 있습니다", "NotebookLM 수정 내용", "Here is the fixed content"와 같은 인사말, 서론, 결론, 부가 설명을 **일절 포함하지 마세요**. 오직 블로그 본문 자체(Markdown)만 출력해야 합니다.
+          5. **[매우 중요] 絶対 금지 사항**: "다음은 ~개선된 블로그 초안입니다", "수정했습니다" 등 어떠한 인사말, 서론, 결론, 부가 설명도 **절대 금지**합니다.
+          6. **[출력 규칙]**: 반드시 최종 완성된 마크다운 본문 전체를 \`<content>\` 와 \`</content>\` 태그로 감싸서 출력하세요.
           
-          최종 수정된 본문(Markdown)만 응답하세요.
+          출력 형식 예시:
+          <content>
+          여기에 최종 마크다운 본문 작성
+          </content>
         `;
 
         try {
           let refinedContent = await client.generateText(criticPrompt);
           
-          // AI가 지시를 무시하고 덧붙이는 서문/인사말 강제 제거 (Sanitizer)
-          refinedContent = refinedContent
-            .replace(/^[\s\S]*?(?:다음은|수정된|교정된|수정본|Here is|NotebookLM|Notebook LM).*?:?\s*\n\n/i, "")
-            .trim();
+          // AI가 지시를 무시하고 덧붙이는 텍스트를 방지하기 위해 <content> 태그 내부만 추출
+          const contentMatch = refinedContent.match(/<content>([\s\S]*?)<\/content>/i);
+          if (contentMatch) {
+            refinedContent = contentMatch[1].trim();
+          } else {
+            // Fallback: 태그를 안썼을 경우 강력한 정규식으로 앞부분 찌꺼기 제거
+            refinedContent = refinedContent
+              .replace(/^[\s\S]*?(?:다음은|수정된|교정된|수정본|개선된|Here is|NotebookLM|Notebook LM|신뢰성|논리적).*?(?:\n\n|\n)/i, "")
+              .trim();
+          }
 
           if (refinedContent && refinedContent.length > 100) {
             finalAiPost = { ...aiPost, content: refinedContent };
