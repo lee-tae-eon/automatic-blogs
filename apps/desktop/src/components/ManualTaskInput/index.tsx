@@ -123,18 +123,22 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
           boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
         }}
       >
-        <TrendSection
-          trendType={trendType}
-          setTrendType={setTrendType}
-          trends={trends}
-          setTrends={setTrends}
-          trendQuery={trendQuery}
-          setTrendQuery={setTrendQuery}
-          isFetchingTrends={isFetchingTrends}
-          fetchTrends={fetchTrends}
-          selectTrend={selectTrend}
-          clearTrends={clearTrends}
-        />
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+            <TrendSection
+              trendType={trendType}
+              setTrendType={setTrendType}
+              trends={trends}
+              setTrends={setTrends}
+              trendQuery={trendQuery}
+              setTrendQuery={setTrendQuery}
+              isFetchingTrends={isFetchingTrends}
+              fetchTrends={fetchTrends}
+              selectTrend={selectTrend}
+              clearTrends={clearTrends}
+            />
+          </div>
+        </div>
         <TaskFormSection
           topic={topic}
           setTopic={setTopic}
