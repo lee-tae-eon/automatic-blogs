@@ -10,7 +10,7 @@ export interface RecommendedTopic {
   hotness: number; // 1-100
 }
 
-export type RecommendCategory = "tech" | "economy" | "entertainment" | "life" | "travel";
+export type RecommendCategory = "tech" | "economy" | "entertainment" | "life" | "travel" | "health";
 
 export const CATEGORY_MAP: Record<RecommendCategory, string> = {
   tech: "IT/테크",
@@ -18,6 +18,7 @@ export const CATEGORY_MAP: Record<RecommendCategory, string> = {
   entertainment: "연예/방송",
   life: "생활/건강",
   travel: "여행/맛집",
+  health: "건강/의학/웰빙",
 };
 
 export class TopicRecommendationService {
@@ -56,6 +57,10 @@ export class TopicRecommendationService {
         // 연예나 경제는 RSS(Google Trends)가 매우 빠름
         const rssTrends = await this.rssService.fetchTrendingTopics("KR");
         rawData = rssTrends.map(t => t.title).join(", ");
+      } else if (category === "health") {
+        // 건강/의학 카테고리는 무조건 Tavily로 명확하게 질병관리나 최신 의학, 통증 관리 트렌드를 탐색
+        const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
+        rawData = searchResult.context;
       } else {
         // 테크, 생활, 여행은 Tavily 검색 시도, 실패 시 RSS로 대체
         try {

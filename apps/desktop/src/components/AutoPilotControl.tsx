@@ -35,6 +35,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     { id: "entertainment", label: "🎬 연예" },
     { id: "life", label: "🏠 생활" },
     { id: "travel", label: "✈️ 여행" },
+    { id: "health", label: "🏥 건강" },
   ];
 
   const currentRecs = recommendations[activeCategory] || [];
