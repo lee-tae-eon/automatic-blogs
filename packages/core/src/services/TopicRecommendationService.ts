@@ -61,8 +61,12 @@ export class TopicRecommendationService {
         // 건강/의학 카테고리는 무조건 Tavily로 명확하게 질병관리나 최신 의학, 통증 관리 트렌드를 탐색
         const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
         rawData = searchResult.context;
+      } else if (category === "travel") {
+        // [v4.5] 사용자 요청: 여행 트렌드는 명시적으로 '해외 여행' 트렌드 위주로 수집
+        const searchResult = await this.tavilyService.searchLatestNews(`해외 여행 인기 트렌드 OR 이색 해외 여행지 추천 OR 가성비 해외 여행 국가`);
+        rawData = searchResult.context;
       } else {
-        // 테크, 생활, 여행은 Tavily 검색 시도, 실패 시 RSS로 대체
+        // 테크, 생활 등 기타 카테고리는 Tavily 검색 시도, 실패 시 RSS로 대체
         try {
           const searchResult = await this.tavilyService.searchLatestNews(`${CATEGORY_MAP[category]} 최신 트렌드 이슈`);
           rawData = searchResult.context;
