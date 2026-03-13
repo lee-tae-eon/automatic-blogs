@@ -53,5 +53,10 @@ This file defines the core philosophy and architecture of the system. The agent 
 
 ---
 
+## 7. 옵시디언 정리
+
+-- **경로**: /Users/itaeeon/Library/Mobile Documents/iCloud~md~obsidian/Documents/aidenLife/01_Personal Project/01_Blog Automation
+-- **업데이트**: 내가 요청하면 위 경로에 BlogAutomation 관련된 옵시디언 문서 정리를 한다 !! 필수 !! 내요청시!
+
 _이 컨텍스트는 지속적으로 업데이트되며, 에이전트는 항상 최신 상태를 유지해야 합니다._
 _This context is continuously updated, and the agent must always stay up to date._
