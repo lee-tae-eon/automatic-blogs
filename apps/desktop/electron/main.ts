@@ -19,7 +19,7 @@ dotenv.config({ path: envPath });
 
 console.log(`🌍 Environment loaded from: ${envPath}`);
 console.log(
-  `🤖 Default Model: ${process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash"}`,
+  `🤖 Default Model: ${process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"}`,
 );
 
 if (app.isPackaged) {
@@ -128,10 +128,10 @@ function registerIpcHandlers() {
 
     let lastError: any;
     const modelVersions = [
-      process.env["VITE_GEMINI_MODEL_3.1_PRO"] || "gemini-3.1-pro-preview",
-      process.env["VITE_GEMINI_MODEL_3.0_FLASH"] || "gemini-3-flash-preview",
-      process.env["VITE_GEMINI_MODEL_3.1_FLASH_LITE"] || "gemini-3.1-flash-lite-preview",
-      process.env["VITE_GEMINI_MODEL_2.5_FLASH"] || "gemini-2.5-flash",
+      process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview",
+      process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview",
+      process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview",
+      process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash",
     ];
 
     for (const [idx, apiKey] of apiKeys.entries()) {
@@ -199,22 +199,22 @@ function registerIpcHandlers() {
         let modelName = "";
         switch (credentials.modelType) {
           case "3.1_pro":
-            modelName = process.env["VITE_GEMINI_MODEL_3.1_PRO"] || "gemini-3.1-pro-preview";
+            modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview";
             break;
           case "3.0_flash":
-            modelName = process.env["VITE_GEMINI_MODEL_3.0_FLASH"] || "gemini-3-flash-preview";
+            modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
             break;
           case "3.1_flash_lite":
-            modelName = process.env["VITE_GEMINI_MODEL_3.1_FLASH_LITE"] || "gemini-3.1-flash-lite-preview";
+            modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview";
             break;
           case "2.5_flash":
-            modelName = process.env["VITE_GEMINI_MODEL_2.5_FLASH"] || "gemini-2.5-flash";
+            modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash";
             break;
           case "2.5_flash_lite":
-            modelName = process.env["VITE_GEMINI_MODEL_2.5_FLASH_LITE"] || "gemini-2.5-flash-lite";
+            modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite";
             break;
           default:
-            modelName = process.env["VITE_GEMINI_MODEL_3.0_FLASH"] || "gemini-3-flash-preview";
+            modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
         }
 
         const client = new GeminiClient(apiKey, modelName);
@@ -377,12 +377,12 @@ function registerIpcHandlers() {
             const selectedModelType = task.modelType || credentials.modelType;
                 let mName = "";
                 switch (selectedModelType) { // Changed modelType to selectedModelType
-                  case "3.1_pro": mName = process.env["VITE_GEMINI_MODEL_3.1_PRO"] || "gemini-3.1-pro-preview"; break;
-                  case "3.0_flash": mName = process.env["VITE_GEMINI_MODEL_3.0_FLASH"] || "gemini-3-flash-preview"; break;
-                  case "3.1_flash_lite": mName = process.env["VITE_GEMINI_MODEL_3.1_FLASH_LITE"] || "gemini-3.1-flash-lite-preview"; break;
-                  case "2.5_flash": mName = process.env["VITE_GEMINI_MODEL_2.5_FLASH"] || "gemini-2.5-flash"; break;
-                  case "2.5_flash_lite": mName = process.env["VITE_GEMINI_MODEL_2.5_FLASH_LITE"] || "gemini-2.5-flash-lite"; break;
-                  default: mName = process.env["VITE_GEMINI_MODEL_3.0_FLASH"] || "gemini-3-flash-preview";
+                  case "3.1_pro": mName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+                  case "3.0_flash": mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+                  case "3.1_flash_lite": mName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                  case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2.5_FLASH || "gemini-2.5-flash"; break;
+                  case "2.5_flash_lite": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                  default: mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
                 }
                 const client = new GeminiClient(apiKey, mName);
                 if (mainWindow) mainWindow.webContents.send("process-log", `🤖 모델 사용: ${mName}`);
