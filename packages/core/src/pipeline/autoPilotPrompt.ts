@@ -2,6 +2,7 @@ import { BlogPostInput, AutoPilotStrategy } from "../types/blog";
 import { getPersonaDetail } from "../persona/persona.config";
 import { getPersonaExamples } from "../persona/persona.example";
 import { getToneInstruction } from "../tone/tone_config";
+import { getDomainStrategy } from "../services/DomainKeywordService";
 
 /**
  * [v3.34] Auto-Pilot 전용 정밀 프롬프트 엔진
@@ -108,6 +109,15 @@ ${strategy.differentiationStrategy}
 
 ## 2. 세만틱 SEO 및 AdPost 최적화 (AdPost Induction)
 검색 엔진과 광고 매칭 봇(AdPost)이 이 글을 '전문적인 문서'로 판단하도록 전략적으로 작성하세요.
+${(() => {
+  const domainStrategy = getDomainStrategy(input.topic);
+  if (!domainStrategy) return "";
+  return `
+- **[도메인 특화] ${input.topic.includes("금융") || input.topic.includes("재테크") ? "금융/재테크" : "건강/의료"} 전략**:
+  * **타겟 엔티티**: ${domainStrategy.highYield.join(", ")} 및 ${domainStrategy.entities.join(", ")}
+  * **전용 규칙**: ${domainStrategy.contextRules.join(" / ")}
+`;
+})()}
 - **[Ad-Targeting] 상단 키워드 배치**: 제목과 **본문 상단 1~2문단** 내에 아래 필수 연관어를 집중적으로 배치하세요. (애드포스트 NLP 봇은 상단 3~5줄을 가장 중요하게 분석합니다.)
 - **[Entity Clarity] 명사 중심 서술**: 대명사('그것', '이것' 등) 사용을 피하고 구체적인 제품명/서비스명(Entity)을 반복 사용하여 문맥을 명확히 하세요.
 - **필수 연관 키워드**: ${input.keywords?.join(", ")}

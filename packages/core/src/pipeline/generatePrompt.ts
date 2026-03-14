@@ -4,6 +4,7 @@ import { getPersonaExamples } from "../persona/persona.example";
 import { getQualityMetrics, SEO_RULES } from "../persona/quality-metrics";
 import { BlogPostInput } from "../types/blog";
 import { inferTargetAudience, inferContentGoal } from "../util/autoInference";
+import { getDomainStrategy } from "../services/DomainKeywordService";
 
 /**
  * [v4.2] 자연스러운 흐름 + 구체적 예시 주입 엔진
@@ -171,6 +172,18 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 
 ## 🔍 [v5.5] SEO & AdPost Contextual Induction (AdPost Optimization)
 [CRITICAL] 아래 규칙들은 네이버 애드포스트(AdPost) 봇의 NLP 분석을 최적화하여 고단가 광고 매칭을 유도하기 위한 핵심 지침입니다.
+
+${(() => {
+  const domainStrategy = getDomainStrategy(input.topic);
+  if (!domainStrategy) return "";
+  return `
+### 🏦 [도메인 특화] ${input.topic.includes("금융") || input.topic.includes("재테크") ? "금융/재테크" : "건강/의료"} 전략
+- **타겟 엔티티 우선 노출**: 아래 단어들을 제목과 본문 상단 3~5줄에 자연스럽게 포함하세요: **${domainStrategy.highYield.join(", ")}**
+- **명칭 중심 서술**: **${domainStrategy.entities.join(", ")}** 등의 구체적 명사를 대명사 대신 사용하여 NLP 분석 효율을 높이세요.
+- **도메인 전용 규칙**:
+${domainStrategy.contextRules.map((r) => `  * ${r}`).join("\n")}
+`;
+})()}
 
 1. **[Ad-Targeting] 제목 및 상단 키워드 배치**:
    - 제목에 핵심 키워드인 **'${input.topic}'**과 관련 브랜드/제품명을 반드시 포함하세요.
