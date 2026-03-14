@@ -376,11 +376,11 @@ function registerIpcHandlers() {
 
             const selectedModelType = task.modelType || credentials.modelType;
                 let mName = "";
-                switch (selectedModelType) { // Changed modelType to selectedModelType
+                switch (selectedModelType) {
                   case "3.1_pro": mName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
                   case "3.0_flash": mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
                   case "3.1_flash_lite": mName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
-                  case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2.5_FLASH || "gemini-2.5-flash"; break;
+                  case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
                   case "2.5_flash_lite": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
                   default: mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
                 }
