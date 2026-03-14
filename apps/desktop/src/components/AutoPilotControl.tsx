@@ -155,11 +155,34 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
         />
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "1.2rem" }}>🚀</span>
-        <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#4338ca" }}>
-          오늘의 추천 토픽 (실시간 트렌드 분석)
-        </h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "1.2rem" }}>🚀</span>
+          <h2 style={{ fontSize: "1.1rem", margin: 0, color: "#4338ca" }}>
+            오늘의 추천 토픽 (실시간 트렌드 분석)
+          </h2>
+        </div>
+        <button
+          onClick={handleFetchRecs}
+          disabled={isFetchingRecs}
+          style={{
+            padding: "6px 14px",
+            borderRadius: "8px",
+            border: "1px solid #c7d2fe",
+            backgroundColor: "white",
+            color: "#4f46e5",
+            fontSize: "0.85rem",
+            fontWeight: "bold",
+            cursor: isFetchingRecs ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+            transition: "all 0.2s"
+          }}
+        >
+          🔄 다시 검색
+        </button>
       </div>
 
       {/* 카테고리 탭 */}
