@@ -12,7 +12,7 @@ interface HeaderProps {
     subGemini: string;
     thirdGemini: string; // 추가
     headless: boolean;
-    modelType: "fast" | "normal";
+    modelType: "3.1_pro" | "3.0_flash" | "3.1_flash_lite" | "2.5_flash" | "2.5_flash_lite";
     tistoryId: string;
     tistoryPw: string;
     enableNaver: boolean;
@@ -349,18 +349,18 @@ export const Header: React.FC<HeaderProps> = ({ credentials, onChange }) => {
                   width: "100%",
                   padding: "8px",
                   borderRadius: "4px",
-                  border:
-                    credentials.modelType === "fast"
-                      ? "1px solid #00d2ff"
-                      : "1px solid #ddd",
+                  border: "1px solid #ddd",
                   backgroundColor: "#fff",
                   fontSize: "0.8rem",
                   marginBottom: "8px",
                   cursor: "pointer",
                 }}
               >
-                <option value="normal">Normal (Flash 2.5)</option>
-                <option value="fast">Fast (Flash 1.5)</option>
+                <option value="3.1_pro">3.1 Pro (Preview)</option>
+                <option value="3.0_flash">3.0 Flash (Preview)</option>
+                <option value="3.1_flash_lite">3.1 Flash Lite (Preview)</option>
+                <option value="2.5_flash">2.5 Flash</option>
+                <option value="2.5_flash_lite">2.5 Flash Lite</option>
               </select>
 
               <label
