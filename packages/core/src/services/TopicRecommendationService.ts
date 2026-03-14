@@ -10,7 +10,7 @@ export interface RecommendedTopic {
   hotness: number; // 1-100
 }
 
-export type RecommendCategory = "tech" | "economy" | "entertainment" | "life" | "travel" | "health";
+export type RecommendCategory = "tech" | "economy" | "entertainment" | "life" | "travel" | "health" | "parenting";
 
 export const CATEGORY_MAP: Record<RecommendCategory, string> = {
   tech: "IT/테크",
@@ -19,6 +19,7 @@ export const CATEGORY_MAP: Record<RecommendCategory, string> = {
   life: "생활/건강",
   travel: "여행/맛집",
   health: "건강/의학/웰빙",
+  parenting: "육아/아동",
 };
 
 export class TopicRecommendationService {
@@ -60,6 +61,10 @@ export class TopicRecommendationService {
       } else if (category === "health") {
         // 건강/의학 카테고리는 무조건 Tavily로 명확하게 질병관리나 최신 의학, 통증 관리 트렌드를 탐색
         const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
+        rawData = searchResult.context;
+      } else if (category === "parenting") {
+        // 육아/아동 카테고리 특화 검색 (월령별 발달, 육아템, 실전 꿀팁 등)
+        const searchResult = await this.tavilyService.searchLatestNews(`최신 육아 트렌드 이슈 OR 시기별 자녀 아동 발달 가이드 OR 초보 부모 육아템 추천`);
         rawData = searchResult.context;
       } else if (category === "travel") {
         // [v4.5] 사용자 요청: 여행 트렌드는 명시적으로 '해외 여행' 트렌드 위주로 수집

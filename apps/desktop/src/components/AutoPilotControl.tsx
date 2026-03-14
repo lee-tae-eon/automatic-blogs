@@ -36,6 +36,7 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
     { id: "life", label: "🏠 생활" },
     { id: "travel", label: "✈️ 여행" },
     { id: "health", label: "🏥 건강" },
+    { id: "parenting", label: "👶 육아" },
   ];
 
   const currentRecs = recommendations[activeCategory] || [];
