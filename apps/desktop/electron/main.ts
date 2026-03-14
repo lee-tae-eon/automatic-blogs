@@ -457,11 +457,15 @@ function registerIpcHandlers() {
           let lastError;
           for (const apiKey of apiKeys) {
             try {
-              const modelName =
-                modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST ||
-                    "gemini-2.5-flash-lite"
-                  : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+              let modelName = "";
+              switch (modelType) {
+                case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+                case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+                case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+                case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+              }
 
               const geminiClient = new GeminiClient(apiKey, modelName);
               const scoutConfig = {
@@ -550,11 +554,15 @@ function registerIpcHandlers() {
           let lastError;
           for (const apiKey of apiKeys) {
             try {
-              const modelName =
-                modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST ||
-                    "gemini-2.5-flash-lite"
-                  : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+              let modelName = "";
+              switch (modelType) {
+                case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+                case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+                case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+                case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+              }
 
               const geminiClient = new GeminiClient(apiKey, modelName);
               const publishPlatforms: ("naver" | "tistory")[] = [];
@@ -668,11 +676,15 @@ function registerIpcHandlers() {
           let lastError;
           for (const apiKey of apiKeys) {
             try {
-              const modelName =
-                modelType === "fast"
-                  ? process.env.VITE_GEMINI_MODEL_FAST ||
-                    "gemini-2.5-flash-lite"
-                  : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+              let modelName = "";
+              switch (modelType) {
+                case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+                case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+                case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+                case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+              }
 
               const geminiClient = new GeminiClient(apiKey, modelName);
               const scoutConfig = {
