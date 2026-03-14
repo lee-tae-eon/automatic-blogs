@@ -22,7 +22,9 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 
   // 1. 실시간 정보 및 내부 링크 지침
   let newsInstruction = "";
-  const internalLinkText = (input.internalLinkSuggestions || [])
+  // [v6.0] 추천 링크 중복 제거 (URL 기준)
+  const uniqueLinks = Array.from(new Map((input.internalLinkSuggestions || []).map(link => [link.url, link])).values());
+  const internalLinkText = uniqueLinks
     .map((link) => `- [${link.title}](${link.url})`)
     .join("\n");
 

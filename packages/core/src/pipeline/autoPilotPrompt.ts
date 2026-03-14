@@ -24,7 +24,9 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
     input.latestNews ||
     (input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0)
   ) {
-    const internalLinkText = (input.internalLinkSuggestions || [])
+    // [v6.0] 추천 링크 중복 제거 (URL 기준)
+    const uniqueLinks = Array.from(new Map((input.internalLinkSuggestions || []).map(link => [link.url, link])).values());
+    const internalLinkText = uniqueLinks
       .map((link) => `- [${link.title}](${link.url})`)
       .join("\n");
 

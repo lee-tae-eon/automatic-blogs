@@ -73,7 +73,7 @@ export class SqliteStorage implements IStorage {
     const params = queryKeywords.map(k => `%${k}%`);
     
     const stmt = this.db.prepare(`
-      SELECT title, url FROM published_posts
+      SELECT DISTINCT title, url FROM published_posts
       WHERE ${conditions}
       ORDER BY published_at DESC
       LIMIT ?

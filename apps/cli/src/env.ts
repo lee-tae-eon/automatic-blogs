@@ -11,7 +11,6 @@ export const ENV = {
     process.env.VITE_GEMINI_API_SUB_KEY ||
     process.env.VITE_GEMINI_API_KEY ||
     "",
-  // 기본 모델명을 명시적으로 지정 (404 에러 방지)
-  GEMINI_MODEL_FAST: process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-1.5-flash",
-  VITE_GEMINI_MODEL_NORMAL: process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-1.5-flash",
+  // 기본 모델명을 명시적으로 지정
+  GEMINI_MODEL_DEFAULT: process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview",
 };
