@@ -63,8 +63,8 @@ export class TopicRecommendationService {
         const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
         rawData = searchResult.context;
       } else if (category === "parenting") {
-        // 육아/아동 카테고리 특화 검색 (월령별 발달, 육아템, 실전 꿀팁 등)
-        const searchResult = await this.tavilyService.searchLatestNews(`최신 육아 트렌드 이슈 OR 시기별 자녀 아동 발달 가이드 OR 초보 부모 육아템 추천`);
+        // 육아/아동 카테고리 특화 검색 (노이즈 방지를 위해 '이슈/최신/트렌드' 단어 배제, 타겟 키워드만 집중)
+        const searchResult = await this.tavilyService.searchLatestNews(`한국 육아 꿀팁 OR 영유아 아동 발달 가이드 OR 신생아 초보 부모 가이드`);
         rawData = searchResult.context;
       } else if (category === "travel") {
         // [v4.5] 사용자 요청: 여행 트렌드는 명시적으로 '해외 여행' 트렌드 위주로 수집
@@ -99,10 +99,11 @@ export class TopicRecommendationService {
 
         [선정 지침 - 절대 준수]:
         1. **최신성 필터링 (CRITICAL)**: 2024년, 2025년 등 과거 연도 관련 키워드나 이미 지나간 이슈는 **절대 포함하지 마세요.** 오직 2026년 현재 유효한 트렌드만 다룹니다.
-        2. **화제성**: 현재 사람들이 가장 궁금해하고 검색량이 급증하는 주제여야 합니다.
-        3. **차별화**: 뻔한 내용이 아니라, 블로거가 자신만의 시각을 더해 상위 노출될 수 있는 '전략적 키워드'로 가공하세요.
-        4. **구체성**: 키워드는 블로그 제목으로 바로 써도 될 만큼 구체적이어야 합니다.
-        5. **이유 명시**: 왜 이 주제를 오늘 써야 하는지(예: 정부 발표 직후, 커뮤니티 난리 남 등)를 짧고 강렬하게 적으세요.
+        2. **분야 엄수 (CRITICAL)**: 제공된 원천 데이터에 '${CATEGORY_MAP[category]}'와 전혀 관련 없는 내용(예: AI, 반도체, 정치, 로봇, 가상화폐 등)이 포함되어 있다면 그 정보는 철저히 무시하세요. 무관한 주제를 억지로 엮는 것은 절대 금지입니다.
+        3. **화제성**: 현재 사람들이 가장 궁금해하고 검색량이 급증하는 주제여야 합니다.
+        4. **차별화**: 뻔한 내용이 아니라, 블로거가 자신만의 시각을 더해 상위 노출될 수 있는 '전략적 키워드'로 가공하세요.
+        5. **구체성**: 키워드는 블로그 제목으로 바로 써도 될 만큼 구체적이어야 합니다.
+        6. **이유 명시**: 왜 이 주제를 오늘 써야 하는지(예: 정부 발표 직후, 커뮤니티 난리 남 등)를 짧고 강렬하게 적으세요.
 
         [출력 형식]: 반드시 아래 JSON 배열 형식으로만 응답하세요.
         [
