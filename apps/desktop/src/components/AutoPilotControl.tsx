@@ -49,8 +49,9 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   // 발행 설정 모달 상태
   const [selectedCandidate, setSelectedCandidate] = useState<any | null>(null);
   const [persona, setPersona] = useState<string>("informative");
-  const [tone, setTone] = useState<string>("professional");
-  const [useImage, setUseImage] = useState(true);
+  const [topicCount, setTopicCount] = useState<number>(10);
+  const [tone, setTone] = useState<string>("empathetic");
+  const [useImage, setUseImage] = useState<boolean>(true);
   const [useNotebookLM, setUseNotebookLM] = useState(false); // 추가
   const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // 추가
 

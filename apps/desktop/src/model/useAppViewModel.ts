@@ -214,7 +214,7 @@ export const useAppViewModel = () => {
           result.data.map((task: BatchTask) => ({
             ...task,
             persona: task.persona || "정보형",
-            tone: task.tone || "전문적인",
+            tone: task.tone || "공감형",
           })),
         );
       } else {

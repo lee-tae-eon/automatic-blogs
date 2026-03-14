@@ -17,7 +17,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
   const [topic, setTopic] = useState("");
   const [keywords, setKeywords] = useState("");
   const [persona, setPersona] = useState<Persona>("informative");
-  const [tone, setTone] = useState<Tone>("professional");
+  const [tone, setTone] = useState<Tone>("empathetic");
   const [useImage, setUseImage] = useState(true); // v4.7: 이미지 사용 기본값 true
   const [useNotebookLM, setUseNotebookLM] = useState(false); // v5.0: NotebookLM 사용 여부
   const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // v5.0: 검수 모드
@@ -59,10 +59,10 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
 
     if (trendType === "hollywood") {
       setPersona("reporter");
-      setTone("professional");
+      setTone("empathetic");
     } else {
       setPersona("informative");
-      setTone("professional");
+      setTone("empathetic");
     }
   };
 
