@@ -12,7 +12,7 @@ export class TavilyService {
     try {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
-        query: `${query} 2026년 최신 현황 및 상세 분석`,
+        query: query,
         search_depth: "advanced",
         max_results: 3,
         include_images: false,
