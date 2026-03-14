@@ -128,9 +128,10 @@ function registerIpcHandlers() {
 
     let lastError: any;
     const modelVersions = [
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
+      process.env.VITE_GEMINI_MODEL_3.1_PRO || "gemini-3.1-pro-preview",
+      process.env.VITE_GEMINI_MODEL_3.0_FLASH || "gemini-3-flash-preview",
+      process.env.VITE_GEMINI_MODEL_3.1_FLASH_LITE || "gemini-3.1-flash-lite-preview",
+      process.env.VITE_GEMINI_MODEL_2.5_FLASH || "gemini-2.5-flash",
     ];
 
     for (const [idx, apiKey] of apiKeys.entries()) {
@@ -195,10 +196,26 @@ function registerIpcHandlers() {
           `🔍 하이브리드 검색 시도 (Key: ${apiKey.slice(0, 5)}...): '${query || "Hollywood Trends"}'`,
         );
 
-        const modelName =
-          credentials.modelType === "fast"
-            ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
-            : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
+        let modelName = "";
+        switch (credentials.modelType) {
+          case "3.1_pro":
+            modelName = process.env.VITE_GEMINI_MODEL_3.1_PRO || "gemini-3.1-pro-preview";
+            break;
+          case "3.0_flash":
+            modelName = process.env.VITE_GEMINI_MODEL_3.0_FLASH || "gemini-3-flash-preview";
+            break;
+          case "3.1_flash_lite":
+            modelName = process.env.VITE_GEMINI_MODEL_3.1_FLASH_LITE || "gemini-3.1-flash-lite-preview";
+            break;
+          case "2.5_flash":
+            modelName = process.env.VITE_GEMINI_MODEL_2.5_FLASH || "gemini-2.5-flash";
+            break;
+          case "2.5_flash_lite":
+            modelName = process.env.VITE_GEMINI_MODEL_2.5_FLASH_LITE || "gemini-2.5-flash-lite";
+            break;
+          default:
+            modelName = process.env.VITE_GEMINI_MODEL_3.0_FLASH || "gemini-3-flash-preview";
+        }
 
         const client = new GeminiClient(apiKey, modelName);
         const tavily = new TavilyService();
@@ -358,15 +375,20 @@ function registerIpcHandlers() {
               throw new Error("AbortError");
 
             const selectedModelType = task.modelType || credentials.modelType;
-            const modelName =
-              selectedModelType === "fast"
-                ? process.env.VITE_GEMINI_MODEL_FAST || "gemini-2.5-flash-lite"
-                : process.env.VITE_GEMINI_MODEL_NORMAL || "gemini-2.5-flash";
-
-            const geminiClient = new GeminiClient(apiKey, modelName);
+                let mName = "";
+                switch (selectedModelType) { // Changed modelType to selectedModelType
+                  case "3.1_pro": mName = process.env.VITE_GEMINI_MODEL_3.1_PRO || "gemini-3.1-pro-preview"; break;
+                  case "3.0_flash": mName = process.env.VITE_GEMINI_MODEL_3.0_FLASH || "gemini-3-flash-preview"; break;
+                  case "3.1_flash_lite": mName = process.env.VITE_GEMINI_MODEL_3.1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                  case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2.5_FLASH || "gemini-2.5-flash"; break;
+                  case "2.5_flash_lite": mName = process.env.VITE_GEMINI_MODEL_2.5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                  default: mName = process.env.VITE_GEMINI_MODEL_3.0_FLASH || "gemini-3-flash-preview";
+                }
+                const client = new GeminiClient(apiKey, mName);
+                if (mainWindow) mainWindow.webContents.send("process-log", `🤖 모델 사용: ${mName}`);
 
             const generateOptions = {
-              client: geminiClient,
+              client: client, // Changed geminiClient to client
               task: task,
               projectRoot: userDataPath,
               onProgress: (message: string) => {
