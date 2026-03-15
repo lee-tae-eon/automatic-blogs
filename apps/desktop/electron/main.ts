@@ -138,7 +138,11 @@ function registerIpcHandlers() {
       for (const modelName of modelVersions) {
         try {
           const client = new GeminiClient(apiKey, modelName);
-          const service = new TopicRecommendationService(client);
+          const naverConfig = {
+            clientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+            clientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+          };
+          const service = new TopicRecommendationService(client, naverConfig);
 
           const logMsg = `🔍 [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 중...`;
           if (mainWindow) mainWindow.webContents.send("process-log", logMsg);
