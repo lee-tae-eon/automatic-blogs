@@ -6,6 +6,7 @@ import { TopicExpanderService } from "../services/TopicExpanderService";
 import { CompetitorAnalyzerService } from "../services/CompetitorAnalyzerService";
 import { generatePost } from "./generatePost";
 import { markdownToHtml } from "../util/markdownToHtml";
+import { delay } from "../util/delay";
 import { IBlogPublisher } from "../publisher/interface";
 import { NaverPublisher } from "../publisher/naverPub";
 import { TistoryPublisher } from "../publisher/tistoryPub";
@@ -158,6 +159,12 @@ export async function runAutoPilot(options: AutoPilotOptions) {
             tags: publication.tags || bestTarget.keyword.split(" "),
           });
           log(`✅ NAVER 발행 완료! (${account.id})`);
+
+          // [Downtime] 3~5분 사이의 랜덤 대기 시간 추가 (안티봇 회피)
+          const downtimeMs = Math.floor(Math.random() * (300000 - 180000 + 1)) + 180000;
+          const downtimeMin = (downtimeMs / 60000).toFixed(2);
+          log(`🕒 다음 작업을 위해 ${downtimeMin}분 동안 대기합니다 (Downtime)...`);
+          await delay(downtimeMs);
         }
       } else if (platform === "tistory" && credentials.tistory) {
         log(`🚀 TISTORY 발행 중... (계정: ${credentials.tistory.id})`);
@@ -175,6 +182,12 @@ export async function runAutoPilot(options: AutoPilotOptions) {
           tags: publication.tags || bestTarget.keyword.split(" "),
         });
         log(`✅ TISTORY 발행 완료!`);
+
+        // [Downtime] 티스토리도 동일하게 대기 시간 적용
+        const downtimeMs = Math.floor(Math.random() * (300000 - 180000 + 1)) + 180000;
+        const downtimeMin = (downtimeMs / 60000).toFixed(2);
+        log(`🕒 다음 작업을 위해 ${downtimeMin}분 동안 대기합니다 (Downtime)...`);
+        await delay(downtimeMs);
       }
     }
 

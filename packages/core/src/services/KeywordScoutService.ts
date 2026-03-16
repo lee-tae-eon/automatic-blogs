@@ -158,17 +158,29 @@ export class KeywordScoutService {
       score += 5;  // 극심한 레드오션
     }
 
-    // C. 제목 및 광고 필터 (최대 10점)
-    const adKeywords = ["대출", "보험", "수술", "분양", "렌트", "광고", "협찬"];
-    const hasAdKeyword = adKeywords.some(kw => analysis.keyword.includes(kw));
-    const titleAdCount = analysis.topTitles.filter(t => 
-        adKeywords.some(ak => t.includes(ak))
+    // C. 수익성(High-Yield) 보너스 및 광고 필터 (수익 극대화 전략)
+    const highYieldKeywords = ["대출", "보험", "수술", "분양", "청약", "렌트", "카드", "금리", "지원금", "환급"];
+    const pureSpamKeywords = ["광고", "협찬", "무료상담", "최저가 보장"]; // 순수 스팸성 키워드만 감점
+
+    const hasHighYield = highYieldKeywords.some(kw => analysis.keyword.includes(kw));
+    const hasSpam = pureSpamKeywords.some(kw => analysis.keyword.includes(kw));
+    
+    // 상위 노출 블로그들의 제목에 스팸 키워드가 도배되어 있는지 확인
+    const titleSpamCount = analysis.topTitles.filter(t => 
+        pureSpamKeywords.some(ak => t.includes(ak))
     ).length;
 
-    if (!hasAdKeyword && titleAdCount < 2) {
+    if (hasSpam || titleSpamCount >= 3) {
+      score -= 20; // 스팸/광고 도배 키워드 강력 감점
+    } else if (hasHighYield && analysis.competitionIndex < 50) {
+      // 고단가 키워드이면서 경쟁률이 감당 가능한 수준(50 미만)이면 엄청난 보너스 부여
+      score += 30; 
+    } else if (hasHighYield) {
+      // 경쟁이 심해도 고단가 키워드 자체의 가치를 인정하여 소폭 가점
       score += 10;
-    } else if (titleAdCount >= 5) {
-      score -= 20; // 광고 도배 키워드 강력 감점
+    } else {
+      // 일반 키워드
+      score += 5;
     }
 
     return score;

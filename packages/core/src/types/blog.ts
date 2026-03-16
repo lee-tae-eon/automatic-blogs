@@ -23,7 +23,9 @@ export type Persona =
   | "experiential" // 후기형 (The Reviewer)
   | "reporter" // 이슈형 (The Reporter)
   | "entertainment" // 엔터형 (The Fan/Watcher)
-  | "travel"; // 여행 가이드 (The Travel Guide)
+  | "travel" // 여행 가이드 (The Travel Guide)
+  | "financeMaster" // 재테크/금융 전문가 (The Finance Master)
+  | "healthExpert"; // 건강/의학 큐레이터 (The Health Expert)
 
 export interface PersonaDetail {
   role: string; // AI 역할 정의

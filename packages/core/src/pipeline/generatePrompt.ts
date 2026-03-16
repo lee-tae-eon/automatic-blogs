@@ -176,8 +176,15 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 ${(() => {
   const domainStrategy = getDomainStrategy(input.topic);
   if (!domainStrategy) return "";
+  
+  let domainName = "수익화";
+  if (input.topic.includes("금융") || input.topic.includes("재테크") || input.topic.includes("주식") || input.topic.includes("대출")) domainName = "금융/재테크";
+  else if (input.topic.includes("건강") || input.topic.includes("의료") || input.topic.includes("보험") || input.topic.includes("수술")) domainName = "건강/의료";
+  else if (input.topic.includes("it") || input.topic.includes("테크") || input.topic.includes("ai") || input.topic.includes("개발")) domainName = "IT/테크";
+  else if (input.topic.includes("부동산") || input.topic.includes("아파트") || input.topic.includes("청약") || input.topic.includes("분양")) domainName = "부동산/분양";
+
   return `
-### 🏦 [도메인 특화] ${input.topic.includes("금융") || input.topic.includes("재테크") ? "금융/재테크" : "건강/의료"} 전략
+### 🏦 [도메인 특화] ${domainName} 수익 극대화 전략 (Best Blogger)
 - **타겟 엔티티 우선 노출**: 아래 단어들을 제목과 본문 상단 3~5줄에 자연스럽게 포함하세요: **${domainStrategy.highYield.join(", ")}**
 - **명칭 중심 서술**: **${domainStrategy.entities.join(", ")}** 등의 구체적 명사를 대명사 대신 사용하여 NLP 분석 효율을 높이세요.
 - **도메인 전용 규칙**:

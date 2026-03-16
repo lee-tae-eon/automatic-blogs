@@ -66,6 +66,30 @@ export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
     imageCount: 4,
     keywordDensity: [0.01, 0.02],
   },
+
+  // 7. 재테크/금융 전문가 (The Finance Master)
+  financeMaster: {
+    targetLength: [2000, 3500],
+    headingCount: 5,
+    paragraphMaxLength: 150,
+    sentenceMaxLength: 50,
+    emojiUsage: "minimal",
+    tableRequired: true, // 비교 표 필수
+    imageCount: 3,
+    keywordDensity: [0.02, 0.04], // 타겟 키워드 밀도 약간 높임
+  },
+
+  // 8. 건강/의학 큐레이터 (The Health Expert)
+  healthExpert: {
+    targetLength: [2000, 3000],
+    headingCount: 5,
+    paragraphMaxLength: 130,
+    sentenceMaxLength: 50,
+    emojiUsage: "minimal",
+    tableRequired: true, // 성분 비교 등
+    imageCount: 3,
+    keywordDensity: [0.02, 0.04],
+  },
 };
 
 export const getQualityMetrics = (persona: Persona): QualityMetrics => {

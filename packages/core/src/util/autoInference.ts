@@ -63,6 +63,8 @@ export function inferTargetAudience(topic: string, persona: Persona): string {
     reporter: "최신 이슈와 트렌드를 빠르게 파악하고 싶은 독자",
     entertainment: "연예, 방송, 문화 트렌드를 즐기는 팬들과 대중",
     travel: "항공권 예약부터 현지 도착까지 구체적이고 정확한 정보가 필요한 실제 여행자",
+    financeMaster: "자산 증식, 절세, 대출 이자 절감 등에 관심 있는 경제 주체",
+    healthExpert: "건강 관리, 예방, 전문적인 의학/영양 정보를 찾는 분",
   };
 
   return personaDefaultTargets[persona] || "일반 독자";
@@ -81,6 +83,8 @@ export function inferContentGoal(
       reporter: "engagement", // 이슈 공유 및 소통
       entertainment: "engagement", // 팬들과의 소통 및 공감
       travel: "informative", // 정확한 정보 전달 및 가이드
+      financeMaster: "conversion", // 금융상품/서비스 전환 유도 (수익화)
+      healthExpert: "conversion", // 의료/건강 제품 전환 유도 (수익화)
     };
 
   return goalMap[persona] || "informative";

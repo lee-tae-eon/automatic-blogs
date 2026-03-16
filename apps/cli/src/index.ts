@@ -33,7 +33,7 @@ async function main() {
     status: "대기",
   };
 
-  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODEL_FAST);
+  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODEL_DEFAULT);
 
   try {
     // 2. AI 포스트 생성 (최신 프롬프트 생성 로직 연동)
