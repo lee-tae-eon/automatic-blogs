@@ -9,85 +9,85 @@ export const SEO_RULES = {
 export const QUALITY_METRICS: Record<Persona, QualityMetrics> = {
   // 1. 정보성 (The Analyst)
   informative: {
-    targetLength: [1500, 3000],
-    headingCount: 5,
+    targetLength: [2500, 4000],
+    headingCount: 6,
     paragraphMaxLength: 150,
     sentenceMaxLength: 50,
     emojiUsage: "minimal",
     tableRequired: true,
-    imageCount: 3,
+    imageCount: 4,
     keywordDensity: [0.01, 0.03],
   },
 
   // 2. 후기성 (The Reviewer)
   experiential: {
-    targetLength: [1000, 2000],
-    headingCount: 4,
+    targetLength: [2000, 3500],
+    headingCount: 5,
     paragraphMaxLength: 120,
     sentenceMaxLength: 40,
     emojiUsage: "moderate",
-    tableRequired: false,
-    imageCount: 5,
+    tableRequired: true,
+    imageCount: 6,
     keywordDensity: [0.01, 0.02],
   },
 
   // 3. 뉴스형 (The Reporter)
   reporter: {
-    targetLength: [800, 1500],
-    headingCount: 4,
+    targetLength: [1500, 2500],
+    headingCount: 5,
     paragraphMaxLength: 100,
     sentenceMaxLength: 45,
     emojiUsage: "minimal",
-    tableRequired: false,
-    imageCount: 2,
+    tableRequired: true,
+    imageCount: 3,
     keywordDensity: [0.01, 0.02],
   },
 
   // 4. 엔터형 (The Fan/Watcher)
   entertainment: {
-    targetLength: [800, 1500],
-    headingCount: 4,
+    targetLength: [1500, 2500],
+    headingCount: 5,
     paragraphMaxLength: 100,
     sentenceMaxLength: 40,
     emojiUsage: "heavy",
     tableRequired: false,
-    imageCount: 4,
+    imageCount: 5,
     keywordDensity: [0.01, 0.02],
   },
 
   // 6. 여행 가이드 (The Travel Guide)
   travel: {
-    targetLength: [1500, 2500],
-    headingCount: 5,
+    targetLength: [2500, 4000],
+    headingCount: 6,
     paragraphMaxLength: 120,
     sentenceMaxLength: 45,
     emojiUsage: "moderate",
     tableRequired: true,
-    imageCount: 4,
+    imageCount: 5,
     keywordDensity: [0.01, 0.02],
   },
 
   // 7. 재테크/금융 전문가 (The Finance Master)
   financeMaster: {
-    targetLength: [2000, 3500],
-    headingCount: 5,
+    targetLength: [3000, 5000],
+    headingCount: 7,
     paragraphMaxLength: 150,
     sentenceMaxLength: 50,
     emojiUsage: "minimal",
-    tableRequired: true, // 비교 표 필수
-    imageCount: 3,
-    keywordDensity: [0.02, 0.04], // 타겟 키워드 밀도 약간 높임
+    tableRequired: true,
+    imageCount: 4,
+    keywordDensity: [0.02, 0.04],
   },
 
   // 8. 건강/의학 큐레이터 (The Health Expert)
   healthExpert: {
-    targetLength: [2000, 3000],
-    headingCount: 5,
+    targetLength: [3000, 4500],
+    headingCount: 7,
     paragraphMaxLength: 130,
     sentenceMaxLength: 50,
     emojiUsage: "minimal",
-    tableRequired: true, // 성분 비교 등
-    imageCount: 3,
+    tableRequired: true,
+    imageCount: 4,
     keywordDensity: [0.02, 0.04],
   },
 };
