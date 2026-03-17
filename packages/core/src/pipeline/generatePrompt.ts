@@ -169,7 +169,9 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
   2. **금지**: 형용사나 감성적인 문구에는 사용을 엄격히 금지합니다.
   3. **빈도 제한**: 포스팅 전체에서 **최대 3회**만 사용하세요.
   4. **단어 단위**: 한 번에 **10자 이내**로 적용하며, 다른 기호와 중첩하지 마세요.
+`;
 
+  const revenueStrategy = `
 ## 🔍 [v6.0] 수익 및 유입 극대화 전략 (CTR & Revenue Maximization)
 [ULTRA CRITICAL] 아래 규칙들은 상위 1% 블로거들의 '돈이 되는 글쓰기' 핵심 비법입니다.
 
@@ -189,7 +191,7 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
    - 이는 독자의 체류 시간(Dwell Time)을 늘려 검색 상위 노출을 유지하는 비결입니다.
 
 4. **[Conversion] 강력한 내부 링크 추천**:
-   - `input.internalLinkSuggestions`가 있다면, 단순히 나열하지 말고 **"함께 읽으면 수익이 2배가 되는 연관 글"**과 같은 매력적인 카피와 함께 추천하세요.
+   - \`input.internalLinkSuggestions\`가 있다면, 단순히 나열하지 말고 **"함께 읽으면 수익이 2배가 되는 연관 글"**과 같은 매력적인 카피와 함께 추천하세요.
 
 ## 🔍 [v5.5] SEO & AdPost Contextual Induction (AdPost Optimization)
 [CRITICAL] 아래 규칙들은 네이버 애드포스트(AdPost) 봇의 NLP 분석을 최적화하여 고단가 광고 매칭을 유도하기 위한 핵심 지침입니다.
@@ -197,12 +199,36 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 ${(() => {
   const domainStrategy = getDomainStrategy(input.topic);
   if (!domainStrategy) return "";
-  
+
   let domainName = "수익화";
-  if (input.topic.includes("금융") || input.topic.includes("재테크") || input.topic.includes("주식") || input.topic.includes("대출")) domainName = "금융/재테크";
-  else if (input.topic.includes("건강") || input.topic.includes("의료") || input.topic.includes("보험") || input.topic.includes("수술")) domainName = "건강/의료";
-  else if (input.topic.includes("it") || input.topic.includes("테크") || input.topic.includes("ai") || input.topic.includes("개발")) domainName = "IT/테크";
-  else if (input.topic.includes("부동산") || input.topic.includes("아파트") || input.topic.includes("청약") || input.topic.includes("분양")) domainName = "부동산/분양";
+  if (
+    input.topic.includes("금융") ||
+    input.topic.includes("재테크") ||
+    input.topic.includes("주식") ||
+    input.topic.includes("대출")
+  )
+    domainName = "금융/재테크";
+  else if (
+    input.topic.includes("건강") ||
+    input.topic.includes("의료") ||
+    input.topic.includes("보험") ||
+    input.topic.includes("수술")
+  )
+    domainName = "건강/의료";
+  else if (
+    input.topic.includes("it") ||
+    input.topic.includes("테크") ||
+    input.topic.includes("ai") ||
+    input.topic.includes("개발")
+  )
+    domainName = "IT/테크";
+  else if (
+    input.topic.includes("부동산") ||
+    input.topic.includes("아파트") ||
+    input.topic.includes("청약") ||
+    input.topic.includes("분양")
+  )
+    domainName = "부동산/분양";
 
   return `
 ### 🏦 [도메인 특화] ${domainName} 수익 극대화 전략 (Best Blogger)
@@ -279,6 +305,7 @@ ${domainStrategy.contextRules.map((r) => `  * ${r}`).join("\n")}
 ${newsInstruction}
 ${styleGuide}
 ${structureGuide}
+${revenueStrategy}
 ${mission}
 `.trim();
 }
