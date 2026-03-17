@@ -10,11 +10,13 @@ interface TaskTableProps {
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
-  { label: "분석가 (정보)", value: "informative" },
-  { label: "리뷰어 (후기)", value: "experiential" },
-  { label: "리포터 (뉴스)", value: "reporter" },
-  { label: "엔터형 (팬)", value: "entertainment" },
-  { label: "여행 가이드", value: "travel" },
+  { label: "정보형", value: "informative" },
+  { label: "후기형", value: "experiential" },
+  { label: "이슈형", value: "reporter" },
+  { label: "엔터형", value: "entertainment" },
+  { label: "여행형", value: "travel" },
+  { label: "금융형", value: "financeMaster" },
+  { label: "건강형", value: "healthExpert" },
 ];
 
 const toneOptions: { label: string; value: Tone }[] = [

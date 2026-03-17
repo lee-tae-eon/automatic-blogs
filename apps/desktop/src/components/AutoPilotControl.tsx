@@ -773,6 +773,8 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
                   <option value="reporter">리포터 (뉴스)</option>
                   <option value="entertainment">엔터형 (팬)</option>
                   <option value="travel">여행 가이드</option>
+                  <option value="financeMaster">재테크 (금융)</option>
+                  <option value="healthExpert">건강형 (의학)</option>
                 </select>
               </div>
               <div style={{ flex: 1 }}>
