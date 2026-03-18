@@ -68,7 +68,7 @@ export class TopicRecommendationService {
   }
 
   /**
-   * 특정 카테고리의 핫 토픽 10개를 가져옵니다.
+   * 특정 카테고리의 핫 토픽 20개를 가져옵니다.
    * [v7.0] 뉴스(RSS/Tavily) + 네이버 블로그 검색 결합
    */
   async getRecommendationsByCategory(category: RecommendCategory): Promise<RecommendedTopic[]> {
@@ -113,7 +113,7 @@ export class TopicRecommendationService {
       if (this.naverSearchService) {
         try {
           const query = NAVER_BLOG_QUERIES[category];
-          const blogResults = await this.naverSearchService.searchBlog(query, 10);
+          const blogResults = await this.naverSearchService.searchBlog(query, 20);
           if (blogResults) {
             naverBlogData = blogResults;
             console.log(`✅ [TopicRec] 네이버 블로그 유입 데이터 수집 완료: ${category}`);
@@ -135,7 +135,7 @@ export class TopicRecommendationService {
       
       const prompt = `
         당신은 대한민국 최고의 블로그 콘텐츠 전략가이자 수익화 마케터입니다. 
-        현재는 **${currentDateStr}**입니다. 반드시 현재 시점에서 가장 유효한 정보를 바탕으로 **'${CATEGORY_MAP[category]}'** 카테고리에서 오늘 블로그로 쓰기 가장 좋은, **수익성(상업적 의도)과 화제성을 동시에 갖춘 핫 토픽 10개**를 선정하세요.
+        현재는 **${currentDateStr}**입니다. 반드시 현재 시점에서 가장 유효한 정보를 바탕으로 **'${CATEGORY_MAP[category]}'** 카테고리에서 오늘 블로그로 쓰기 가장 좋은, **수익성(상업적 의도)과 화제성을 동시에 갖춘 핫 토픽 20개**를 선정하세요.
 
         [원천 데이터]:
         === 📰 최신 뉴스/검색 이슈 ===
@@ -151,7 +151,7 @@ export class TopicRecommendationService {
            - 예: '아이폰 출시' (X) -> '아이폰 자급제 할인 카드 혜택' (O - 금융 브릿징)
         3. **분야 엄수 (CRITICAL)**: 제공된 데이터에 '${CATEGORY_MAP[category]}'와 전혀 관련 없는 내용이 포함되어 있다면 무시하세요. 단, 해당 카테고리와 '금융/건강/IT' 등 고수익 도메인을 자연스럽게 연결(Domain Bridging)하는 것은 적극 권장합니다.
         4. **블로그 유입 우선**: 네이버 블로그 데이터에서 등장하는 키워드를 뉴스 이슈와 결합하여 '실제 독자들이 검색하는' 주제를 만드세요.
-        5. **다양성 (CRITICAL)**: 뻔한 주제를 피하고, 매번 [창의적이고 다채로운 수익화 앵글]로 10가지 전혀 다른 차별화된 키워드를 기획하세요. (Random Seed: ${Math.random().toString(36).substring(7)})
+        5. **다양성 (CRITICAL)**: 뻔한 주제를 피하고, 매번 [창의적이고 다채로운 수익화 앵글]로 20가지 전혀 다른 차별화된 키워드를 기획하세요. (Random Seed: ${Math.random().toString(36).substring(7)})
         6. **구체성**: 키워드는 블로그 제목으로 바로 써도 될 만큼 구체적이어야 합니다.
         7. **이유 명시**: 왜 이 주제가 화제성이 있고 **동시에 수익을 낼 수 있는지**(예: "정부 지원금 신청 기간이라 관련 트래픽 및 금융 광고 단가 상승")를 짧고 강렬하게 적으세요.
 
