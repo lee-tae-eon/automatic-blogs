@@ -102,10 +102,9 @@ export const CoupangTaskInput: React.FC<CoupangTaskInputProps> = ({
             식별용 주제 (상품 간략명) <span style={{ color: "red" }}>*</span>
           </label>
           <input
-            type="text"
-            placeholder="예: 애플 2024 맥북 프롬 14"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+           type="text"
+           placeholder="예: 애플 2026 맥북 프로 14"
+           value={topic}            onChange={(e) => setTopic(e.target.value)}
             style={{
               width: "100%",
               padding: "10px",

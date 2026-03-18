@@ -64,8 +64,8 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     const expander = new TopicExpanderService(geminiClient);
     let candidates = await expander.expandTopic(broadTopic);
 
-    // [Safety] 과거 연도 키워드 강제 필터링
-    const currentYear = new Date().getFullYear().toString();
+    // [Safety] 과거 연도 키워드 강제 필터링 (2026년 기준)
+    const currentYear = "2026"; 
     candidates = candidates.filter(
       (c) => !c.keyword.includes("2024") && !c.keyword.includes("2025"),
     );
