@@ -11,9 +11,10 @@ export interface RecommendedTopic {
   hotness: number; // 1-100
 }
 
-export type RecommendCategory = "tech" | "economy" | "entertainment" | "life" | "travel" | "health" | "parenting";
+export type RecommendCategory = "trending" | "tech" | "economy" | "entertainment" | "life" | "travel" | "health" | "parenting";
 
 export const CATEGORY_MAP: Record<RecommendCategory, string> = {
+  trending: "⚡ 실시간 급상승 이슈",
   tech: "IT/테크",
   economy: "경제/비즈니스",
   entertainment: "연예/방송",
@@ -25,6 +26,7 @@ export const CATEGORY_MAP: Record<RecommendCategory, string> = {
 
 /** 카테고리별 Naver 블로그 검색 쿼리 */
 const NAVER_BLOG_QUERIES: Record<RecommendCategory, string> = {
+  trending: "오늘의 뉴스 실시간 핫이슈 급상승 키워드",
   tech: "IT 트렌드 최신 테크",
   economy: "재테크 경제 금융 투자",
   entertainment: "연예 드라마 방송 핫이슈",
@@ -73,12 +75,19 @@ export class TopicRecommendationService {
     try {
       console.log(`📡 [TopicRec] '${CATEGORY_MAP[category]}' 트렌드 수집 중...`);
       
-      // ─── 1. 뉴스 데이터 수집 (기존 로직 유지) ───────────────────────
+      // ─── 1. 뉴스 데이터 수집 ───────────────────────────────────
       let newsData = "";
       
-      if (category === "entertainment" || category === "economy") {
+      if (category === "trending" || category === "entertainment" || category === "economy") {
+        // [v7.1] 실시간 이슈는 구글 트렌드(RSS)를 최우선으로 수집
         const rssTrends = await this.rssService.fetchTrendingTopics("KR");
         newsData = rssTrends.map(t => t.title).join(", ");
+        
+        if (category === "trending") {
+          // 실시간 카테고리는 뉴스 검색 데이터도 추가하여 풍부하게 만듦
+          const searchResult = await this.tavilyService.searchLatestNews(`대한민국 현재 실시간 급상승 뉴스 핫이슈`);
+          newsData += `\n\n${searchResult.context}`;
+        }
       } else if (category === "health") {
         const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
         newsData = searchResult.context;

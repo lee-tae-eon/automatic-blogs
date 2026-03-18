@@ -146,10 +146,12 @@ export class KeywordScoutService {
 
     // B. 경쟁률 점수 (최대 50점) - v2.0 핵심: 검색량 대비 발행량
     // Index가 낮을수록(발행량이 적을수록) 고점
-    if (analysis.competitionIndex < 1) {
-      score += 50; // 황금 (발행량 < 검색량)
+    if (analysis.competitionIndex < 0.5) {
+      score += 50; // 황금 (발행량 < 검색량의 절반)
+    } else if (analysis.competitionIndex < 2) {
+      score += 45; // 블루오션 (발행량 < 검색량의 2배)
     } else if (analysis.competitionIndex < 10) {
-      score += 40; // 블루오션
+      score += 40; // 양호
     } else if (analysis.competitionIndex < 50) {
       score += 30; // 경쟁 있음
     } else if (analysis.competitionIndex < 200) {
@@ -158,7 +160,14 @@ export class KeywordScoutService {
       score += 5;  // 극심한 레드오션
     }
 
-    // C. 수익성(High-Yield) 보너스 및 광고 필터 (수익 극대화 전략)
+    // C. [NEW] 롱테일 가산점 (유입 폭발 전략) - 최대 20점 추가
+    // 3단어 이상이거나 글자 수가 10자 이상인 경우 구체적 검색어로 판단
+    const isLongTail = analysis.keyword.split(" ").length >= 3 || analysis.keyword.length >= 10;
+    if (isLongTail && analysis.competitionIndex < 20) {
+      score += 20; // 경쟁이 적당한 롱테일은 최우선 순위
+    }
+
+    // D. 수익성(High-Yield) 보너스 및 광고 필터 (수익 극대화 전략)
     const highYieldKeywords = ["대출", "보험", "수술", "분양", "청약", "렌트", "카드", "금리", "지원금", "환급"];
     const pureSpamKeywords = ["광고", "협찬", "무료상담", "최저가 보장"]; // 순수 스팸성 키워드만 감점
 

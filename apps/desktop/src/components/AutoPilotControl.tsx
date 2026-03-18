@@ -27,9 +27,10 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
 }) => {
   const [topic, setTopic] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("tech");
+  const [activeCategory, setActiveCategory] = useState<string>("trending");
 
   const categories = [
+    { id: "trending", label: "⚡ 실시간 이슈" },
     { id: "tech", label: "💻 IT/테크" },
     { id: "economy", label: "📈 경제" },
     { id: "entertainment", label: "🎬 연예" },
