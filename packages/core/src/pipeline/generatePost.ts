@@ -199,23 +199,6 @@ ${tavilyResult.context}
 ${naverResult}
         `.trim();
 
-        // ✅ [NEW v7.2] 고관여 페르소나(건강/금융/여행)일 경우 추천 제품 정보 추가 확보
-        if (task.persona === "healthExpert" || task.persona === "financeMaster" || task.persona === "travel") {
-          onProgress?.("🛍️ 관련 추천 제품 및 예약 정보 수집 중...");
-          try {
-            const productResults = await tavily.searchProducts(task.topic);
-            if (productResults && productResults.length > 0) {
-              const productText = productResults
-                .map((p, i) => `- [추천 제품 ${i + 1}] 이름: ${p.name}, 구매링크: ${p.url}`)
-                .join("\n");
-              
-              newsContext += `\n\n# [🛍️ AI 추천 제품 리스트]\n본문 내에 아래 제품들을 자연스럽게 언급하며 추천 링크를 걸어주세요:\n${productText}`;
-            }
-          } catch (e) {
-            console.warn("⚠️ 제품 검색 실패 (무시):", e);
-          }
-        }
-
         inputParams.latestNews = newsContext || "최신 정보 없음";
 
         if (newsContext && newsContext.length > 100) {

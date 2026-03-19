@@ -88,32 +88,4 @@ export class TavilyService {
       return [];
     }
   }
-
-  /**
-   * 주제와 관련된 인기 제품 및 구매 링크를 검색합니다.
-   */
-  async searchProducts(topic: string): Promise<{ name: string; url: string }[]> {
-    try {
-      const query = `${topic} 인기 제품 추천 예약 사이트 구매 링크 가격`;
-      const response = await axios.post(this.baseUrl, {
-        api_key: this.apiKey,
-        query: query,
-        search_depth: "basic",
-        max_results: 5,
-        include_domains: [
-          "naver.com", "coupang.com", "danawa.com", "ssg.com", 
-          "klook.com", "myrealtrip.com", "agoda.com", "skyscanner.co.kr", "kkday.com"
-        ],
-      });
-
-      const results = response.data.results || [];
-      return results.map((r: any) => ({
-        name: r.title.replace(/<[^>]*>?/gm, "").split("|")[0].trim(),
-        url: r.url
-      }));
-    } catch (error) {
-      console.error("❌ Tavily 제품 검색 중 오류:", error);
-      return [];
-    }
-  }
 }
