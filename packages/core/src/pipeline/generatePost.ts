@@ -38,6 +38,14 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
+  // [Safety v7.4] 제품 링크 및 쇼핑 태그 강제 제거 (강화된 정규식)
+  const productTagRegex = /\[\s*(제품|상품|추천제품|추천상품)\s*:[\s\S]*?\]/gi;
+  if (productTagRegex.test(content)) {
+    console.log("🧹 [Sanitizer] 불필요한 제품 추천 태그 강제 제거 완료");
+    content = content.replace(productTagRegex, "");
+    isModified = true;
+  }
+
   if (/자살/g.test(content)) {
     console.warn("🛡️ [Safety] 본문의 금지어를 순화합니다.");
     content = content.replace(/자살/g, "사망");
