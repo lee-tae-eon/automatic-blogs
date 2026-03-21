@@ -343,16 +343,17 @@ export class NaverEditor {
 
           // 🔗 [v5.5] 연관 정보 링크 (OG Link Card) 블록 처리
           case "og_link":
+          case "youtube_video":
             if (!block.url) break;
             try {
               await this.page.keyboard.press("Enter");
-              // 클립보드 복붙이 아닌 직접 타이핑이어야 네이버 에디터가 링크 카드로 인식할 확률이 높음
+              // 클립보드 복붙이 아닌 직접 타이핑이어야 네이버 에디터가 링크/영상 카드로 인식함
               await this.page.keyboard.type(block.url, { delay: 10 });
-              await this.page.keyboard.press("Enter"); // OG 썸네일 생성 트리거
-              await this.page.waitForTimeout(3000); // 썸네일(카드)이 스크래핑되어 그려질 시간을 충분히 부여
+              await this.page.keyboard.press("Enter"); // 변환 트리거
+              await this.page.waitForTimeout(3500); // 영상/링크 카드가 생성될 시간을 충분히 부여
               await this.page.keyboard.press("Enter"); // 분리 여백
             } catch (e) {
-              console.error("❌ 링크 카드 자동 생성 에러:", e);
+              console.error("❌ 멀티미디어 카드 생성 에러:", e);
             }
             break;
 
@@ -560,13 +561,38 @@ export class NaverEditor {
               });
             }
           } else {
-            // 4. 차트/링크가 없는 일반 문단 처리
-            if (textContent || $el.find("img, iframe, video").length > 0) {
-              blocks.push({
-                type: "paragraph",
-                text: textContent,
-                html: rawHtml || textContent,
-              });
+            // 3-B. 🎬 유튜브 영상 [영상: URL] 처리
+            const videoPrefixRegex = /\[\s*(영상|동영상|유튜브)\s*:\s*(https?:\/\/[^\s\]]+)\s*\]/gi;
+            let videoLastIndex = 0;
+            let videoMatch;
+            let foundVideo = false;
+
+            while ((videoMatch = videoPrefixRegex.exec(text)) !== null) {
+              foundVideo = true;
+              const videoStartIndex = videoMatch.index;
+              const beforeText = text.substring(videoLastIndex, videoStartIndex).trim();
+              if (beforeText) {
+                blocks.push({ type: "paragraph", text: beforeText, html: beforeText });
+              }
+
+              blocks.push({ type: "youtube_video", url: videoMatch[2].trim() });
+              videoLastIndex = videoStartIndex + videoMatch[0].length;
+            }
+
+            if (foundVideo) {
+              const afterText = text.substring(videoLastIndex).trim();
+              if (afterText) {
+                blocks.push({ type: "paragraph", text: afterText, html: afterText });
+              }
+            } else {
+              // 4. 차트/링크/영상이 없는 일반 문단 처리
+              if (textContent || $el.find("img, iframe, video").length > 0) {
+                blocks.push({
+                  type: "paragraph",
+                  text: textContent,
+                  html: rawHtml || textContent,
+                });
+              }
             }
           }
         }

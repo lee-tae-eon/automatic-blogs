@@ -198,6 +198,15 @@ export async function generatePost({
           naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
+        // ✅ [NEW v8.0] 관련 유튜브 영상 자동 검색 및 컨텍스트 추가
+        onProgress?.("🎬 관련 유튜브 영상 검색 중...");
+        const youtubeUrl = await tavily.searchYoutubeVideo(cleanTopic);
+        let youtubeContext = "";
+        if (youtubeUrl) {
+          youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- URL: ${youtubeUrl}\n(본문 중간에 위 영상을 [영상: URL] 형태로 삽입하세요.)`;
+          console.log(`✅ [YouTube] 발견된 영상: ${youtubeUrl}`);
+        }
+
         // 데이터 통합
         newsContext = `
 # [웹 검색 및 분석 데이터 (Tavily)]
@@ -205,6 +214,7 @@ ${tavilyResult.context}
 
 # [네이버 블로그 실시간 동향 (Naver)]
 ${naverResult}
+${youtubeContext}
         `.trim();
 
         inputParams.latestNews = newsContext || "최신 정보 없음";

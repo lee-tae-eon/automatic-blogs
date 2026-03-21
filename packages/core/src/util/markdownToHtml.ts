@@ -23,9 +23,24 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   
   let html = result.toString();
 
-  // 4. [중요] 불필요한 인라인 스타일 제거
-  // 네이버 에디터는 외부 스타일을 대부분 무시하거나, 오히려 꼬이게 만듭니다.
-  // 순수한 태그만 남겨서 에디터가 알아서 렌더링하게 둡니다.
+  // 3. [v8.0] 프리미엄 디자인 박스 변환 (Inline Styles for Naver Editor)
+  // AI가 생성한 <div class="..."> 태그를 네이버 에디터가 인식할 수 있는 인라인 스타일로 변환합니다.
+  
+  const boxStyles: Record<string, string> = {
+    "summary-box": "background-color: #f0f7ff; border: 1px solid #d0e3ff; padding: 20px; border-radius: 12px; margin: 20px 0;",
+    "tip-box": "background-color: #f6fff5; border: 1px solid #e1f5e0; padding: 20px; border-radius: 12px; margin: 20px 0;",
+    "warning-box": "background-color: #fff9f0; border: 1px solid #ffe8d0; padding: 20px; border-radius: 12px; margin: 20px 0;",
+    "checkpoint": "background-color: #f8f9fa; border-left: 5px solid #03c75a; padding: 15px 20px; margin: 20px 0; font-style: italic;"
+  };
+
+  Object.entries(boxStyles).forEach(([className, style]) => {
+    const regex = new RegExp(`<div class="${className}">([\\s\\S]*?)<\\/div>`, "gi");
+    html = html.replace(regex, (match, content) => {
+      return `<div style="${style}">${content}</div>`;
+    });
+  });
+
+  // 4. [중요] 불필요한 인라인 스타일 제거 (기타 요소들은 유지)
 
   // 컨테이너도 스타일 없이 깔끔하게
   return `<div class="post-content">${html}</div>`;

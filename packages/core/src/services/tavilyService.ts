@@ -88,4 +88,28 @@ export class TavilyService {
       return [];
     }
   }
+
+  /**
+   * 주제와 관련된 최신/인기 유튜브 영상 URL을 검색합니다.
+   */
+  async searchYoutubeVideo(topic: string): Promise<string | null> {
+    try {
+      const query = `${topic} 유튜브 영상 추천 공식 채널`;
+      const response = await axios.post(this.baseUrl, {
+        api_key: this.apiKey,
+        query: query,
+        search_depth: "basic",
+        max_results: 5,
+        include_domains: ["youtube.com"], // 오직 유튜브 도메인만 허용
+      });
+
+      const results = response.data.results || [];
+      // 실시간 이슈나 꿀팁 영상 위주로 첫 번째 링크 반환
+      const video = results.find((r: any) => r.url.includes("watch?v=") || r.url.includes("youtu.be"));
+      return video ? video.url : null;
+    } catch (error) {
+      console.error("❌ Tavily 유튜브 검색 중 오류:", error);
+      return null;
+    }
+  }
 }
