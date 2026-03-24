@@ -15,6 +15,11 @@ export interface KeywordAnalysis {
   recommendation: string; // 추천 등급
 }
 
+export interface GoldenKeywordResult {
+  seedKeyword: string;
+  goldenKeywords: KeywordAnalysis[];
+}
+
 export interface ScoutConfig {
   searchClientId: string;
   searchClientSecret: string;
@@ -40,6 +45,39 @@ export class KeywordScoutService {
       .update(message)
       .digest("base64");
     return hash;
+  }
+
+  /**
+   * [Task 1] 연관 키워드를 분석하여 황금 키워드 리스트를 반환합니다.
+   * @param seedKeyword 시작 키워드
+   * @param depth 탐색 깊이 (기본 5개 연관 키워드 탐색)
+   */
+  async findGoldenKeywords(seedKeyword: string, depth: number = 5): Promise<GoldenKeywordResult> {
+    console.log(`🔍 [Scout] '${seedKeyword}' 기반 황금 키워드 탐색 시작 (depth: ${depth})...`);
+    
+    // 1. 시드 키워드 분석
+    const seedAnalysis = await this.analyzeKeyword(seedKeyword);
+    const candidates: KeywordAnalysis[] = [seedAnalysis];
+
+    // 2. 연관 키워드 중 상위 N개 추출 및 분석
+    const relatedList = seedAnalysis.relatedKeywords.slice(0, depth);
+    
+    // 병렬 분석 진행 (API 속도 고려)
+    const relatedAnalyses = await Promise.all(
+      relatedList.map(kw => this.analyzeKeyword(kw))
+    );
+
+    candidates.push(...relatedAnalyses);
+
+    // 3. 점수 순으로 정렬하여 반환
+    const goldenKeywords = candidates
+      .sort((a, b) => b.score - a.score)
+      .filter(kw => kw.totalSearchCnt > 50); // 최소 검색량 필터링 (너무 적은 건 제외)
+
+    return {
+      seedKeyword,
+      goldenKeywords
+    };
   }
 
   /**

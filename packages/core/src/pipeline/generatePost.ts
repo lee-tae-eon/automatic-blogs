@@ -198,13 +198,22 @@ export async function generatePost({
           naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
-        // ✅ [NEW v8.0] 관련 유튜브 영상 자동 검색 및 컨텍스트 추가
-        onProgress?.("🎬 관련 유튜브 영상 검색 중...");
-        const youtubeUrl = await tavily.searchYoutubeVideo(cleanTopic);
+        // ✅ [NEW v8.1] 관련 유튜브 영상 자동 검색 및 연관성 검증
+        onProgress?.("🎬 관련 유튜브 영상 검색 및 검증 중...");
+        const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
         let youtubeContext = "";
-        if (youtubeUrl) {
-          youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- URL: ${youtubeUrl}\n(본문 중간에 위 영상을 [영상: URL] 형태로 삽입하세요.)`;
-          console.log(`✅ [YouTube] 발견된 영상: ${youtubeUrl}`);
+        
+        if (videoInfo) {
+          // [Relevance Check] 주제의 핵심 단어가 영상 제목에 포함되어 있는지 확인
+          const topicWords = cleanTopic.split(" ").filter(w => w.length >= 2);
+          const isRelevant = topicWords.some(word => videoInfo.title.includes(word));
+          
+          if (isRelevant) {
+            youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${videoInfo.title}\n- URL: ${videoInfo.url}\n(본문 내용과 직접적인 연관성이 매우 높으므로, 적절한 위치에 [영상: URL] 형태로 삽입하세요.)`;
+            console.log(`✅ [YouTube] 검증 완료된 영상: ${videoInfo.title}`);
+          } else {
+            console.log(`⚠️ [YouTube] 연관성 부족으로 제외: ${videoInfo.title}`);
+          }
         }
 
         // 데이터 통합
