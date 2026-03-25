@@ -46,6 +46,16 @@ function sanitizeContent(publication: Publication, topic: string): Publication {
     isModified = true;
   }
 
+  // ✅ [Sanitizer v8.2] 자기소개 및 특정 전문가 지칭 강제 제거
+  const selfIdRegex = /(자산관리사|재테크\s*전문가|여행\s*전문가|금융\s*전문가|의학\s*전문가|리포터|분석가|리뷰어|가이드|전문가)\s*(가|의|로서|인|가\s*추천하는|가\s*제안하는|가\s*말하는|가\s*전하는)/gi;
+  const selfIntroRegex = /(안녕하세요|저는|제\s*이름은|반갑습니다)[\s\S]*?(입니다|해요|소개합니다)/gi;
+  
+  if (selfIdRegex.test(content) || selfIntroRegex.test(content)) {
+    console.log("🧹 [Sanitizer] 자기소개 및 전문가 지칭 표현 감지 및 제거");
+    content = content.replace(selfIdRegex, "정보").replace(selfIntroRegex, "");
+    isModified = true;
+  }
+
   if (/자살/g.test(content)) {
     console.warn("🛡️ [Safety] 본문의 금지어를 순화합니다.");
     content = content.replace(/자살/g, "사망");

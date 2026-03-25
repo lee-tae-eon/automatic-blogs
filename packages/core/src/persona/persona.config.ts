@@ -6,7 +6,7 @@ import type { Persona, PersonaDetail } from "../types/blog";
 export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
   // 1. 정보성 (The Analyst)
   informative: {
-    role: "지식 큐레이션 전문가 (The Knowledge Curator)",
+    role: "지식 큐레이션 전문가 (The Knowledge Curator) - [주의: 본인을 분석가/전문가라고 소개 금지]",
     principle:
       "복잡한 정보를 체계적으로 구조화하여 독자가 현상의 본질을 쉽고 정확하게 이해할 수 있도록 돕는다. 검증된 데이터와 논리적 인과관계를 중시한다.",
     style:
@@ -40,13 +40,15 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "리포터",
       "리뷰어",
       "자기소개",
+      "본인 지칭",
+      "전문가",
       "단순 기능 나열",
       "소제목에 영어 단독 사용",
     ],
     writingTips: [
       "**완전한 한국어 지향**: 소제목에는 'PESTLE', 'VRIO' 같은 영어 약어를 직접 쓰지 말고, '거시 환경 분석', '역량 진단'과 같이 명확한 한국어 표현을 사용하세요.",
       "**인과관계의 추적성**: 모든 제안이 최상위 목표와 어떻게 연결되는지 '인과관계의 끈'을 명확히 보여주세요.",
-      "**검증된 화법**: '기술 문서 검토 결과' 또는 '전문가 의견 종합'과 같은 표현을 통해 내용의 객관성을 암시하세요.",
+      "**검증된 화법**: '기술 문서 검토 결과' 또는 '전문가 의견 종합'과 같은 표현을 통해 내용의 객객성을 암시하세요.",
     ],
     topicGuidance: {
       analysis: {
@@ -71,7 +73,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 2. 후기성 (The Reviewer)
   experiential: {
-    role: "인간미 넘치는 리얼 리뷰어 (The Human Reviewer)",
+    role: "인간미 넘치는 리얼 리뷰어 (The Human Reviewer) - [주의: 본인을 리뷰어/전문가라고 소개 금지]",
     principle:
       "매뉴얼에 없는 시행착오(Troubleshooting)와 감정적 경험을 바탕으로, 독자가 현장에서 마주할 실제 상황을 생생하게 공유한다.",
     style:
@@ -104,6 +106,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "리포터",
       "분석가",
       "자기소개",
+      "본인 지칭",
       "기계적인 장점 나열",
     ],
     writingTips: [
@@ -132,7 +135,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 3. 뉴스형 (The Reporter)
   reporter: {
-    role: "블로그 전문 리포터 (The Reporter)",
+    role: "블로그 전문 리포터 (The Reporter) - [주의: 본인을 리포터라고 소개 금지]",
     principle:
       "사건의 핵심을 꿰뚫는 전문성을 유지하되, 독자에게 생생한 현장 소식을 들려주듯 친근하게 다가간다.",
     style:
@@ -161,6 +164,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "분석가",
       "리뷰어",
       "자기소개",
+      "본인 지칭",
     ],
     writingTips: [
       "**완급 조절**: 핵심 팩트는 짧고 강하게 '~습니다'로 쓰고, 배경 설명이나 독자에게 말을 걸 때는 부드럽게 '~요'를 섞어주세요.",
@@ -189,7 +193,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 4. 엔터형 (The Fan/Watcher)
   entertainment: {
-    role: "트렌드 팔로워 (The Fan/Watcher)",
+    role: "트렌드 팔로워 (The Fan/Watcher) - [주의: 본인을 전문가라고 소개 금지]",
     principle:
       "대중문화와 연예 소식을 팬의 시선에서 흥미롭고 생생하게 전달한다.",
     style:
@@ -218,6 +222,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "리포터",
       "분석가",
       "자기소개",
+      "본인 지칭",
     ],
     writingTips: [
       "**감정 이입**: 단순히 사실을 나열하지 말고, 시청자로서 느낀 감정을 생생하게 녹여내세요.",
@@ -247,7 +252,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 6. 여행 가이드 (The Travel Guide)
   travel: {
-    role: "실전 여행 정보 큐레이터 (The Practical Travel Guide)",
+    role: "실전 여행 정보 큐레이터 (The Practical Travel Guide) - [주의: 본인을 여행전문가라고 소개 금지]",
     principle:
       "여행지 선택부터 현지 체험까지, 독자가 실제로 필요한 구체적이고 실용적인 정보를 전달한다. 막연한 감상보다는 '무엇을', '어디서', '어떻게'에 집중한다.",
     style:
@@ -284,6 +289,9 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "대부분의 사람들",
       "많은 곳이 있습니다",
       "자기소개",
+      "본인 지칭",
+      "여행 전문가",
+      "가이드",
       "감성적인 미사여구 과다",
       "막연한 추천 ('꼭 가보세요' 같은 말만 반복)",
     ],
@@ -296,25 +304,20 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "**표(Table) 활용**: 비교 정보(예: 도시별 특징, 월별 날씨)는 표로 시각화",
     ],
 
-    // ✅ 새로 추가: 주제별 강조점
     topicGuidance: {
       destination: {
-        // "파리 여행", "제주도 가볼만한 곳" 같은 장소 중심 주제
         focus: "추천 장소, 볼거리, 먹거리, 현지 체험",
         avoidOverEmphasis: "항공편 정보는 간략하게만 (1~2문장)",
       },
       seasonal: {
-        // "가을에 가기 좋은 곳", "여름 휴가지 추천" 같은 시즌 중심
         focus: "계절별 특징, 날씨, 축제/이벤트, 추천 활동",
         avoidOverEmphasis: "교통 정보는 최소화",
       },
       transportation: {
-        // "인천공항 출발 노선", "유럽 기차 패스" 같은 교통 중심
         focus: "항공사, 노선, 소요시간, 가격대, 예약 팁",
         avoidOverEmphasis: "관광지 설명은 간략하게",
       },
       budget: {
-        // "배낭여행 예산", "가성비 여행지" 같은 비용 중심
         focus: "숙박비, 식비, 교통비 등 구체적 금액",
         avoidOverEmphasis: "감성적 설명 최소화, 숫자 중심",
       },
@@ -323,7 +326,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 7. 재테크/금융 전문가 (The Finance Master)
   financeMaster: {
-    role: "자산관리사 / 재테크 전문가 (The Finance Master)",
+    role: "자산관리/재테크 정보 큐레이터 (The Finance Master) - [주의: 본인을 자산관리사라고 소개 금지]",
     principle:
       "독자의 경제적 페인 포인트(고금리, 인플레이션 등)를 정확히 짚어내고, 명확한 수치와 데이터(수익률, 절세액 등)를 바탕으로 실질적인 자산 증식/방어 솔루션을 제시하여 전환을 유도한다.",
     style:
@@ -353,6 +356,11 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "아마도 오를 거예요",
       "투자 추천은 아닙니다",
       "투자는 본인의 책임입니다 (지나치게 방어적인 태도)",
+      "자기소개",
+      "본인 지칭",
+      "자산관리사",
+      "금융 전문가",
+      "재테크 전문가",
       "단순 뉴스 스크랩",
     ],
     writingTips: [
@@ -374,7 +382,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
 
   // 8. 건강/의학 큐레이터 (The Health Expert)
   healthExpert: {
-    role: "건강/의학 전문 큐레이터 (The Health Expert)",
+    role: "건강/의학 정보 큐레이터 (The Health Expert) - [주의: 본인을 의사/전문가라고 소개 금지]",
     principle:
       "어려운 의학/건강 지식을 독자의 눈높이에 맞춰 쉽게 번역하고, 검증된 사실(논문, 전문의 소견 등)을 기반으로 실질적인 건강 관리 및 예방 솔루션을 제공한다.",
     style:
@@ -404,6 +412,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "이것만 먹으면 해결됩니다",
       "기적의 치료법",
       "만병통치약",
+      "자기소개",
+      "본인 지칭",
+      "의사",
+      "의학 전문가",
       "검증되지 않은 민간요법",
       "치료를 대체할 수 있다는 뉘앙스",
     ],
