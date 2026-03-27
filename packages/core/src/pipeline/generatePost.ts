@@ -8,6 +8,7 @@ import { DbService } from "../services/dbService";
 import { analyzeTopicIntent } from "../util/autoInference";
 import { KeywordScoutService } from "../services/KeywordScoutService";
 import { ChartService } from "../services/chartService";
+import { NanoBananaService, AntiGravityBridge } from "../services/NanoBananaService";
 import path from "path";
 import fs from "fs";
 
@@ -437,6 +438,39 @@ ${youtubeContext}
           } catch (e) {
             console.error("❌ 매뉴얼 모드 차트 생성 에러:", e);
           }
+        }
+      }
+
+      // 🍌 [v8.6] 주 카테고리/주제용 프리미엄 Hero Image 전략 (발행 전 미리 생성)
+      if (task.useImage !== false) {
+        onProgress?.("💎 프리미엄 Hero Image (나노바나나/안티그래비티) 준비 중...");
+        const nanoBanana = new NanoBananaService(process.env.VITE_GEMINI_API_KEY || "");
+        const antiGravity = new AntiGravityBridge();
+        const saveDir = path.join(projectRoot || process.cwd(), "temp_images");
+        
+        try {
+          // 1. 안티그래비티 확인 -> 2. 나노바나나 생성
+          let heroImagePath = await antiGravity.getLatestDynamicImage();
+          if (!heroImagePath) {
+            heroImagePath = await nanoBanana.generatePremiumImage(task.topic, saveDir);
+          }
+
+          if (heroImagePath) {
+            // 본문에 [이미지: ...] 태그가 이미 있다면 첫 번째 태그를 교체하거나, 
+            // 없으면 본문 최상단에 강제로 삽입
+            const hasImageTag = /\[이미지\s*:.*?\]/i.test(sanitizedPublication.content);
+            if (hasImageTag) {
+              sanitizedPublication.content = sanitizedPublication.content.replace(
+                /\[이미지\s*:.*?\]/i, 
+                `[프리미엄이미지: ${heroImagePath}]`
+              );
+            } else {
+              sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
+            }
+            console.log(`✅ [HeroImage] 프리미엄 이미지 준비 완료: ${heroImagePath}`);
+          }
+        } catch (e) {
+          console.error("❌ [HeroImage] 프리미엄 이미지 생성 중 오류:", e);
         }
       }
 

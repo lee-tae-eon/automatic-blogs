@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
 import { ChartService } from "../../services/chartService";
+import { NanoBananaService, AntiGravityBridge } from "../../services/NanoBananaService";
 
 // ✅ 페르소나별 테마 컬러 및 스타일 정의
 const PERSONA_THEMES: Record<string, { color: string; bgColor: string }> = {
@@ -66,6 +67,8 @@ const getCheckpointStyle = () => {
 export class NaverEditor {
   private pexelsService = new PexelsService();
   private chartService = new ChartService();
+  private nanoBanana = new NanoBananaService(process.env.VITE_GEMINI_API_KEY || "");
+  private antiGravity = new AntiGravityBridge();
   private tempDir: string;
   private topic: string;
   private tags: string[];
@@ -270,6 +273,17 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
+          case "direct_image":
+            if (block.path && fs.existsSync(block.path)) {
+              await this.page.keyboard.press("Enter");
+              await this.uploadImage(this.page, block.path);
+              await this.page.waitForTimeout(500);
+              await this.page.keyboard.press("ArrowDown");
+              await this.page.keyboard.press("Enter");
+              imageCount++; // 프리미엄 이미지도 카운트에 포함
+            }
+            break;
+
           case "image":
             if (imageCount >= MAX_IMAGES) break;
             let rawKeyword = block.keyword || this.topic;
@@ -286,10 +300,30 @@ export class NaverEditor {
             if (usedKeywords.has(cleanKeyword)) break;
 
             try {
-              const imagePath = await this.pexelsService.downloadImage(
-                cleanKeyword,
-                this.tempDir,
-              );
+              let imagePath: string | null = null;
+
+              // 🚀 [v8.5] 첫 번째 이미지는 '프리미엄 이미지' 전략 적용
+              if (imageCount === 0) {
+                console.log("💎 [Hero Image] 첫 번째 프리미엄 이미지 전략 실행...");
+                
+                // 1순위: 안티그래비티 동적 이미지 (사용자 수동 생성)
+                imagePath = await this.antiGravity.getLatestDynamicImage();
+                
+                // 2순위: 나노바나나 (Gemini Imagen 3)
+                if (!imagePath) {
+                  // VITE_GEMINI_API_KEY가 설정되어 있어야 합니다.
+                  imagePath = await this.nanoBanana.generatePremiumImage(this.topic, this.tempDir);
+                }
+              }
+
+              // 3순위 (또는 두 번째 이후): Pexels (일반 이미지)
+              if (!imagePath) {
+                imagePath = await this.pexelsService.downloadImage(
+                  cleanKeyword,
+                  this.tempDir,
+                );
+              }
+
               if (imagePath) {
                 await this.page.keyboard.press("Enter");
                 await this.uploadImage(this.page, imagePath);
@@ -396,6 +430,13 @@ export class NaverEditor {
       const rawHtml = $el.html() || "";
 
       // 1. 이미지 태그 처리
+      const premiumImageRegex = /\[프리미엄이미지\s*:\s*(.*?)\]/i;
+      const premiumMatch = textContent.match(premiumImageRegex);
+      if (premiumMatch) {
+        blocks.push({ type: "direct_image", path: premiumMatch[1].trim() });
+        return;
+      }
+
       const imageRegex = /\[이미지\s*:\s*(.*?)\]/i;
       const imageMatch = textContent.match(imageRegex);
       if (imageMatch) {
