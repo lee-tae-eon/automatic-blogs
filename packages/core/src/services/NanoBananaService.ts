@@ -22,35 +22,45 @@ export class NanoBananaService {
   async generatePremiumImage(prompt: string, saveDir: string): Promise<string | null> {
     console.log(`🍌 [NanoBanana] 프리미엄 이미지 생성 시작: [${prompt}]`);
     
+    if (!this.apiKey || this.apiKey.length < 10) {
+      console.error("❌ [NanoBanana] Gemini API Key가 유효하지 않습니다. 이미지 생성을 건너뜁니다.");
+      return null;
+    }
+
     try {
-      // Imagen 3 API 호출 (Google Cloud 또는 AI Studio API 키 필요)
-      // 참고: 현재 공식 라이브러리(@google/generative-ai)에서 직접 지원하지 않을 경우 REST API로 호출
       const response = await axios.post(
         `${this.baseUrl}?key=${this.apiKey}`,
         {
           instances: [
             {
-              prompt: `A high-quality, professional, and visually stunning blog header image for: "${prompt}". Artistic, modern, and clean aesthetic, cinematic lighting, 8k resolution, photorealistic.`,
+              prompt: `A high-quality, professional, and visually stunning blog header image for: "${prompt}". Artistic, modern, and clean aesthetic, cinematic lighting, 8k resolution, photorealistic. No text, only high quality image.`,
             },
           ],
           parameters: {
             sampleCount: 1,
-            aspectRatio: "16:9",
+            aspectRatio: "1:1", // 안정성을 위해 1:1 시도 (필요시 조절)
           },
         },
         {
           headers: { "Content-Type": "application/json" },
+          timeout: 20000 // 20초 타임아웃
         }
       );
 
       const prediction = response.data.predictions?.[0];
-      if (!prediction || !prediction.bytesBase64Encoded) {
-        console.warn("⚠️ [NanoBanana] 이미지 생성 응답에 데이터가 없습니다.");
+      if (!prediction || (!prediction.bytesBase64Encoded && !prediction.mimeType)) {
+        console.warn("⚠️ [NanoBanana] 이미지 생성 응답에 유효한 데이터가 없습니다.", JSON.stringify(response.data).slice(0, 500));
         return null;
       }
 
+      const base64Data = prediction.bytesBase64Encoded || prediction.image?.bytesBase64Encoded;
+      if (!base64Data) {
+         console.warn("⚠️ [NanoBanana] Base64 데이터를 찾을 수 없습니다.");
+         return null;
+      }
+
       // Base64 데이터를 파일로 저장
-      const buffer = Buffer.from(prediction.bytesBase64Encoded, "base64");
+      const buffer = Buffer.from(base64Data, "base64");
       const fileName = `nanobanana_${Date.now()}.png`;
       const filePath = path.join(saveDir, fileName);
       
@@ -59,7 +69,13 @@ export class NanoBananaService {
       
       return filePath;
     } catch (error: any) {
-      console.error("❌ [NanoBanana] 이미지 생성 중 오류:", error.response?.data || error.message);
+      console.error("❌ [NanoBanana] 이미지 생성 중 오류:");
+      if (error.response) {
+        console.error(`   - Status: ${error.response.status}`);
+        console.error(`   - Data: ${JSON.stringify(error.response.data)}`);
+      } else {
+        console.error(`   - Message: ${error.message}`);
+      }
       return null;
     }
   }
@@ -73,20 +89,22 @@ export class AntiGravityBridge {
   private readonly watchPath: string;
 
   constructor() {
-    // 사용자가 지정한 안티그래비티 이미지 출력 경로 (Desktops)
+    // 사용자가 지정한 안티그래비티 이미지 출력 경로 (정확한 경로 지정)
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    this.watchPath = path.join(homeDir, "Desktops", "blogcategoryinfoimage");
+    // 사용자가 'Desktops'라고 했으므로 해당 경로 우선 확인 후 Desktop으로 폴백
+    let targetPath = path.join(homeDir, "Desktops", "blogcategoryinfoimage");
+    
+    if (!fs.existsSync(targetPath)) {
+      targetPath = path.join(homeDir, "Desktop", "blogcategoryinfoimage");
+    }
+    
+    this.watchPath = targetPath;
     
     if (!fs.existsSync(this.watchPath)) {
       try {
-        // Desktops 폴더가 없을 경우를 대비해 생성 시도 (보통은 Desktop이지만 사용자의 요청을 따름)
         fs.mkdirSync(this.watchPath, { recursive: true });
       } catch (e) {
-        // 실패 시 일반 Desktop으로 폴백 시도
-        this.watchPath = path.join(homeDir, "Desktop", "blogcategoryinfoimage");
-        if (!fs.existsSync(this.watchPath)) {
-           fs.mkdirSync(this.watchPath, { recursive: true });
-        }
+        console.warn(`⚠️ [AntiGravity] 경로 생성 실패: ${this.watchPath}`);
       }
     }
   }

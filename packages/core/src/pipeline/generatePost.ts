@@ -214,17 +214,18 @@ export async function generatePost({
         const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
         let youtubeContext = "";
         
-        if (videoInfo) {
+        if (videoInfo && videoInfo.title && videoInfo.url) {
+          const { title, url } = videoInfo;
           // [Relevance Check] 주제의 단어가 영상 제목에 포함되어 있는지 확인 (더 완화된 체크)
           const topicWords = cleanTopic.split(/\s+/).filter(w => w.length >= 2);
-          const isRelevant = topicWords.some(word => videoInfo.title.includes(word)) || 
-                             videoInfo.title.includes(cleanTopic.slice(0, 5));
+          const isRelevant = topicWords.some(word => title.includes(word)) || 
+                             title.includes(cleanTopic.slice(0, 5));
           
           if (isRelevant || true) { // 임시로 검증 통과 허용하여 동작 확인
-            youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${videoInfo.title}\n- URL: ${videoInfo.url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${videoInfo.url}] 태그를 독립된 줄에 삽입하세요.)`;
-            console.log(`✅ [YouTube] 검증 완료된 영상: ${videoInfo.title}`);
+            youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${title}\n- URL: ${url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${url}] 태그를 독립된 줄에 삽입하세요.)`;
+            console.log(`✅ [YouTube] 검증 완료된 영상: ${title}`);
           } else {
-            console.log(`⚠️ [YouTube] 연관성 부족으로 제외: ${videoInfo.title}`);
+            console.log(`⚠️ [YouTube] 연관성 부족으로 제외: ${title}`);
           }
         }
 
@@ -443,8 +444,10 @@ ${youtubeContext}
 
       // 🍌 [v8.6] 주 카테고리/주제용 프리미엄 Hero Image 전략 (발행 전 미리 생성)
       if (task.useImage !== false) {
-        onProgress?.("💎 프리미엄 Hero Image (나노바나나/안티그래비티) 준비 중...");
-        const nanoBanana = new NanoBananaService(process.env.VITE_GEMINI_API_KEY || "");
+        onProgress?.("💎 프리미엄 Hero Image 준비 중...");
+        // API 키 로드 (다양한 환경 변수명 지원)
+        const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_SUB_KEY || "";
+        const nanoBanana = new NanoBananaService(geminiKey);
         const antiGravity = new AntiGravityBridge();
         const saveDir = path.join(projectRoot || process.cwd(), "temp_images");
         
@@ -452,6 +455,7 @@ ${youtubeContext}
           // 1. 안티그래비티 확인 -> 2. 나노바나나 생성
           let heroImagePath = await antiGravity.getLatestDynamicImage();
           if (!heroImagePath) {
+            console.log("🔍 [HeroImage] 안티그래비티 이미지가 없어 나노바나나를 호출합니다.");
             heroImagePath = await nanoBanana.generatePremiumImage(task.topic, saveDir);
           }
 
@@ -468,9 +472,11 @@ ${youtubeContext}
               sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
             }
             console.log(`✅ [HeroImage] 프리미엄 이미지 준비 완료: ${heroImagePath}`);
+          } else {
+            console.warn("⚠️ [HeroImage] 프리미엄 이미지를 확보하지 못했습니다. (안티그래비티 폴더 비어있음 + 나노바나나 생성 실패)");
           }
         } catch (e) {
-          console.error("❌ [HeroImage] 프리미엄 이미지 생성 중 오류:", e);
+          console.error("❌ [HeroImage] 프리미엄 이미지 전략 실행 중 오류:", e);
         }
       }
 

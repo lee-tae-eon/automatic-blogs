@@ -94,17 +94,20 @@ export class TavilyService {
    */
   async searchYoutubeVideo(topic: string): Promise<{ title: string; url: string } | null> {
     try {
-      const query = `"${topic}" 관련 정보 꿀팁 공식 영상`;
+      // site:youtube.com 연산자를 사용하여 도메인 필터링 안정화
+      const query = `site:youtube.com "${topic}" 관련 정보 꿀팁 공식 영상`;
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query: query,
         search_depth: "basic",
         max_results: 5,
-        include_domains: ["youtube.com"],
+        // include_domains 파라미터는 432 에러를 유발할 수 있어 쿼리 연산자로 대체
       });
 
       const results = response.data.results || [];
-      const video = results.find((r: any) => r.url.includes("watch?v=") || r.url.includes("youtu.be"));
+      const video = results.find((r: any) => 
+        r.url.includes("watch?v=") || r.url.includes("youtu.be") || r.url.includes("youtube.com")
+      );
       
       if (video) {
         return {
@@ -113,8 +116,8 @@ export class TavilyService {
         };
       }
       return null;
-    } catch (error) {
-      console.error("❌ Tavily 유튜브 검색 중 오류:", error);
+    } catch (error: any) {
+      console.error(`❌ Tavily 유튜브 검색 중 오류 (${error.response?.status}):`, error.message);
       return null;
     }
   }
