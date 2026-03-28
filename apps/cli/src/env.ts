@@ -11,6 +11,14 @@ export const ENV = {
     process.env.VITE_GEMINI_API_SUB_KEY ||
     process.env.VITE_GEMINI_API_KEY ||
     "",
-  // 기본 모델명을 명시적으로 지정
-  GEMINI_MODEL_DEFAULT: process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview",
+  // 우선순위별 모델 리스트
+  GEMINI_MODELS: [
+    process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview",
+    process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3.0-flash-preview",
+    process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview",
+    process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash",
+    process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite",
+  ].filter(Boolean),
+  
+  GEMINI_MODEL_DEFAULT: process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3.0-flash-preview",
 };

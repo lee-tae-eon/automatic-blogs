@@ -24,16 +24,17 @@ async function main() {
   console.log(`\n🛠️  [DEBUG MODE] 블로그 자동화 로직 검증 시작`);
 
   // 1. 최신 규격에 맞춘 테스트 입력 데이터
-  const input: BatchTask = {
-    topic: "청라 맛집", // 살고 계신 지역 기반 예시
-    persona: "informative", // 이제 문자열 매칭 대신 enum/type 사용
-    tone: "professional", // 새로 추가한 톤앤매너
-    keywords: ["청라맛집", "인천맛집", "내돈내산"],
-    category: "맛집",
+  const input: any = {
+    topic: "KB금융·신한지주 4월 배당금 입금 전 필독! 고배당주 절세 계좌(ISA/연금저축) 활용법",
+    persona: "financeMaster", 
+    tone: "professional", 
+    keywords: ["KB금융", "신한지주", "배당금", "ISA", "연금저축", "고배당주"],
+    category: "금융",
     status: "대기",
+    useImage: true, // 이미지 생성 명시적 활성화
   };
 
-  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODEL_DEFAULT);
+  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODELS);
 
   try {
     // 2. AI 포스트 생성 (최신 프롬프트 생성 로직 연동)

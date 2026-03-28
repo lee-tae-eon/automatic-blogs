@@ -130,3 +130,77 @@ Call log:
 
 🔗 발생 URL: https://blog.naver.com/PostView.naver?blogId=eongon&Redirect=View&logNo=224203555253&categoryNo=1&isAfterWrite=true&isMrblogPost=false&isHappyBeanLeverage=true&contentLength=46452
 --------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 5:51:12]
+📍 대상 포스트: 2026년 보유세 개편안 계산기 활용법 및 아파트 증여세 절세 전략, 몰라서 손해 보지 않는 핵심 포인트
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 5:53:58]
+📍 대상 포스트: 2026년 카타르 LNG 공급 중단 여파, 도시가스 요금 인상 대비 '에너지 절약 지원금' 신청 서두르세요
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 5:56:47]
+📍 대상 포스트: 2026년 NVIDIA GPU 수급난과 AI 관련주 완벽 분석, 내 자산을 지키는 ETF 투자 전략
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 5:58:04]
+📍 대상 포스트: 2026년 1주택자 보유세 인상 대비법, 상속 주택 비과세와 현명한 절세 전략 가이드
+❌ 에러 메시지: page.waitForURL: Target page, context or browser has been closed
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 6:00:35]
+📍 대상 포스트: 2026년 보유세 개편안 계산기 활용법 및 아파트 증여세 절세 전략, 몰라서 손해 보지 않는 핵심 포인트
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewIdSafetyInfo&token_help=H4Idbo0l809hK1o1"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewAuthType"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewInputPasswd"
+============================================================
+🔗 발생 URL: https://nid.naver.com/user2/help/idSafetyRelease?m=viewInputPasswd
+--------------------------------------------------
+
+==================================================
+[2026. 3. 25. 오전 6:02:20]
+📍 대상 포스트: 2026년 카타르 LNG 공급 중단 여파, 도시가스 요금 인상 대비 '에너지 절약 지원금' 신청 서두르세요
+❌ 에러 메시지: page.waitForURL: Target page, context or browser has been closed
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+  navigated to "https://nid.naver.com/nidlogin.login"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewIdSafetyInfo&token_help=CwYibrXl80UJF6r2"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewAuthType"
+  navigated to "https://nid.naver.com/user2/help/idSafetyRelease?m=viewInputPasswd"
+  navigated to "https://nid.naver.com/nidlogin.login?url=http://www.naver.com&locale=ko_KR"
+  navigated to "https://nid.naver.com/nidlogin.login"
+  navigated to "https://nid.naver.com/nidlogin.login"
+  navigated to "https://nid.naver.com/signin/v3/finalize?url=http%3A%2F%2Fwww.naver.com&svctype=1"
+  navigated to "http://www.naver.com/"
+  navigated to "https://www.naver.com/"
+============================================================
+🔗 발생 URL: https://www.naver.com/
+--------------------------------------------------

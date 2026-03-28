@@ -443,25 +443,29 @@ ${youtubeContext}
       }
 
       // 🍌 [v8.6] 주 카테고리/주제용 프리미엄 Hero Image 전략 (발행 전 미리 생성)
-      if (task.useImage !== false) {
-        onProgress?.("💎 프리미엄 Hero Image 준비 중...");
+      // [Condition] 사용자가 명시적으로 끄지 않았거나, 특정 고부가가치 페르소나일 때 강제 실행
+      const isHighValuePersona = ["financeMaster", "travel", "healthExpert"].includes(task.persona);
+      const shouldGeneratePremiumImage = task.useImage !== false || isHighValuePersona;
+
+      console.log(`📸 [DEBUG] Hero Image Strategy: shouldGenerate=${shouldGeneratePremiumImage}, persona=${task.persona}, useImage=${task.useImage}`);
+
+      if (shouldGeneratePremiumImage) {
+        onProgress?.("💎 프리미엄 Hero Image 준비 중 (나노바나나/안티그래비티)...");
         // API 키 로드 (다양한 환경 변수명 지원)
         const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_SUB_KEY || "";
+        console.log(`📸 [DEBUG] Gemini API Key status: ${geminiKey ? "Found (len: " + geminiKey.length + ")" : "Not Found"}`);
+        
         const nanoBanana = new NanoBananaService(geminiKey);
         const antiGravity = new AntiGravityBridge();
         const saveDir = path.join(projectRoot || process.cwd(), "temp_images");
         
         try {
-          // 1. 안티그래비티 확인 -> 2. 나노바나나 생성
+          // 🚀 [v8.7] 안티그래비티(AntiGravity) 이미지 최우선 전략
+          console.log(`🔍 [HeroImage] 안티그래비티 폴더에서 이미지를 확인합니다...`);
           let heroImagePath = await antiGravity.getLatestDynamicImage();
-          if (!heroImagePath) {
-            console.log("🔍 [HeroImage] 안티그래비티 이미지가 없어 나노바나나를 호출합니다.");
-            heroImagePath = await nanoBanana.generatePremiumImage(task.topic, saveDir);
-          }
-
+          
           if (heroImagePath) {
-            // 본문에 [이미지: ...] 태그가 이미 있다면 첫 번째 태그를 교체하거나, 
-            // 없으면 본문 최상단에 강제로 삽입
+            // 안티그래비티에서 이미지를 찾은 경우 본문에 삽입
             const hasImageTag = /\[이미지\s*:.*?\]/i.test(sanitizedPublication.content);
             if (hasImageTag) {
               sanitizedPublication.content = sanitizedPublication.content.replace(
@@ -471,13 +475,16 @@ ${youtubeContext}
             } else {
               sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
             }
-            console.log(`✅ [HeroImage] 프리미엄 이미지 준비 완료: ${heroImagePath}`);
+            console.log(`✅ [HeroImage] 안티그래비티 프리미엄 이미지 적용 완료: ${heroImagePath}`);
           } else {
-            console.warn("⚠️ [HeroImage] 프리미엄 이미지를 확보하지 못했습니다. (안티그래비티 폴더 비어있음 + 나노바나나 생성 실패)");
+            console.warn("⚠️ [HeroImage] 안티그래비티 폴더가 비어있습니다. 'Desktops/blogcategoryinfoimage'에 이미지를 넣어주세요.");
+            console.log("⏭️ [HeroImage] 안티그래비티 이미지가 없어 Pexels 자동 검색으로 전환합니다.");
           }
         } catch (e) {
-          console.error("❌ [HeroImage] 프리미엄 이미지 전략 실행 중 오류:", e);
+          console.error("❌ [HeroImage] 안티그래비티 이미지 로드 중 오류:", e);
         }
+      } else {
+        console.log("⏭️ [HeroImage] 이미지 생성 조건이 충족되지 않아 건너뜁니다.");
       }
 
       db.savePost(task.topic, task.persona, task.tone, sanitizedPublication);

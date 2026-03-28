@@ -9,15 +9,21 @@ import { BaseAiClient } from "./types";
 export class GeminiClient implements BaseAiClient {
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
+  private modelNames: string[];
+  private currentModelIndex: number = 0;
+  private apiKey: string;
 
-  constructor(apiKey: string, modelName: string = "gemini-2.5-flash") {
-    // 가장 가성비 좋은 flash 모델 사용
-    // 2. this 키워드를 사용하여 멤버 변수에 할당
+  constructor(apiKey: string, modelNames: string | string[] = "gemini-2.5-flash") {
+    this.apiKey = apiKey;
     this.genAI = new GoogleGenerativeAI(apiKey);
+    this.modelNames = Array.isArray(modelNames) ? modelNames : [modelNames];
+    this.model = this.initModel(this.modelNames[0]);
+  }
 
-    // 최신 모델인 gemini-1.5-flash-latest 사용
-    this.model = this.genAI.getGenerativeModel({
-      model: modelName || "gemini-2.5-flash",
+  private initModel(modelName: string): GenerativeModel {
+    console.log(`🤖 [Gemini] 모델 초기화: ${modelName}`);
+    return this.genAI.getGenerativeModel({
+      model: modelName,
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -39,11 +45,31 @@ export class GeminiClient implements BaseAiClient {
     });
   }
 
+  /**
+   * 서버 에러 발생 시 다음 모델로 스위칭합니다.
+   */
+  private switchToNextModel(): boolean {
+    if (this.currentModelIndex < this.modelNames.length - 1) {
+      this.currentModelIndex++;
+      const nextModel = this.modelNames[this.currentModelIndex];
+      console.warn(`🔄 [Gemini] 에러 발생으로 인해 다음 모델로 스위칭합니다: ${nextModel}`);
+      this.model = this.initModel(nextModel);
+      return true;
+    }
+    return false;
+  }
+
   async generateText(prompt: string): Promise<string> {
     try {
       const result = await this.model.generateContent(prompt);
       return result.response.text();
     } catch (err: any) {
+      const isServerError = err.message?.includes("503") || err.message?.includes("500") || err.message?.includes("high demand");
+      
+      if (isServerError && this.switchToNextModel()) {
+        return this.generateText(prompt); // 다음 모델로 재시도
+      }
+
       console.log(`🛑 ${err}`);
       throw new Error(`🛑 Fail to Generate Content: ${err.message || err}`);
     }
@@ -59,8 +85,12 @@ export class GeminiClient implements BaseAiClient {
       ]);
       responseText = result.response.text();
     } catch (error: any) {
-      // API 호출 자체에서 에러가 발생한 경우 (e.g., 429, 500)
-      // 에러를 그대로 다시 던져서 상위에서 처리하도록 합니다.
+      const isServerError = error.message?.includes("503") || error.message?.includes("500") || error.message?.includes("high demand");
+      
+      if (isServerError && this.switchToNextModel()) {
+        return this.generateJson<T>(prompt); // 다음 모델로 재시도
+      }
+
       console.error("Gemini API 호출 실패:", error.message);
       throw error;
     }
