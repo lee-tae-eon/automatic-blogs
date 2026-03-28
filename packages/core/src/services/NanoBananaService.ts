@@ -89,22 +89,32 @@ export class AntiGravityBridge {
   private readonly watchPath: string;
 
   constructor() {
-    // 사용자가 지정한 안티그래비티 이미지 출력 경로 (정확한 경로 지정)
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    // 사용자가 'Desktops'라고 했으므로 해당 경로 우선 확인 후 Desktop으로 폴백
-    let targetPath = path.join(homeDir, "Desktops", "blogcategoryinfoimage");
     
-    if (!fs.existsSync(targetPath)) {
-      targetPath = path.join(homeDir, "Desktop", "blogcategoryinfoimage");
+    // 가능한 모든 경로 후보군 (순서대로 확인)
+    const candidates = [
+      path.join(homeDir, "Desktop", "blogcategoryinfoimage"),
+      path.join(homeDir, "Desktops", "blogcategoryinfoimage"),
+      path.join(process.cwd(), "blogcategoryinfoimage"), // 현재 작업 디렉토리 폴백
+    ];
+
+    let foundPath = candidates[0];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        foundPath = p;
+        break;
+      }
     }
-    
-    this.watchPath = targetPath;
+
+    this.watchPath = foundPath;
+    console.log(`🚀 [AntiGravity] 감시 경로 설정: ${this.watchPath}`);
     
     if (!fs.existsSync(this.watchPath)) {
       try {
         fs.mkdirSync(this.watchPath, { recursive: true });
+        console.log(`🚀 [AntiGravity] 새로운 경로 생성됨: ${this.watchPath}`);
       } catch (e) {
-        console.warn(`⚠️ [AntiGravity] 경로 생성 실패: ${this.watchPath}`);
+        console.warn(`⚠️ [AntiGravity] 경로 생성 권한 부족: ${this.watchPath}`);
       }
     }
   }
@@ -114,23 +124,27 @@ export class AntiGravityBridge {
    */
   async getLatestDynamicImage(): Promise<string | null> {
     try {
+      if (!fs.existsSync(this.watchPath)) return null;
+
       const files = fs.readdirSync(this.watchPath)
         .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
         .map(f => ({
           name: f,
+          fullPath: path.join(this.watchPath, f),
           time: fs.statSync(path.join(this.watchPath, f)).mtime.getTime()
         }))
         .sort((a, b) => b.time - a.time);
 
       if (files.length > 0) {
-        const latestFile = path.join(this.watchPath, files[0].name);
-        console.log(`🚀 [AntiGravity] 동적 이미지 발견: ${latestFile}`);
+        const latestFile = files[0].fullPath;
+        console.log(`✅ [AntiGravity] 최신 이미지 발견: ${files[0].name}`);
         return latestFile;
       }
       
+      console.warn(`⚠️ [AntiGravity] 폴더에 유효한 이미지가 없습니다: ${this.watchPath}`);
       return null;
     } catch (error) {
-      console.error("❌ [AntiGravity] 이미지 확인 중 오류:", error);
+      console.error("❌ [AntiGravity] 이미지 스캔 중 오류:", error);
       return null;
     }
   }

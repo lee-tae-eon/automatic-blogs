@@ -94,31 +94,31 @@ export class TavilyService {
    */
   async searchYoutubeVideo(topic: string): Promise<{ title: string; url: string } | null> {
     try {
-      // Tavily API 스펙에 맞춰 요청 구조 정규화
-      // 432 에러 방지를 위해 쿼리를 단순화하고 불필요한 연산자 제거 시도
-      const cleanTopic = topic.replace(/[^\w\s가-힣]/g, " ").trim();
-      const query = `youtube.com ${cleanTopic} official video tips`;
+      // 432 에러(Unsupported Parameter/Limit)를 피하기 위해 가장 최소한의 파라미터만 사용
+      // 쿼리 내에 site:youtube.com을 넣어 도메인 제한 효과 유도
+      const query = `site:youtube.com ${topic} 관련 영상`;
       
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query: query,
-        search_depth: "basic",
-        max_results: 5,
-        include_domains: ["youtube.com"], // 다시 도메인 포함 시도 (헤더/바디 구조가 맞으면 성공함)
+        max_results: 10 // 필터 없이 많이 가져온 후 로컬에서 거름
       }, {
         headers: { "Content-Type": "application/json" },
         timeout: 10000
       });
 
       const results = response.data.results || [];
-      // URL에 youtube가 포함된 결과 찾기
+      console.log(`🎬 [Tavily YouTube] 필터 없이 ${results.length}개 결과 확보`);
+
+      // 로컬에서 유튜브 URL 정밀 필터링
       const video = results.find((r: any) => 
-        r.url.includes("youtube.com/watch") || 
-        r.url.includes("youtu.be/") ||
-        r.url.includes("youtube.com/embed")
+        r.url.toLowerCase().includes("youtube.com/watch") || 
+        r.url.toLowerCase().includes("youtu.be/") ||
+        r.url.toLowerCase().includes("youtube.com/v/")
       );
       
       if (video) {
+        console.log(`✅ [Tavily YouTube] 유효 영상 발견: ${video.title}`);
         return {
           title: video.title.replace(/<[^>]*>?/gm, "").trim(),
           url: video.url
@@ -126,24 +126,7 @@ export class TavilyService {
       }
       return null;
     } catch (error: any) {
-      // 432 에러 발생 시 도메인 필터 없이 재시도 (Fallback)
-      if (error.response?.status === 432) {
-        console.warn("⚠️ Tavily 432 Error 감지: 도메인 필터 없이 재시도합니다.");
-        try {
-          const response = await axios.post(this.baseUrl, {
-            api_key: this.apiKey,
-            query: `youtube ${topic}`,
-            search_depth: "basic",
-            max_results: 5
-          });
-          const results = response.data.results || [];
-          const video = results.find((r: any) => r.url.includes("youtube.com") || r.url.includes("youtu.be"));
-          if (video) return { title: video.title, url: video.url };
-        } catch (e) {
-          console.error("❌ Tavily 재시도 실패:", e);
-        }
-      }
-      console.error(`❌ Tavily 유튜브 검색 최종 실패 (${error.response?.status}):`, error.message);
+      console.error(`❌ [Tavily YouTube] 검색 실패: ${error.message}`);
       return null;
     }
   }
