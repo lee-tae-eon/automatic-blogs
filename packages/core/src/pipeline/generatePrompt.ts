@@ -56,18 +56,25 @@ ${internalLinkText}
   // 2. 문체 및 페르소나 가이드 (예시 주입)
   let topicGuidanceText = "";
   if (personaDetail.topicGuidance) {
-    const guidanceEntries = Object.entries(personaDetail.topicGuidance)
-      .map(
-        ([key, data]) =>
-          `- [분류: ${key}]\n  * 집중(Focus): ${data.focus}\n  * 지양(Avoid): ${data.avoidOverEmphasis}`,
-      )
-      .join("\n");
+    // [v9.0] 카테고리 기반 도메인 특화 지능형 필터링
+    const currentCategory = input.category.toLowerCase();
+    
+    // 현재 입력된 카테고리와 가장 매칭되는 지침 찾기
+    const guidanceEntry = Object.entries(personaDetail.topicGuidance).find(([key]) => 
+      currentCategory.includes(key) || key.includes(currentCategory)
+    );
 
-    topicGuidanceText = `
-## 🎯 주제별 집중 공략 포인트 (Topic Guidance)
-주어진 주제가 아래 항목 중 어디에 해당하는지 파악하고, 그에 맞는 전략을 적용하세요.
-${guidanceEntries}
+    if (guidanceEntry) {
+      const [key, data] = guidanceEntry;
+      topicGuidanceText = `
+## 🎯 [Best Blogger Strategy] ${input.category} 전문성 강화 지침
+귀하는 현재 **'${input.category}'** 분야의 1% 전문가로서 글을 쓰고 있습니다. 아래 도메인 특화 전략을 본문에 반드시 녹여내세요.
+- **분류**: ${key}
+- **핵심 집중(Focus)**: ${data.focus}
+- **지양 사항(Avoid)**: ${data.avoidOverEmphasis}
+- **[CRITICAL] 풍성함 전략**: 단순히 정보를 요약하지 마세요. 독자가 미처 생각지 못한 **'비하인드 스토리', '수치 기반의 데이터 분석', '2026년 기준의 미래 전망'**을 각각 최소 1문단 이상 심층적으로 서술하여 콘텐츠의 밀도를 극대화하세요.
 `;
+    }
   }
 
   const styleGuide = `

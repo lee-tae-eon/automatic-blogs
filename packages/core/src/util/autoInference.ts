@@ -6,6 +6,57 @@ import type { Persona } from "../types/blog";
 // ============================================
 
 /**
+ * 카테고리 및 주제 기반으로 최적의 페르소나 자동 추론
+ */
+export function inferPersona(category: string, topic: string): Persona {
+  const cat = category.toLowerCase();
+  const top = topic.toLowerCase();
+
+  if (cat.includes("경제") || cat.includes("금융") || cat.includes("비즈니스") || top.match(/배당|계좌|ISA|대출|금리|주식|코인/)) {
+    return "financeMaster";
+  }
+  if (cat.includes("건강") || cat.includes("의학") || cat.includes("의료") || top.match(/수술|보험|비타민|영양제|증상|치료/)) {
+    return "healthExpert";
+  }
+  if (cat.includes("여행") || cat.includes("맛집") || top.match(/여행|항공|호텔|맛집|코스/)) {
+    return "travel";
+  }
+  if (cat.includes("연예") || cat.includes("방송") || cat.includes("entertainment") || top.match(/드라마|배우|가수|아이돌/)) {
+    return "entertainment";
+  }
+  if (cat.includes("테크") || cat.includes("it") || top.match(/삼성|애플|아이폰|갤럭시|출시|성능/)) {
+    return "informative"; // IT 분석가
+  }
+  if (top.match(/후기|리뷰|사용기|써본/)) {
+    return "experiential";
+  }
+  if (cat.includes("이슈") || cat.includes("뉴스") || top.match(/속보|상황|실체/)) {
+    return "reporter";
+  }
+
+  return "informative"; // 기본값
+}
+
+/**
+ * 주제 기반으로 최적의 톤 자동 추론
+ */
+export function inferTone(topic: string): "professional" | "empathetic" | "incisive" | "serious" {
+  const top = topic.toLowerCase();
+
+  if (top.match(/배당|계좌|ISA|대출|금리|성능|분석|전망/)) {
+    return "professional";
+  }
+  if (top.match(/논란|실체|비판|충격|폭로|진실/)) {
+    return "incisive";
+  }
+  if (top.match(/사건|사고|사망|주의|경고/)) {
+    return "serious";
+  }
+  
+  return "empathetic"; // 일반적인 소통형
+}
+
+/**
  * 페르소나 + 주제 기반으로 타겟 독자 자동 추론
  */
 export function inferTargetAudience(topic: string, persona: Persona): string {
