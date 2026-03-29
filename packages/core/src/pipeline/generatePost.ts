@@ -443,29 +443,38 @@ ${youtubeContext}
       }
 
       // 🍌 [v8.6] 주 카테고리/주제용 프리미엄 Hero Image 전략 (발행 전 미리 생성)
-      // [Condition] 사용자가 명시적으로 끄지 않았거나, 특정 고부가가치 페르소나일 때 강제 실행
+      // [Condition] 사용자가 직접 이미지를 지정했거나, 자동 삽입 옵션이 켜져 있거나, 특정 페르소나일 때 실행
       const isHighValuePersona = ["financeMaster", "travel", "healthExpert"].includes(task.persona);
-      const shouldGeneratePremiumImage = task.useImage !== false || isHighValuePersona;
+      const shouldExecuteHeroStrategy = !!task.heroImagePath || task.useImage !== false || isHighValuePersona;
 
-      console.log(`📸 [DEBUG] Hero Image Strategy: shouldGenerate=${shouldGeneratePremiumImage}, persona=${task.persona}, useImage=${task.useImage}`);
+      console.log(`📸 [DEBUG] Hero Image Strategy: shouldExecute=${shouldExecuteHeroStrategy}, hasPath=${!!task.heroImagePath}, persona=${task.persona}`);
 
-      if (shouldGeneratePremiumImage) {
-        onProgress?.("💎 프리미엄 Hero Image 준비 중 (나노바나나/안티그래비티)...");
+      if (shouldExecuteHeroStrategy) {
+        onProgress?.("💎 프리미엄 Hero Image 준비 중...");
         // API 키 로드 (다양한 환경 변수명 지원)
         const geminiKey = process.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_SUB_KEY || "";
-        console.log(`📸 [DEBUG] Gemini API Key status: ${geminiKey ? "Found (len: " + geminiKey.length + ")" : "Not Found"}`);
         
         const nanoBanana = new NanoBananaService(geminiKey);
         const antiGravity = new AntiGravityBridge();
         const saveDir = path.join(projectRoot || process.cwd(), "temp_images");
         
         try {
-          // 🚀 [v8.7] 안티그래비티(AntiGravity) 이미지 최우선 전략
-          console.log(`🔍 [HeroImage] 안티그래비티 폴더에서 이미지를 확인합니다...`);
-          let heroImagePath = await antiGravity.getLatestDynamicImage();
+          // 🚀 [v8.8] 프리미엄 이미지 확보 우선순위: 1. 수동 지정 -> 2. 안티그래비티 -> 3. Pexels 폴백
+          let heroImagePath: string | null = null;
+
+          // 1단계: 사용자가 직접 경로를 입력한 경우 (최우선)
+          if (task.heroImagePath && fs.existsSync(task.heroImagePath)) {
+            console.log(`✅ [HeroImage] 사용자가 직접 지정한 경로를 사용합니다: ${task.heroImagePath}`);
+            heroImagePath = task.heroImagePath;
+          } 
+          // 2단계: 안티그래비티 폴더에서 최신 이미지 검색
+          else {
+            console.log(`🔍 [HeroImage] 안티그래비티 폴더에서 이미지를 확인합니다...`);
+            heroImagePath = await antiGravity.getLatestDynamicImage();
+          }
           
           if (heroImagePath) {
-            // 안티그래비티에서 이미지를 찾은 경우 본문에 삽입
+            // 프리미엄 이미지를 찾은 경우 본문에 삽입
             const hasImageTag = /\[이미지\s*:.*?\]/i.test(sanitizedPublication.content);
             if (hasImageTag) {
               sanitizedPublication.content = sanitizedPublication.content.replace(
@@ -475,13 +484,13 @@ ${youtubeContext}
             } else {
               sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
             }
-            console.log(`✅ [HeroImage] 안티그래비티 프리미엄 이미지 적용 완료: ${heroImagePath}`);
+            console.log(`✅ [HeroImage] 프리미엄 이미지 적용 완료: ${path.basename(heroImagePath)}`);
           } else {
-            console.warn("⚠️ [HeroImage] 안티그래비티 폴더가 비어있습니다. 'Desktops/blogcategoryinfoimage'에 이미지를 넣어주세요.");
-            console.log("⏭️ [HeroImage] 안티그래비티 이미지가 없어 Pexels 자동 검색으로 전환합니다.");
+            console.warn("⚠️ [HeroImage] 프리미엄 이미지를 확보하지 못했습니다. (수동 지정 없음 + 안티그래비티 폴더 비어있음)");
+            console.log("⏭️ [HeroImage] Pexels 자동 검색으로 전환합니다.");
           }
         } catch (e) {
-          console.error("❌ [HeroImage] 안티그래비티 이미지 로드 중 오류:", e);
+          console.error("❌ [HeroImage] 프리미엄 이미지 전략 실행 중 오류:", e);
         }
       } else {
         console.log("⏭️ [HeroImage] 이미지 생성 조건이 충족되지 않아 건너뜁니다.");
