@@ -1,14 +1,28 @@
 import React from "react";
+import { Persona, Tone } from "@blog-automation/core/types/blog";
 
 export interface TrendTopic {
   topic: string;
   summary: string;
   keywords: string[];
+  persona?: Persona;
+  tone?: Tone;
 }
 
+export type TrendCategory = 
+  | "hollywood" 
+  | "korea" 
+  | "tech" 
+  | "economy" 
+  | "entertainment" 
+  | "life" 
+  | "travel" 
+  | "health" 
+  | "parenting";
+
 interface TrendSectionProps {
-  trendType: "hollywood" | "korea";
-  setTrendType: (type: "hollywood" | "korea") => void;
+  trendType: TrendCategory;
+  setTrendType: (type: TrendCategory) => void;
   trends: TrendTopic[];
   setTrends: (trends: TrendTopic[]) => void;
   trendQuery: string;
@@ -17,6 +31,8 @@ interface TrendSectionProps {
   fetchTrends: () => void;
   selectTrend: (trend: TrendTopic) => void;
   clearTrends: () => void;
+  persona: Persona;
+  setPersona: (persona: Persona) => void;
 }
 
 export const TrendSection: React.FC<TrendSectionProps> = ({
@@ -30,7 +46,20 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
   fetchTrends,
   selectTrend,
   clearTrends,
+  persona,
+  setPersona,
 }) => {
+  const categories: { key: TrendCategory; label: string; icon: string; color: string }[] = [
+    { key: "hollywood", label: "헐리우드", icon: "🎬", color: "#ff4757" },
+    { key: "korea", label: "한국 트렌드", icon: "🇰🇷", color: "#03c75a" },
+    { key: "tech", label: "IT/테크", icon: "💻", color: "#4834d4" },
+    { key: "economy", label: "경제", icon: "💰", color: "#f0932b" },
+    { key: "entertainment", label: "연예/방송", icon: "📺", color: "#e056fd" },
+    { key: "life", label: "생활/건강", icon: "🏠", color: "#686de0" },
+    { key: "travel", label: "여행", icon: "✈️", color: "#22a6b3" },
+    { key: "health", label: "건강", icon: "🏥", color: "#eb4d4b" },
+    { key: "parenting", label: "육아", icon: "👶", color: "#6ab04c" },
+  ];
   return (
     <div
       className="trends-section"
@@ -262,6 +291,43 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
                 >
                   {t.topic}
                 </strong>
+                {(t.persona || t.tone) && (
+                  <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+                    {t.persona && (
+                      <span style={{ 
+                        fontSize: "0.65rem", 
+                        backgroundColor: "#edf2ff", 
+                        color: "#4c6ef5", 
+                        padding: "2px 6px", 
+                        borderRadius: "4px",
+                        fontWeight: "bold"
+                      }}>
+                        👤 {t.persona === "informative" ? "분석가" : 
+                            t.persona === "experiential" ? "리뷰어" : 
+                            t.persona === "reporter" ? "리포터" : 
+                            t.persona === "entertainment" ? "팬/엔터" : 
+                            t.persona === "travel" ? "가이드" : 
+                            t.persona === "financeMaster" ? "금융전문가" : 
+                            t.persona === "healthExpert" ? "건강전문가" : t.persona}
+                      </span>
+                    )}
+                    {t.tone && (
+                      <span style={{ 
+                        fontSize: "0.65rem", 
+                        backgroundColor: "#fff0f6", 
+                        color: "#d6336c", 
+                        padding: "2px 6px", 
+                        borderRadius: "4px",
+                        fontWeight: "bold"
+                      }}>
+                        ✨ {t.tone === "professional" ? "전문적" : 
+                            t.tone === "serious" ? "냉철" : 
+                            t.tone === "incisive" ? "비판적" : 
+                            t.tone === "empathetic" ? "공감" : t.tone}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div
                   style={{
                     fontSize: "0.8rem",

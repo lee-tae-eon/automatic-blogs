@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import * as path from "path";
 import * as fs from "fs/promises";
 import dotenv from "dotenv";
@@ -110,6 +110,27 @@ async function runWithAbort<T>(
 
 function registerIpcHandlers() {
   // ----------------------------------------
+  // [System] 이미지 파일 선택 다이얼로그 (New v8.8)
+  // ----------------------------------------
+  ipcMain.handle("select-image", async () => {
+    if (!mainWindow) return { success: false, error: "Main window not found" };
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: "대표 이미지 선택",
+      properties: ["openFile"],
+      filters: [
+        { name: "Images", extensions: ["jpg", "png", "jpeg", "webp", "gif"] },
+      ],
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, filePath: result.filePaths[0] };
+  });
+
+  // ----------------------------------------
   // [Discovery] 추천 토픽 가져오기 (New v3.0)
   // ----------------------------------------
   ipcMain.handle("fetch-recommended-topics", async (event, category: any) => {
@@ -129,7 +150,7 @@ function registerIpcHandlers() {
     let lastError: any;
     const modelVersions = [
       process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview",
-      process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview",
+      process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3.0-flash-preview",
       process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview",
       process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash",
     ];
@@ -370,62 +391,81 @@ function registerIpcHandlers() {
           throw new Error("사용 가능한 Gemini API Key가 없습니다.");
         }
 
-        let publication;
         let lastError;
+        const modelOrder: any[] = [
+          task.modelType || credentials.modelType || "3.0_flash",
+          "3.1_pro",
+          "3.0_flash",
+          "3.1_flash_lite",
+          "2.5_flash",
+          "2.5_flash_lite",
+        ];
+        const uniqueModels = Array.from(new Set(modelOrder));
 
         for (const apiKey of apiKeys) {
-          try {
-            if (globalAbortController?.signal.aborted)
-              throw new Error("AbortError");
+          for (const modelType of uniqueModels) {
+            try {
+              if (globalAbortController?.signal.aborted)
+                throw new Error("AbortError");
 
-            const selectedModelType = task.modelType || credentials.modelType;
-                let mName = "";
-                switch (selectedModelType) {
-                  case "3.1_pro": mName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
-                  case "3.0_flash": mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
-                  case "3.1_flash_lite": mName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
-                  case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
-                  case "2.5_flash_lite": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
-                  default: mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
-                }
-                const client = new GeminiClient(apiKey, mName);
-                if (mainWindow) mainWindow.webContents.send("process-log", `🤖 모델 사용: ${mName}`);
+              let mName = "";
+              switch (modelType) {
+                case "3.1_pro": mName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+                case "3.0_flash": mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+                case "3.1_flash_lite": mName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+                case "2.5_flash": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+                case "2.5_flash_lite": mName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+                default: mName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+              }
 
-            const generateOptions = {
-              client: client, // Changed geminiClient to client
-              task: task,
-              projectRoot: userDataPath,
-              onProgress: (message: string) => {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                  mainWindow.webContents.send("process-log", message);
-                }
-              },
-            };
+              const client = new GeminiClient(apiKey, mName);
+              const logMsg = `🤖 AI 모델 시도: ${mName} (Key: ${apiKey.slice(0, 5)}...)`;
+              if (mainWindow) mainWindow.webContents.send("process-log", logMsg);
 
-            if (task.coupangLink) {
-              publication = await generateCoupangPost(generateOptions);
-            } else {
-              publication = await generatePost(generateOptions);
+              const generateOptions = {
+                client: client,
+                task: { ...task, modelType }, // 현재 시도 중인 모델 타입 반영
+                projectRoot: userDataPath,
+                onProgress: (message: string) => {
+                  if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send("process-log", message);
+                  }
+                },
+              };
+
+              let publication;
+              if (task.coupangLink) {
+                publication = await generateCoupangPost(generateOptions);
+              } else {
+                publication = await generatePost(generateOptions);
+              }
+
+              if (publication) return { success: true, data: publication };
+            } catch (error: any) {
+              if (error.message === "AbortError") throw error;
+
+              lastError = error;
+              const errorMsg = String(error.message || error);
+              
+              // 429(할당량 초과) 또는 503(과부하/High demand)인 경우 다음 모델/키 시도
+              if (
+                errorMsg.includes("429") || 
+                errorMsg.includes("limit") || 
+                errorMsg.includes("503") || 
+                errorMsg.includes("Service Unavailable") || 
+                errorMsg.includes("demand")
+              ) {
+                const warnMsg = `⚠️ [AI 생성] ${modelType} 실패 (${errorMsg.slice(0, 50)}...). 다른 모델로 전환합니다.`;
+                if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
+                continue; 
+              }
+              // 그 외 예상치 못한 에러는 중단
+              throw error;
             }
-
-            if (publication) break;
-          } catch (error: any) {
-            if (error.message === "AbortError") throw error;
-
-            lastError = error;
-            const errorMsg = error.message || "";
-            if (errorMsg.includes("429") || errorMsg.includes("limit")) {
-              continue;
-            }
-            throw error;
           }
         }
 
-        if (!publication) {
-          throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
-        }
-
-        return { success: true, data: publication };
+        throw lastError || new Error("모든 AI 모델 호출에 실패했습니다.");
       }, globalAbortController);
     } catch (error: any) {
       if (error.message === "AbortError") {

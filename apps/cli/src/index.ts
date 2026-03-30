@@ -31,7 +31,8 @@ async function main() {
     keywords: ["KB금융", "신한지주", "배당금", "ISA", "연금저축", "고배당주"],
     category: "금융",
     status: "대기",
-    useImage: true, // 이미지 생성 명시적 활성화
+    useImage: true, 
+    // heroImagePath: "/Users/itaeeon/Desktop/my_special_image.png", // 🍌 [v8.8] 특정 이미지 경로를 직접 지정하고 싶을 때 사용
   };
 
   const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODELS);

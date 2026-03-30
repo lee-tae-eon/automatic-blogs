@@ -12,6 +12,8 @@ interface TaskFormSectionProps {
   setTone: (val: Tone) => void;
   useImage: boolean;
   setUseImage: (val: boolean) => void;
+  heroImagePath: string;
+  setHeroImagePath: (val: string) => void;
   useNotebookLM: boolean;
   setUseNotebookLM: (val: boolean) => void;
   notebookMode: "manual" | "auto";
@@ -32,6 +34,8 @@ export const TaskFormSection: React.FC<TaskFormSectionProps> = ({
   setTone,
   useImage,
   setUseImage,
+  heroImagePath,
+  setHeroImagePath,
   useNotebookLM,
   setUseNotebookLM,
   notebookMode,
@@ -379,8 +383,63 @@ export const TaskFormSection: React.FC<TaskFormSectionProps> = ({
               onChange={(e) => setUseImage(e.target.checked)}
               style={{ width: "16px", height: "16px" }}
             />
-            이미지 자동 삽입
+            이미지 자동 삽입 (Pexels / 안티그래비티)
           </label>
+
+          {useImage && (
+            <div style={{ marginLeft: "26px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
+                🖼️ 대표 이미지 직접 선택
+              </label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  placeholder="이미지 파일을 선택하거나 경로를 입력하세요"
+                  value={heroImagePath}
+                  onChange={(e) => setHeroImagePath(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: "8px",
+                    borderRadius: "4px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.85rem",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const result = await (window as any).ipcRenderer.invoke("select-image");
+                    if (result && result.success) {
+                      setHeroImagePath(result.filePath);
+                    }
+                  }}
+                  style={{
+                    padding: "8px 15px",
+                    backgroundColor: "#4f46e5",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  파일 선택
+                </button>
+              </div>
+              <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginTop: "4px" }}>
+                * 미선택 시 'blogcategoryinfoimage' 폴더 감지 또는 Pexels를 사용합니다.
+              </p>
+            </div>
+          )}
         </div>
 
         <div

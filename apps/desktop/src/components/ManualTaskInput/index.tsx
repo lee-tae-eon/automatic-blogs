@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BatchTask, Persona, Tone } from "@blog-automation/core/types/blog";
-import { TrendSection, TrendTopic } from "./TrendSection";
+import { TrendSection, TrendTopic, TrendCategory } from "./TrendSection";
 import { TaskFormSection } from "./TaskFormSection";
 
 interface ManualTaskInputProps {
@@ -19,26 +19,48 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
   const [persona, setPersona] = useState<Persona>("informative");
   const [tone, setTone] = useState<Tone>("empathetic");
   const [useImage, setUseImage] = useState(true); // v4.7: 이미지 사용 기본값 true
+  const [heroImagePath, setHeroImagePath] = useState(""); // 🍌 [v8.8] 대표 이미지 경로 추가
   const [useNotebookLM, setUseNotebookLM] = useState(false); // v5.0: NotebookLM 사용 여부
   const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto"); // v5.0: 검수 모드
 
   const [trends, setTrends] = useState<TrendTopic[]>([]);
   const [trendQuery, setTrendQuery] = useState("");
   const [isFetchingTrends, setIsFetchingTrends] = useState(false);
-  const [trendType, setTrendType] = useState<"hollywood" | "korea">(
+  const [trendType, setTrendType] = useState<TrendCategory>(
     "hollywood",
   );
 
   const fetchTrends = async () => {
     setIsFetchingTrends(true);
     try {
-      const channel =
-        trendType === "hollywood"
-          ? "fetch-hollywood-trends"
-          : "fetch-korea-trends";
-      const result = await window.ipcRenderer.invoke(channel, trendQuery);
+      let channel = "";
+      let arg: any = trendQuery;
+
+      if (trendType === "hollywood") {
+        channel = "fetch-hollywood-trends";
+      } else if (trendType === "korea") {
+        channel = "fetch-korea-trends";
+      } else {
+        // [v9.0] 일반 카테고리 추천 (tech, economy 등)
+        channel = "fetch-recommended-topics";
+        arg = trendType; // trendQuery 대신 카테고리 키 전달
+      }
+
+      const result = await window.ipcRenderer.invoke(channel, arg);
       if (result && result.success) {
-        setTrends(result.data);
+        // fetch-recommended-topics의 경우 데이터 형식이 약간 다름 (keyword -> topic)
+        if (trendType !== "hollywood" && trendType !== "korea") {
+          const formatted = result.data.map((item: any) => ({
+            topic: item.keyword,
+            summary: item.reason,
+            keywords: [item.keyword],
+            persona: item.persona,
+            tone: item.tone,
+          }));
+          setTrends(formatted);
+        } else {
+          setTrends(result.data);
+        }
       } else {
         alert(
           "트렌드를 가져오지 못했습니다: " +
@@ -57,11 +79,21 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
     setTopic(trend.topic);
     setKeywords(trend.keywords.join(", "));
 
-    if (trendType === "hollywood") {
-      setPersona("reporter");
-      setTone("empathetic");
+    // 추천된 페르소나와 톤이 있으면 우선 적용 (v9.0)
+    if (trend.persona) {
+      setPersona(trend.persona);
     } else {
-      setPersona("informative");
+      // 폴백 로직
+      if (trendType === "hollywood") {
+        setPersona("reporter");
+      } else {
+        setPersona("informative");
+      }
+    }
+
+    if (trend.tone) {
+      setTone(trend.tone);
+    } else {
       setTone("empathetic");
     }
   };
@@ -85,6 +117,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
       persona,
       tone,
       useImage,
+      heroImagePath: heroImagePath.trim(), // 🍌 [v8.8] 경로 추가
       useNotebookLM, // 추가
       notebookMode, // 추가
       naverCategory: credentials.naverCategory, // v5.4: 봇 실행 시점 값 스냅샷 저장
@@ -97,6 +130,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
     // 폼 초기화
     setTopic("");
     setKeywords("");
+    setHeroImagePath("");
   };
 
   return (
@@ -136,6 +170,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
               fetchTrends={fetchTrends}
               selectTrend={selectTrend}
               clearTrends={clearTrends}
+              persona={persona}
+              setPersona={setPersona}
             />
           </div>
         </div>
@@ -150,6 +186,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
           setTone={setTone}
           useImage={useImage}
           setUseImage={setUseImage}
+          heroImagePath={heroImagePath}
+          setHeroImagePath={setHeroImagePath}
           useNotebookLM={useNotebookLM}
           setUseNotebookLM={setUseNotebookLM}
           notebookMode={notebookMode}

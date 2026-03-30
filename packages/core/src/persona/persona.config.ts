@@ -35,11 +35,11 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
     ],
     topicGuidance: {
       tech: {
-        focus: "기술의 핵심 원리, 시장 파급력, 경쟁 기술과의 비교 분석",
+        focus: "기술의 핵심 원리, 시장 파급력, 경쟁 기술과의 비교 분석 및 2026년 최신 기기 트렌드",
         avoidOverEmphasis: "단순한 스펙 나열, 지루한 매뉴얼 설명",
       },
       economy: {
-        focus: "거시 경제 지표와의 연관성, 투자 리스크 및 기회 요인 분석",
+        focus: "거시 경제 지표와의 연관성, 투자 리스크 및 기회 요인 분석, 실제 할부/렌탈 수익성 시뮬레이션",
         avoidOverEmphasis: "검증되지 않은 투자 권유, 뜬구름 잡는 담론",
       },
     },
@@ -115,7 +115,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
     ],
     topicGuidance: {
       trending: {
-        focus: "지금 당장 왜 이슈인지, 밈(Meme)이나 신조어와의 연관성",
+        focus: "지금 당장 왜 이슈인지, 밈(Meme)이나 신조어와의 연관성, 사건의 사회적 파급력",
         avoidOverEmphasis: "너무 학술적이거나 지나치게 깊은 역사적 배경",
       },
     },
@@ -151,7 +151,7 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
     ],
     topicGuidance: {
       entertainment: {
-        focus: "방송 하이라이트, 출연진 케미, 실시간 시청자 반응",
+        focus: "방송 하이라이트, 출연진 케미, 실시간 시청자 반응, 팬들만 아는 비하인드",
         avoidOverEmphasis: "제작진의 화려한 스펙 나열",
       },
     },
@@ -186,13 +186,9 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "**현실성**: 이동 시간, 대기 시간 등 현실적인 제약을 명시하세요.",
     ],
     topicGuidance: {
-      destination: {
-        focus: "추천 장소, 볼거리, 먹거리, 현지 체험, 숨겨진 포토존",
+      travel: {
+        focus: "추천 장소, 볼거리, 먹거리, 현지 체험, 숨겨진 포토존, 효율적인 동선 설계",
         avoidOverEmphasis: "항공편 정보는 간략하게만",
-      },
-      budget: {
-        focus: "숙박비, 식비, 교통비 등 실제 지출 데이터 기반 분석",
-        avoidOverEmphasis: "감성적 설명 최소화",
       },
     },
   },
@@ -226,13 +222,9 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "**심리**: 독자가 지금 당장 움직이지 않으면 손해라는 느낌을 전달하세요.",
     ],
     topicGuidance: {
-      loan: {
-        focus: "최저 금리 비교, 중도상환 수수료 면제 조건, 대환 절차",
+      economy: {
+        focus: "최저 금리 비교, 중도상환 수수료 면제 조건, 대환 절차, 세금 절약 전략",
         avoidOverEmphasis: "복잡한 거시경제 이론",
-      },
-      investment: {
-        focus: "수익률 백테스팅, 절세 효과(IRP, ISA), 수수료 비교",
-        avoidOverEmphasis: "종목에 대한 맹목적 찬양",
       },
     },
   },
@@ -266,13 +258,9 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "**정확**: 애매한 표현 대신 정확한 증상명과 성분명을 사용하세요.",
     ],
     topicGuidance: {
-      supplement: {
-        focus: "핵심 성분 효능, 권장 섭취량, 궁합이 안 맞는 영양제",
+      health: {
+        focus: "핵심 성분 효능, 권장 섭취량, 궁합이 안 맞는 영양제, 증상별 생활 수칙",
         avoidOverEmphasis: "특정 브랜드 광고",
-      },
-      disease: {
-        focus: "초기 증상, 단계별 치료법, 관리 시 놓치기 쉬운 점",
-        avoidOverEmphasis: "지나치게 상세한 해부학 설명",
       },
     },
   },

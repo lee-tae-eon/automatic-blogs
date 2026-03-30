@@ -86,6 +86,7 @@ export interface BlogPostInput {
   internalLinkSuggestions?: { title: string; url: string }[]; // ✅ [v5.2] 내부 링크 추천 데이터
   coupangLink?: string; // v5.6: 쿠팡 파트너스 단축 링크
   extractedImages?: string[]; // v5.6: 스크래핑된 쿠팡 상품 이미지 URL 배열
+  heroImagePath?: string; // 🍌 [v8.8] 사용자가 직접 지정한 대표 이미지 경로
 }
 
 export interface AiGeneratedPost {
@@ -138,4 +139,5 @@ export interface BatchTask {
   naverCategory2?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
   coupangLink?: string; // v5.6: 쿠팡 파트너스 단축 링크
   targetAccount?: "naver1" | "naver2"; // v5.6: 단일 타겟 계정 직접 지정 (쿠팡 등)
+  heroImagePath?: string; // 🍌 [v8.8] 사용자가 직접 지정한 대표 이미지 경로
 }

@@ -9,6 +9,8 @@ export interface RecommendedTopic {
   reason: string;
   source: string;
   hotness: number; // 1-100
+  persona?: string; // 추천 페르소나 (v9.0)
+  tone?: string;    // 추천 톤 (v9.0)
 }
 
 export type RecommendCategory = "trending" | "tech" | "economy" | "entertainment" | "life" | "travel" | "health" | "parenting";
@@ -154,10 +156,19 @@ export class TopicRecommendationService {
         5. **다양성 (CRITICAL)**: 뻔한 주제를 피하고, 매번 [창의적이고 다채로운 수익화 앵글]로 20가지 전혀 다른 차별화된 키워드를 기획하세요. (Random Seed: ${Math.random().toString(36).substring(7)})
         6. **구체성**: 키워드는 블로그 제목으로 바로 써도 될 만큼 구체적이어야 합니다.
         7. **이유 명시**: 왜 이 주제가 화제성이 있고 **동시에 수익을 낼 수 있는지**(예: "정부 지원금 신청 기간이라 관련 트래픽 및 금융 광고 단가 상승")를 짧고 강렬하게 적으세요.
+        8. **페르소나/톤 추천 (NEW v9.0)**: 각 키워드의 의도에 가장 적합한 페르소나와 톤을 지정하세요.
+           - 페르소나 후보: informative(정보분석), experiential(후기), reporter(뉴스), entertainment(엔터), travel(여행), financeMaster(금융), healthExpert(건강)
+           - 톤 후보: professional(전문적), serious(냉철), incisive(비판적), empathetic(공감)
 
         [출력 형식]: 반드시 아래 JSON 배열 형식으로만 응답하세요.
         [
-          { "keyword": "구체적인 키워드 (예: 2026 청년 도약 계좌 금리 비교)", "reason": "전략적 선정 및 수익화 이유", "hotness": 95 }
+          { 
+            "keyword": "구체적인 키워드", 
+            "reason": "선정 이유", 
+            "hotness": 95,
+            "persona": "추천 페르소나 키",
+            "tone": "추천 톤 키"
+          }
         ]
       `;
 
