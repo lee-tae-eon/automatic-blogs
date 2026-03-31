@@ -13,29 +13,31 @@ export interface RecommendedTopic {
   tone?: string;    // 추천 톤 (v9.0)
 }
 
-export type RecommendCategory = "trending" | "tech" | "economy" | "entertainment" | "life" | "travel" | "health" | "parenting";
+export type RecommendCategory = "trending" | "tech" | "economy" | "finance" | "entertainment" | "life" | "travel" | "health" | "parenting";
 
 export const CATEGORY_MAP: Record<RecommendCategory, string> = {
   trending: "⚡ 실시간 급상승 이슈",
   tech: "IT/테크",
   economy: "경제/비즈니스",
+  finance: "금융/재테크/보험",
   entertainment: "연예/방송",
-  life: "생활/건강",
+  life: "생활/정보",
   travel: "여행/맛집",
   health: "건강/의학/웰빙",
   parenting: "육아/아동",
 };
 
-/** 카테고리별 Naver 블로그 검색 쿼리 */
+/** 카테고리별 기본 Naver 블로그 검색 쿼리 (동적 쿼리 생성 실패 시 대비) */
 const NAVER_BLOG_QUERIES: Record<RecommendCategory, string> = {
   trending: "오늘의 뉴스 실시간 핫이슈 급상승 키워드",
   tech: "IT 트렌드 최신 테크",
-  economy: "재테크 경제 금융 투자",
+  economy: "비즈니스 산업 동향 뉴스",
+  finance: "재테크 경제 금융 투자 보험",
   entertainment: "연예 드라마 방송 핫이슈",
-  life: "생활정보 건강 꿀팁",
+  life: "생활정보 꿀팁",
   travel: "해외여행 국내여행 추천여행지",
-  health: "건강관리 의료 보험 웰빙",
-  parenting: "육아 아이 교육 학습지",
+  health: "건강관리 의료 웰빙",
+  parenting: "육아 아이 교육",
 };
 
 export class TopicRecommendationService {
@@ -50,6 +52,38 @@ export class TopicRecommendationService {
     if (naverConfig && naverConfig.clientId && naverConfig.clientSecret) {
       this.naverSearchService = new NaverSearchService(naverConfig);
       console.log("✅ [TopicRec] 네이버 블로그 검색 연동 활성화");
+    }
+  }
+
+  /**
+   * 동적 검색 쿼리를 생성합니다. (v10.0)
+   * 매번 다른 주제를 탐색하기 위해 AI가 검색어를 제안합니다.
+   */
+  private async generateDynamicSearchQueries(category: RecommendCategory): Promise<string[]> {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const categoryName = CATEGORY_MAP[category];
+
+    const prompt = `
+      당신은 블로그 트렌드 분석가입니다. 오늘은 **${dateStr}**입니다.
+      '**${categoryName}**' 카테고리에 대해, 오늘 블로그 포스팅 소재를 찾기 위한 **다양하고 구체적인 검색 쿼리 3개**를 생성하세요.
+
+      [제약 조건]:
+      1. **다양성**: 매번 뻔한 검색어(예: '여행지 추천') 대신, 시즈널리티나 구체적인 상황을 반영하세요.
+      2. **중복 배제**: 3개의 쿼리는 서로 다른 앵글이어야 합니다.
+      3. **보험/금융 배제 (중요)**: 만약 카테고리가 '금융/재테크/보험'이 **아니라면**, 절대 보험(실비, 자동차, 종신 등)이나 대출 관련 쿼리를 생성하지 마세요.
+      4. **형식**: 오직 검색어만 쉼표로 구분하여 출력하세요. (예: 쿼리1, 쿼리2, 쿼리3)
+
+      카테고리: ${categoryName}
+    `;
+
+    try {
+      const response = await this.aiClient.generateText(prompt);
+      const queries = response.split(",").map(q => q.trim()).filter(q => q.length > 0);
+      return queries.length > 0 ? queries : [NAVER_BLOG_QUERIES[category]];
+    } catch (e) {
+      console.error("⚠️ [TopicRec] 동적 쿼리 생성 실패, 기본값 사용");
+      return [NAVER_BLOG_QUERIES[category]];
     }
   }
 
@@ -71,94 +105,67 @@ export class TopicRecommendationService {
 
   /**
    * 특정 카테고리의 핫 토픽 20개를 가져옵니다.
-   * [v7.0] 뉴스(RSS/Tavily) + 네이버 블로그 검색 결합
+   * [v10.0] 동적 쿼리 + 보험 카테고리 분리
    */
   async getRecommendationsByCategory(category: RecommendCategory): Promise<RecommendedTopic[]> {
     try {
-      console.log(`📡 [TopicRec] '${CATEGORY_MAP[category]}' 트렌드 수집 중...`);
+      console.log(`📡 [TopicRec] '${CATEGORY_MAP[category]}' 동적 트렌드 수집 시작...`);
       
-      // ─── 1. 뉴스 데이터 수집 ───────────────────────────────────
-      let newsData = "";
-      
-      if (category === "trending" || category === "entertainment" || category === "economy") {
-        // [v7.1] 실시간 이슈는 구글 트렌드(RSS)를 최우선으로 수집
+      // 1. 동적 쿼리 생성
+      const dynamicQueries = await this.generateDynamicSearchQueries(category);
+      console.log(`🔍 [TopicRec] 생성된 쿼리: ${dynamicQueries.join(" | ")}`);
+
+      // 2. 데이터 수집 (Tavily + Naver)
+      let combinedData = "";
+
+      // ─── 2-1. Tavily 최신 뉴스 수집 ───────────────────────────────────
+      const newsResults = await Promise.all(
+        dynamicQueries.map(q => this.tavilyService.searchLatestNews(q).catch(() => ({ context: "" })))
+      );
+      combinedData += newsResults.map(r => r.context).join("\n\n");
+
+      // ─── 2-2. RSS (Trending Only) ──────────────────────────────────
+      if (category === "trending") {
         const rssTrends = await this.rssService.fetchTrendingTopics("KR");
-        newsData = rssTrends.map(t => t.title).join(", ");
-        
-        if (category === "trending") {
-          // 실시간 카테고리는 뉴스 검색 데이터도 추가하여 풍부하게 만듦
-          const searchResult = await this.tavilyService.searchLatestNews(`대한민국 현재 실시간 급상승 뉴스 핫이슈`);
-          newsData += `\n\n${searchResult.context}`;
-        }
-      } else if (category === "health") {
-        const searchResult = await this.tavilyService.searchLatestNews(`환절기 건강 관리 트렌드 OR 직장인 통증 관리 OR 최신 영양제 성분 효능`);
-        newsData = searchResult.context;
-      } else if (category === "parenting") {
-        const searchResult = await this.tavilyService.searchLatestNews(`한국 육아 꿀팁 OR 영유아 아동 발달 가이드 OR 신생아 초보 부모 가이드`);
-        newsData = searchResult.context;
-      } else if (category === "travel") {
-        const searchResult = await this.tavilyService.searchLatestNews(`해외 여행 인기 트렌드 OR 이색 해외 여행지 추천 OR 가성비 해외 여행 국가`);
-        newsData = searchResult.context;
-      } else {
-        try {
-          const searchResult = await this.tavilyService.searchLatestNews(`${CATEGORY_MAP[category]} 최신 트렌드 이슈`);
-          newsData = searchResult.context;
-        } catch (e) {
-          console.warn(`⚠️ [TopicRec] Tavily 실패, RSS로 대체: ${category}`);
-          const rssTrends = await this.rssService.fetchTrendingTopics("KR");
-          newsData = rssTrends.map(t => t.title).join(", ");
-        }
+        combinedData += "\n\n=== 실시간 급상승 뉴스 ===\n" + rssTrends.map(t => t.title).join(", ");
       }
 
-      // ─── 2. [NEW v7.0] 네이버 블로그 검색 (실제 블로그 유입 트렌드) ───
-      let naverBlogData = "";
+      // ─── 2-3. 네이버 블로그 검색 ──────────────────────────────────
       if (this.naverSearchService) {
-        try {
-          const query = NAVER_BLOG_QUERIES[category];
-          const blogResults = await this.naverSearchService.searchBlog(query, 20);
-          if (blogResults) {
-            naverBlogData = blogResults;
-            console.log(`✅ [TopicRec] 네이버 블로그 유입 데이터 수집 완료: ${category}`);
-          }
-        } catch (e) {
-          console.warn(`⚠️ [TopicRec] 네이버 블로그 검색 실패 (무시): ${category}`);
+        const naverResults = await Promise.all(
+          dynamicQueries.map(q => this.naverSearchService!.searchBlog(q, 10).catch(() => ""))
+        );
+        const naverData = naverResults.filter(Boolean).join("\n\n");
+        if (naverData) {
+          combinedData += "\n\n=== 네이버 블로그 인기 키워드 ===\n" + naverData;
+          console.log(`✅ [TopicRec] 네이버 블로그 데이터 수집 완료 (${category})`);
         }
       }
 
-      const rawData = [newsData, naverBlogData].filter(Boolean).join("\n\n");
-
-      if (!rawData || rawData.trim().length < 10) {
+      if (!combinedData || combinedData.trim().length < 20) {
         throw new Error("분석할 충분한 트렌드 데이터를 수집하지 못했습니다.");
       }
 
-      // ─── 3. AI 큐레이션 ────────────────────────────────────────────
+      // 3. AI 큐레이션
       const now = new Date();
       const currentDateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+      const isFinanceCategory = category === "finance";
       
       const prompt = `
-        당신은 대한민국 최고의 블로그 콘텐츠 전략가이자 수익화 마케터입니다. 
-        현재는 **${currentDateStr}**입니다. 반드시 현재 시점에서 가장 유효한 정보를 바탕으로 **'${CATEGORY_MAP[category]}'** 카테고리에서 오늘 블로그로 쓰기 가장 좋은, **수익성(상업적 의도)과 화제성을 동시에 갖춘 핫 토픽 20개**를 선정하세요.
+        당신은 대한민국 최고의 블로그 콘텐츠 전략가입니다. 오늘은 **${currentDateStr}**입니다.
+        '**${CATEGORY_MAP[category]}**' 카테고리에서 오늘 블로그로 쓰기 가장 좋은 핫 토픽 20개를 선정하세요.
 
-        [원천 데이터]:
-        === 📰 최신 뉴스/검색 이슈 ===
-        ${newsData || "(데이터 없음)"}
-
-        === 📝 네이버 블로그 실제 인기 키워드 (블로그 유입 반영) ===
-        ${naverBlogData ? naverBlogData : "(네이버 블로그 검색 미연동 - 뉴스 데이터만 사용)"}
+        [수집된 데이터]:
+        ${combinedData}
 
         [선정 지침 - 절대 준수]:
-        1. **최신성 필터링 (CRITICAL)**: 과거 연도 관련 키워드나 이미 지나간 이슈는 절대 포함하지 마세요. 2026년 현재 유효한 트렌드만 다룹니다.
-        2. **수익 극대화 우선 (CRITICAL - Best Blogger Strategy)**: 단순 화제성을 넘어, 사람들이 지갑을 열거나 고단가 광고(대출, 보험, IT솔루션, 부동산, 교육, 여행상품)를 클릭할 만한 **'상업적 의도(Commercial Intent)'**가 높은 주제를 최우선으로 선정하세요.
-           - 예: '일본 여행' (X) -> '일본 여행자 보험 비교 및 추천' (O - 금융 브릿징)
-           - 예: '아이폰 출시' (X) -> '아이폰 자급제 할인 카드 혜택' (O - 금융 브릿징)
-        3. **분야 엄수 (CRITICAL)**: 제공된 데이터에 '${CATEGORY_MAP[category]}'와 전혀 관련 없는 내용이 포함되어 있다면 무시하세요. 단, 해당 카테고리와 '금융/건강/IT' 등 고수익 도메인을 자연스럽게 연결(Domain Bridging)하는 것은 적극 권장합니다.
-        4. **블로그 유입 우선**: 네이버 블로그 데이터에서 등장하는 키워드를 뉴스 이슈와 결합하여 '실제 독자들이 검색하는' 주제를 만드세요.
-        5. **다양성 (CRITICAL)**: 뻔한 주제를 피하고, 매번 [창의적이고 다채로운 수익화 앵글]로 20가지 전혀 다른 차별화된 키워드를 기획하세요. (Random Seed: ${Math.random().toString(36).substring(7)})
-        6. **구체성**: 키워드는 블로그 제목으로 바로 써도 될 만큼 구체적이어야 합니다.
-        7. **이유 명시**: 왜 이 주제가 화제성이 있고 **동시에 수익을 낼 수 있는지**(예: "정부 지원금 신청 기간이라 관련 트래픽 및 금융 광고 단가 상승")를 짧고 강렬하게 적으세요.
-        8. **페르소나/톤 추천 (NEW v9.0)**: 각 키워드의 의도에 가장 적합한 페르소나와 톤을 지정하세요.
-           - 페르소나 후보: informative(정보분석), experiential(후기), reporter(뉴스), entertainment(엔터), travel(여행), financeMaster(금융), healthExpert(건강)
-           - 톤 후보: professional(전문적), serious(냉철), incisive(비판적), empathetic(공감)
+        1. **보험/금융 엄격 분리 (CRITICAL)**:
+           - 현재 카테고리가 '**금융/재테크/보험**'이 **아니라면**, 절대 보험(실비, 암, 자동차, 종신 등), 대출, 카드 신청 등 금융 상품 관련 주제를 포함하지 마세요.
+           - 다른 카테고리에서 금융 데이터가 섞여 들어왔다면 과감히 무시하고 순수하게 해당 카테고리(예: 여행이면 여행 정보만)에 집중하세요.
+        2. **최신성 및 구체성**: 2026년 현재 시점에서 유효한 구체적인 키워드를 선정하세요.
+        3. **다양성**: 검색 결과 중 가장 흥미롭고 유입이 기대되는 다양한 앵글의 20가지 키워드를 기획하세요.
+        4. **이유 명시**: 왜 이 주제가 오늘 유망한지 수익화/화제성 관점에서 설명하세요.
+        5. **페르소나/톤 추천**: 각 키워드에 적합한 페르소나와 톤을 지정하세요.
 
         [출력 형식]: 반드시 아래 JSON 배열 형식으로만 응답하세요.
         [
@@ -166,8 +173,8 @@ export class TopicRecommendationService {
             "keyword": "구체적인 키워드", 
             "reason": "선정 이유", 
             "hotness": 95,
-            "persona": "추천 페르소나 키",
-            "tone": "추천 톤 키"
+            "persona": "informative | experiential | reporter | financeMaster | healthExpert",
+            "tone": "professional | serious | empathetic"
           }
         ]
       `;
@@ -177,10 +184,11 @@ export class TopicRecommendationService {
       return curated.map(item => ({
         ...item,
         category: CATEGORY_MAP[category],
-        source: naverBlogData ? "AI Curated (News + Naver Blog)" : "AI Curated (News)",
+        source: "AI Curated (Dynamic Multi-Source)",
       }));
 
     } catch (error) {
+      console.error(`❌ [TopicRec] ${category} 추천 생성 실패:`, error);
       throw error;
     }
   }
