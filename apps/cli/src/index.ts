@@ -35,7 +35,7 @@ async function main() {
     // heroImagePath: "/Users/itaeeon/Desktop/my_special_image.png", // 🍌 [v8.8] 특정 이미지 경로를 직접 지정하고 싶을 때 사용
   };
 
-  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODELS);
+  const aiClient = new GeminiClient(ENV.GEMINI_API_KEY, ENV.GEMINI_MODEL_DEFAULT);
 
   try {
     // 2. AI 포스트 생성 (최신 프롬프트 생성 로직 연동)

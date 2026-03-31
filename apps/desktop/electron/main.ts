@@ -448,15 +448,22 @@ function registerIpcHandlers() {
               const errorMsg = String(error.message || error);
               
               // 429(할당량 초과) 또는 503(과부하/High demand)인 경우 다음 모델/키 시도
-              if (
+              const isRetryable = 
                 errorMsg.includes("429") || 
                 errorMsg.includes("limit") || 
                 errorMsg.includes("503") || 
+                errorMsg.includes("500") ||
                 errorMsg.includes("Service Unavailable") || 
-                errorMsg.includes("demand")
-              ) {
-                const warnMsg = `⚠️ [AI 생성] ${modelType} 실패 (${errorMsg.slice(0, 50)}...). 다른 모델로 전환합니다.`;
+                errorMsg.includes("demand") ||
+                errorMsg.includes("overloaded");
+
+              if (isRetryable) {
+                const warnMsg = `⚠️ [AI 생성] ${modelType} 실패 (${errorMsg.slice(0, 70)}...). 2초 후 다음 모델로 전환합니다.`;
                 if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
+                console.warn(warnMsg);
+                
+                // [v9.1] 즉시 재시도 시 연속 503 방지를 위한 짧은 대기
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 continue; 
               }
               // 그 외 예상치 못한 에러는 중단

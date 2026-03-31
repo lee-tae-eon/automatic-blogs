@@ -9,15 +9,12 @@ import { BaseAiClient } from "./types";
 export class GeminiClient implements BaseAiClient {
   private genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
-  private modelNames: string[];
-  private currentModelIndex: number = 0;
   private apiKey: string;
 
-  constructor(apiKey: string, modelNames: string | string[] = "gemini-2.5-flash") {
+  constructor(apiKey: string, modelName: string = "gemini-2.5-flash") {
     this.apiKey = apiKey;
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.modelNames = Array.isArray(modelNames) ? modelNames : [modelNames];
-    this.model = this.initModel(this.modelNames[0]);
+    this.model = this.initModel(modelName);
   }
 
   private initModel(modelName: string): GenerativeModel {
@@ -45,33 +42,13 @@ export class GeminiClient implements BaseAiClient {
     });
   }
 
-  /**
-   * 서버 에러 발생 시 다음 모델로 스위칭합니다.
-   */
-  private switchToNextModel(): boolean {
-    if (this.currentModelIndex < this.modelNames.length - 1) {
-      this.currentModelIndex++;
-      const nextModel = this.modelNames[this.currentModelIndex];
-      console.warn(`🔄 [Gemini] 에러 발생으로 인해 다음 모델로 스위칭합니다: ${nextModel}`);
-      this.model = this.initModel(nextModel);
-      return true;
-    }
-    return false;
-  }
-
   async generateText(prompt: string): Promise<string> {
     try {
       const result = await this.model.generateContent(prompt);
       return result.response.text();
     } catch (err: any) {
-      const isServerError = err.message?.includes("503") || err.message?.includes("500") || err.message?.includes("high demand");
-      
-      if (isServerError && this.switchToNextModel()) {
-        return this.generateText(prompt); // 다음 모델로 재시도
-      }
-
-      console.log(`🛑 ${err}`);
-      throw new Error(`🛑 Fail to Generate Content: ${err.message || err}`);
+      console.error(`🛑 Gemini generateText 실패: ${err.message || err}`);
+      throw err; // 상위에서 처리하도록 원본 에러 던짐
     }
   }
 
@@ -85,14 +62,8 @@ export class GeminiClient implements BaseAiClient {
       ]);
       responseText = result.response.text();
     } catch (error: any) {
-      const isServerError = error.message?.includes("503") || error.message?.includes("500") || error.message?.includes("high demand");
-      
-      if (isServerError && this.switchToNextModel()) {
-        return this.generateJson<T>(prompt); // 다음 모델로 재시도
-      }
-
-      console.error("Gemini API 호출 실패:", error.message);
-      throw error;
+      console.error(`🛑 Gemini generateJson 호출 실패: ${error.message || error}`);
+      throw error; // 상위에서 처리하도록 원본 에러 던짐
     }
 
     // API 호출은 성공했으나, 응답을 파싱하는 과정에서 에러가 발생할 수 있습니다.
@@ -104,7 +75,6 @@ export class GeminiClient implements BaseAiClient {
         .trim();
 
       // 2. 만약 앞뒤에 설명이 붙어있을 경우를 대비해 JSON 시작점과 끝점을 찾음
-      // { 또는 [ 중 먼저 나오는 것을 시작점으로, } 또는 ] 중 마지막에 나오는 것을 끝점으로 설정
       const objectStart = cleanedText.indexOf("{");
       const arrayStart = cleanedText.indexOf("[");
       
@@ -125,20 +95,11 @@ export class GeminiClient implements BaseAiClient {
       
       let jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
 
-      // [v4.10] JSON 파싱 안정성 극대화 로직
-      const sanitizeJsonString = (str: string) => {
-        return str
-          .replace(/\n/g, "\\n") // 모든 실제 줄바꿈을 \n 문자로 변환
-          .replace(/\r/g, "\\r")
-          .replace(/\t/g, "\\t");
-      };
-
       try {
         // 1차 시도: 단순 파싱
         return JSON.parse(jsonString.trim()) as T;
       } catch (e) {
         // 2차 시도: 값(Value) 부분의 줄바꿈 및 특수문자 정밀 정제
-        // 큰따옴표로 감싸진 값 내부의 실제 줄바꿈만 타겟팅하여 변환
         let repaired = jsonString.replace(/(": *")([\s\S]*?)(",? *\n|",? *\r|",? *$)/g, (match, prefix, content, suffix) => {
           return prefix + content.replace(/\n/g, "\\n").replace(/\r/g, "\\r") + suffix;
         });
@@ -146,33 +107,22 @@ export class GeminiClient implements BaseAiClient {
         try {
           return JSON.parse(repaired) as T;
         } catch (e2) {
-          // 3차 시도: 더욱 공격적인 정제 (문자열 내 큰따옴표 중첩 문제 해결 시도)
-          // 실제 JSON 구조용 따옴표를 제외한 나머지 따옴표를 작은따옴표로 변환하거나 이스케이프
-          const doubleFix = repaired.replace(/([^\\])"/g, '$1\\"'); // 모든 따옴표 이스케이프 (임시)
-          // 단, JSON 키와 구조용 따옴표는 복구해야 함 (매우 복잡하므로 여기서는 2차 시도까지만 우선 적용 후 관찰)
           throw e2; 
         }
       }
     } catch (parseError: any) {
-      // 이 경우는 순수한 JSON 파싱 에러입니다.
       console.error("JSON 파싱 에러. 원문 데이터:", responseText);
-      console.error("상세 파싱 에러:", parseError);
       throw new Error(
         `AI가 유효한 JSON 형식을 반환하지 않았습니다. ${parseError?.message || ""}`,
       );
     }
   }
 
-  /**
-   * Gemini의 Google Search Grounding 기능을 사용하여 최신 정보를 검색합니다.
-   * @param query 검색어
-   */
   async searchWithGrounding(query: string): Promise<string> {
     try {
-      // 검색 기능을 위해 모델을 새로 인스턴스화 (tools 설정 필요)
       const searchModel = this.genAI.getGenerativeModel({
-        model: this.model.model, // 기존 인스턴스에 설정된 모델명(e.g. gemini-2.5-flash) 사용
-        tools: [{ googleSearch: {} }] as any, // 구글 검색 도구 활성화 (타입 에러 방지를 위해 any 캐스팅)
+        model: this.model.model,
+        tools: [{ googleSearch: {} }] as any,
       });
 
       const prompt = `
@@ -189,8 +139,7 @@ export class GeminiClient implements BaseAiClient {
       const response = result.response;
       return response.text();
     } catch (error: any) {
-      console.warn("⚠️ Gemini Grounding 검색 실패 (Tavily로 대체 진행):", error.message);
-      // 검색 실패 시 빈 문자열 반환 (메인 로직에서 Tavily 결과만 사용하게 됨)
+      console.warn("⚠️ Gemini Grounding 검색 실패:", error.message);
       return "";
     }
   }
