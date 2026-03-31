@@ -402,6 +402,7 @@ export const useAppViewModel = () => {
             password: credentials.naverPw,
             category: task.naverCategory || credentials.naverCategory, // 스냅샷 우선 적용 (없으면 폴백)
             headless: credentials.headless,
+            heroImagePath: task.heroImagePath, // 🍌 [v8.8] 대표 이미지 경로 전달
           });
         }
 
@@ -413,6 +414,7 @@ export const useAppViewModel = () => {
             password: credentials.naverPw2,
             category: task.naverCategory2 || credentials.naverCategory2, // 스냅샷 우선 적용 (없으면 폴백)
             headless: credentials.headless,
+            heroImagePath: task.heroImagePath, // 🍌 [v8.8] 대표 이미지 경로 전달
           });
         }
 
@@ -423,6 +425,7 @@ export const useAppViewModel = () => {
             blogId: credentials.tistoryId,
             password: credentials.tistoryPw,
             headless: credentials.headless,
+            heroImagePath: task.heroImagePath, // 🍌 [v8.8] 대표 이미지 경로 전달
           });
         }
 

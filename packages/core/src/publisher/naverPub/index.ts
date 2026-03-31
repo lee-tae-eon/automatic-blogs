@@ -24,6 +24,7 @@ export interface NaverPostInput {
   tone: Tone;
   onProgress?: (message: string) => void;
   headless?: boolean;
+  heroImagePath?: string; // 🍌 [v8.8] 대표 이미지 경로 추가
 }
 
 /**
@@ -356,6 +357,7 @@ export class NaverPublisher implements IBlogPublisher {
       metaTitle: "",
       focusKeywords: rest.tags || [],
       internalLinkSuggestions: [],
+      heroImagePath: rest.heroImagePath, // 🍌 [v8.8] 대표 이미지 전달
     };
 
     return this.publish({ blogId, password, headless, onProgress }, post);
@@ -366,7 +368,7 @@ export class NaverPublisher implements IBlogPublisher {
    */
   async publish(options: PublishOptions, post: Publication): Promise<void> {
     const { blogId, password, onProgress, headless = false } = options;
-    const { title, content, category, references, persona } = post;
+    const { title, content, category, references, persona, heroImagePath } = post;
 
     // ✅ [v5.3] SEO: focusKeywords + lsiKeywords를 병합하여 최대 10개의 최적 태그 구성
     const rawTags = post.tags || [];
@@ -401,6 +403,7 @@ export class NaverPublisher implements IBlogPublisher {
         title,
         tags,
         persona,
+        heroImagePath,
       );
       onProgress?.("에디터 초기화 중...");
       await editor.clearPopups();

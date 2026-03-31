@@ -78,6 +78,7 @@ async function main() {
       references: post.references,
       persona: input.persona, // ✅ 추가된 필드
       tone: input.tone,       // ✅ 추가된 필드
+      heroImagePath: input.heroImagePath, // 🍌 [v8.8] 대표 이미지 추가
       onProgress: (msg) => console.log(`      > ${msg}`),
     });
 

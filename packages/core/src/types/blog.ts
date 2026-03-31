@@ -112,6 +112,7 @@ export interface Publication extends AiGeneratedPost {
   tone: Tone;
   keywords?: string[];
   latestNews?: string;
+  heroImagePath?: string; // 🍌 [v8.8] 사용자가 직접 지정한 대표 이미지 경로
 }
 
 export interface GeneratePostInput {

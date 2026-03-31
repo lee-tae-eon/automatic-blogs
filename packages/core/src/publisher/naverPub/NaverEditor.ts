@@ -5,7 +5,6 @@ import fs from "fs";
 import path from "path";
 import { PexelsService } from "../../services/pexelImageService";
 import { ChartService } from "../../services/chartService";
-import { NanoBananaService, AntiGravityBridge } from "../../services/NanoBananaService";
 
 // ✅ 페르소나별 테마 컬러 및 스타일 정의
 const PERSONA_THEMES: Record<string, { color: string; bgColor: string }> = {
@@ -67,12 +66,11 @@ const getCheckpointStyle = () => {
 export class NaverEditor {
   private pexelsService = new PexelsService();
   private chartService = new ChartService();
-  private nanoBanana = new NanoBananaService(process.env.VITE_GEMINI_API_KEY || "");
-  private antiGravity = new AntiGravityBridge();
   private tempDir: string;
   private topic: string;
   private tags: string[];
   private persona: string;
+  private heroImagePath?: string; // 🍌 [v8.8] 사용자 지정 대표 이미지
 
   constructor(
     private page: Page,
@@ -80,6 +78,7 @@ export class NaverEditor {
     topic: string,
     tags: string[] = [],
     persona: string = "informative",
+    heroImagePath?: string,
   ) {
     this.tempDir = path.join(projectRoot, "temp_images");
     if (!fs.existsSync(this.tempDir)) {
@@ -88,6 +87,7 @@ export class NaverEditor {
     this.topic = topic;
     this.tags = tags;
     this.persona = persona;
+    this.heroImagePath = heroImagePath;
   }
 
   private cleanContent(content: string): string {
@@ -177,7 +177,8 @@ export class NaverEditor {
 
       const textBlocks = this.htmlToTextBlocks(htmlContent);
       let imageCount = 0;
-      const MAX_IMAGES = 2; // v4.7: 최대 2개로 조정
+      let pexelsCount = 0;
+      const MAX_PEXELS = 3; // 🍌 [v8.8] Pexels 이미지 3개 보장
       const usedKeywords = new Set<string>();
 
       for (const block of textBlocks) {
@@ -188,7 +189,13 @@ export class NaverEditor {
           !block.html &&
           !block.text &&
           block.type !== "separator" &&
-          block.type !== "image"
+          block.type !== "image" &&
+          block.type !== "direct_image" &&
+          block.type !== "chart" &&
+          block.type !== "og_link" &&
+          block.type !== "youtube_video" &&
+          block.type !== "checkpoint" &&
+          block.type !== "coupang_image"
         )
           continue;
 
@@ -285,7 +292,6 @@ export class NaverEditor {
             break;
 
           case "image":
-            if (imageCount >= MAX_IMAGES) break;
             let rawKeyword = block.keyword || this.topic;
             let cleanKeyword = rawKeyword
               .replace(/[\[\]]/g, "")
@@ -302,26 +308,22 @@ export class NaverEditor {
             try {
               let imagePath: string | null = null;
 
-              // 🚀 [v8.5] 첫 번째 이미지는 '프리미엄 이미지' 전략 적용
-              if (imageCount === 0) {
-                console.log("💎 [Hero Image] 첫 번째 프리미엄 이미지 전략 실행...");
-                
-                // 1순위: 안티그래비티 동적 이미지 (사용자 수동 생성)
-                imagePath = await this.antiGravity.getLatestDynamicImage();
-                
-                // 2순위: 나노바나나 (Gemini Imagen 3)
-                if (!imagePath) {
-                  // VITE_GEMINI_API_KEY가 설정되어 있어야 합니다.
-                  imagePath = await this.nanoBanana.generatePremiumImage(this.topic, this.tempDir);
-                }
-              }
-
-              // 3순위 (또는 두 번째 이후): Pexels (일반 이미지)
-              if (!imagePath) {
+              // 🍌 [v8.8] 이미지 전략 전면 개편
+              // 1순위: 사용자가 직접 지정한 heroImagePath (첫 번째 이미지 블록에서만 사용)
+              if (imageCount === 0 && this.heroImagePath && fs.existsSync(this.heroImagePath)) {
+                console.log("🍌 [Hero Image] 사용자 지정 이미지 사용:", this.heroImagePath);
+                imagePath = this.heroImagePath;
+              } 
+              
+              // 2순위: Pexels (사용자 지정 이미지가 없거나, 두 번째 이후 이미지인 경우)
+              // Pexels 이미지는 최대 MAX_PEXELS개까지 허용
+              if (!imagePath && pexelsCount < MAX_PEXELS) {
+                console.log(`📸 [Pexels] 새 이미지 다운로드 시도 (${cleanKeyword})...`);
                 imagePath = await this.pexelsService.downloadImage(
                   cleanKeyword,
                   this.tempDir,
                 );
+                if (imagePath) pexelsCount++;
               }
 
               if (imagePath) {
