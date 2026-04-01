@@ -14,6 +14,7 @@ export type TrendCategory =
   | "korea" 
   | "tech" 
   | "economy" 
+  | "finance"
   | "entertainment" 
   | "life" 
   | "travel" 
@@ -53,13 +54,15 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
     { key: "hollywood", label: "헐리우드", icon: "🎬", color: "#ff4757" },
     { key: "korea", label: "한국 트렌드", icon: "🇰🇷", color: "#03c75a" },
     { key: "tech", label: "IT/테크", icon: "💻", color: "#4834d4" },
-    { key: "economy", label: "경제", icon: "💰", color: "#f0932b" },
+    { key: "economy", label: "경제/비즈", icon: "💰", color: "#f0932b" },
+    { key: "finance", label: "금융/보험", icon: "🏦", color: "#2f3542" },
     { key: "entertainment", label: "연예/방송", icon: "📺", color: "#e056fd" },
-    { key: "life", label: "생활/건강", icon: "🏠", color: "#686de0" },
+    { key: "life", label: "생활/정보", icon: "🏠", color: "#686de0" },
     { key: "travel", label: "여행", icon: "✈️", color: "#22a6b3" },
     { key: "health", label: "건강", icon: "🏥", color: "#eb4d4b" },
     { key: "parenting", label: "육아", icon: "👶", color: "#6ab04c" },
   ];
+
   return (
     <div
       className="trends-section"
@@ -72,6 +75,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
         minHeight: 0
       }}
     >
+      {/* 카테고리 탭 (가로 스크롤 가능) */}
       <div
         style={{
           display: "flex",
@@ -79,50 +83,44 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
           backgroundColor: "#f1f3f5",
           borderRadius: "8px",
           padding: "4px",
+          overflowX: "auto",
+          gap: "4px",
+          scrollbarWidth: "none", // Firefox
+          msOverflowStyle: "none", // IE
         }}
+        className="hide-scrollbar"
       >
-        <button
-          onClick={() => {
-            setTrendType("hollywood");
-            setTrends([]);
-          }}
-          style={{
-            flex: 1,
-            padding: "6px",
-            fontSize: "0.8rem",
-            border: "none",
-            borderRadius: "6px",
-            backgroundColor: trendType === "hollywood" ? "#fff" : "transparent",
-            color: trendType === "hollywood" ? "#ff4757" : "#868e96",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow:
-              trendType === "hollywood" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
-          }}
-        >
-          🎬 헐리우드
-        </button>
-        <button
-          onClick={() => {
-            setTrendType("korea");
-            setTrends([]);
-          }}
-          style={{
-            flex: 1,
-            padding: "6px",
-            fontSize: "0.8rem",
-            border: "none",
-            borderRadius: "6px",
-            backgroundColor: trendType === "korea" ? "#fff" : "transparent",
-            color: trendType === "korea" ? "#03c75a" : "#868e96",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow:
-              trendType === "korea" ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
-          }}
-        >
-          🇰🇷 한국 트렌드
-        </button>
+        <style>
+          {`
+            .hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+          `}
+        </style>
+        {categories.map((cat) => (
+          <button
+            key={cat.key}
+            onClick={() => {
+              setTrendType(cat.key);
+              setTrends([]);
+            }}
+            style={{
+              padding: "6px 12px",
+              fontSize: "0.75rem",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor: trendType === cat.key ? "#fff" : "transparent",
+              color: trendType === cat.key ? cat.color : "#868e96",
+              fontWeight: "bold",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              boxShadow: trendType === cat.key ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
+              transition: "all 0.2s"
+            }}
+          >
+            {cat.icon} {cat.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ marginBottom: "15px" }}>
@@ -133,17 +131,15 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
             color: "#212529",
           }}
         >
-          {trendType === "hollywood"
-            ? "🔥 헐리우드 핫이슈"
-            : "📈 실시간 한국 트렌드"}
+          {categories.find(c => c.key === trendType)?.icon} {categories.find(c => c.key === trendType)?.label} 핫이슈
         </h3>
         <div style={{ display: "flex", gap: "5px" }}>
           <input
             type="text"
             placeholder={
-              trendType === "hollywood"
-                ? "배우/주제 검색..."
-                : "이슈/키워드 검색..."
+              trendType === "hollywood" || trendType === "korea"
+                ? "주제/키워드 검색..."
+                : `${categories.find(c => c.key === trendType)?.label} 관련 검색 (비워두면 자동 추천)`
             }
             value={trendQuery}
             onChange={(e) => setTrendQuery(e.target.value)}
@@ -163,8 +159,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
             style={{
               padding: "8px 15px",
               fontSize: "0.85rem",
-              backgroundColor:
-                trendType === "hollywood" ? "#ff4757" : "#03c75a",
+              backgroundColor: categories.find(c => c.key === trendType)?.color || "#03c75a",
               color: "#fff",
               border: "none",
               borderRadius: "6px",
@@ -172,7 +167,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
               fontWeight: "bold",
             }}
           >
-            {isFetchingTrends ? "..." : "검색"}
+            {isFetchingTrends ? "..." : "추천받기"}
           </button>
         </div>
       </div>
@@ -180,7 +175,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
       <div
         style={{
           flex: 1,
-          minHeight: 0, // Allows the flex item to shrink and trigger the scrollbar
+          minHeight: 0,
           overflowY: "auto",
           paddingRight: "5px",
           position: "relative",
@@ -210,7 +205,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
                 width: "30px",
                 height: "30px",
                 border: "3px solid #f3f3f3",
-                borderTop: `3px solid ${trendType === "hollywood" ? "#ff4757" : "#03c75a"}`,
+                borderTop: `3px solid ${categories.find(c => c.key === trendType)?.color || "#03c75a"}`,
                 borderRadius: "50%",
                 animation: "spin 1s linear infinite",
               }}
@@ -218,11 +213,11 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
             <span
               style={{
                 fontSize: "0.85rem",
-                color: trendType === "hollywood" ? "#ff4757" : "#03c75a",
+                color: categories.find(c => c.key === trendType)?.color || "#03c75a",
                 fontWeight: "bold",
               }}
             >
-              하이브리드 엔진 검색 중...
+              트렌드 수집 및 AI 분석 중...
             </span>
           </div>
         )}
@@ -271,10 +266,8 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
                   transition: "all 0.2s",
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    trendType === "hollywood" ? "#fff5f5" : "#f0fff4";
-                  e.currentTarget.style.borderColor =
-                    trendType === "hollywood" ? "#feb2b2" : "#9ae6b4";
+                  e.currentTarget.style.backgroundColor = "#f1f3f5";
+                  e.currentTarget.style.borderColor = categories.find(c => c.key === trendType)?.color || "#dee2e6";
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = "#f8f9fa";
@@ -354,9 +347,9 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
               borderRadius: "8px",
             }}
           >
-            이슈를 검색하여
+            카테고리를 선택하고
             <br />
-            빠르게 주제를 선정하세요
+            추천받기 버튼을 눌러보세요
           </div>
         )}
       </div>

@@ -32,9 +32,10 @@ export const AutoPilotControl: React.FC<AutoPilotControlProps> = ({
   const categories = [
     { id: "trending", label: "⚡ 실시간 이슈" },
     { id: "tech", label: "💻 IT/테크" },
-    { id: "economy", label: "📈 경제" },
+    { id: "economy", label: "📈 경제/비즈" },
+    { id: "finance", label: "🏦 금융/보험" },
     { id: "entertainment", label: "🎬 연예" },
-    { id: "life", label: "🏠 생활" },
+    { id: "life", label: "🏠 생활/정보" },
     { id: "travel", label: "✈️ 여행" },
     { id: "health", label: "🏥 건강" },
     { id: "parenting", label: "👶 육아" },
