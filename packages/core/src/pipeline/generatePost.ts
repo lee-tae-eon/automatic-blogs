@@ -209,7 +209,7 @@ export async function generatePost({
           naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
-        // ✅ [NEW v8.1] 관련 유튜브 영상 자동 검색 및 연관성 검증
+        /* ✅ [TEMP DISABLED v10.2] 유튜브 영상 소스 문제로 임시 주석 처리
         onProgress?.("🎬 관련 유튜브 영상 검색 및 검증 중...");
         const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
         let youtubeContext = "";
@@ -228,6 +228,8 @@ export async function generatePost({
             console.log(`⚠️ [YouTube] 연관성 부족으로 제외: ${title}`);
           }
         }
+        */
+        const youtubeContext = ""; // 임시 비활성화
 
         // 데이터 통합
         newsContext = `

@@ -147,7 +147,7 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
         className="manual-input-container"
         style={{
           display: "grid",
-          gridTemplateColumns: "350px 1fr",
+          gridTemplateColumns: "1fr 1fr",
           gap: "20px",
           backgroundColor: "#fff",
           borderRadius: "12px",
