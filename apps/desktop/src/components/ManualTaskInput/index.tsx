@@ -80,7 +80,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
 
   const selectTrend = (trend: TrendTopic) => {
     setTopic(trend.topic);
-    setKeywords(trend.keywords.join(", "));
+    // [v10.9] 키워드 자동 삽입 제거 - AI가 자동 산출하도록 비워둠
+    setKeywords(""); 
 
     // 추천된 페르소나와 톤이 있으면 우선 적용 (v9.0)
     if (trend.persona) {
