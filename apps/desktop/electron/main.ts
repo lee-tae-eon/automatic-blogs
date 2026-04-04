@@ -131,10 +131,11 @@ function registerIpcHandlers() {
   });
 
   // ----------------------------------------
-  // [Discovery] 추천 토픽 가져오기 (New v3.0)
+  // [Discovery] 추천 토픽 가져오기 (New v3.0, v10.7 사용자 검색어 지원)
   // ----------------------------------------
-  ipcMain.handle("fetch-recommended-topics", async (event, category: any) => {
+  ipcMain.handle("fetch-recommended-topics", async (event, { category, query }: { category: any; query?: string }) => {
     const credentials: any = store.get("user-credentials");
+    // ... (apiKey 설정 로직)
     const { geminiKey, subGemini, thirdGemini } = credentials || {};
 
     const apiKeys = [
@@ -150,9 +151,10 @@ function registerIpcHandlers() {
     let lastError: any;
     const modelVersions = [
       process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview",
-      process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3.0-flash-preview",
+      process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview",
       process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview",
       process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash",
+      process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite",
     ];
 
     for (const [idx, apiKey] of apiKeys.entries()) {
@@ -165,26 +167,21 @@ function registerIpcHandlers() {
           };
           const service = new TopicRecommendationService(client, naverConfig);
 
-          const logMsg = `🔍 [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 중...`;
+          const logMsg = `🔍 [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 중 (검색어: ${query || "없음"})...`;
           if (mainWindow) mainWindow.webContents.send("process-log", logMsg);
 
-          const data = await service.getRecommendationsByCategory(category);
+          const data = await service.getRecommendationsByCategory(category, query);
           return { success: true, data };
         } catch (error: any) {
           lastError = error;
           const errorMsg = String(error.message || error);
 
-          if (
-            errorMsg.includes("429") ||
-            errorMsg.includes("quota") ||
-            errorMsg.includes("limit")
-          ) {
-            const warnMsg = `⚠️ [추천 시스템] 키 #${idx + 1} (${modelName}) 할당량 초과. 다음 모델/키 시도...`;
-            console.warn(warnMsg);
-            if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
-            continue; // 다음 모델 시도 (안에서)
-          }
-          break; // 429 외의 에러는 해당 키의 다른 모델도 실패할 확률이 높으므로 다음 키로
+          // 할당량 초과(429) 및 기타 모든 일시적 에러에 대해 다음 모델로 계속 시도
+          const warnMsg = `⚠️ [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 실패: ${errorMsg.slice(0, 40)}... 다음 모델/키 시도`;
+          console.warn(warnMsg);
+          if (mainWindow) mainWindow.webContents.send("process-log", warnMsg);
+          
+          continue; // 429뿐만 아니라 모든 에러 발생 시 다음 모델로 넘어감
         }
       }
     }

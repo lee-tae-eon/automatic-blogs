@@ -38,12 +38,15 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
 
       if (trendType === "hollywood") {
         channel = "fetch-hollywood-trends";
+        arg = trendQuery;
       } else if (trendType === "korea") {
         channel = "fetch-korea-trends";
+        arg = trendQuery;
       } else {
         // [v9.0] 일반 카테고리 추천 (tech, economy 등)
+        // [v10.7] 검색어(trendQuery) 지원 추가
         channel = "fetch-recommended-topics";
-        arg = trendType; // trendQuery 대신 카테고리 키 전달
+        arg = { category: trendType, query: trendQuery }; 
       }
 
       const result = await window.ipcRenderer.invoke(channel, arg);

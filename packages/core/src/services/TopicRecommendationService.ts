@@ -106,14 +106,25 @@ export class TopicRecommendationService {
   /**
    * 특정 카테고리의 핫 토픽 20개를 가져옵니다.
    * [v10.0] 동적 쿼리 + 보험 카테고리 분리
+   * [v10.7] 사용자 입력 쿼리(query) 지원 추가
    */
-  async getRecommendationsByCategory(category: RecommendCategory): Promise<RecommendedTopic[]> {
+  async getRecommendationsByCategory(
+    category: RecommendCategory,
+    query?: string
+  ): Promise<RecommendedTopic[]> {
     try {
-      console.log(`📡 [TopicRec] '${CATEGORY_MAP[category]}' 동적 트렌드 수집 시작...`);
+      console.log(`📡 [TopicRec] '${CATEGORY_MAP[category]}' 트렌드 수집 시작 (검색어: ${query || "없음"})...`);
       
-      // 1. 동적 쿼리 생성
-      const dynamicQueries = await this.generateDynamicSearchQueries(category);
-      console.log(`🔍 [TopicRec] 생성된 쿼리: ${dynamicQueries.join(" | ")}`);
+      // 1. 쿼리 준비
+      let dynamicQueries: string[] = [];
+      if (query && query.trim()) {
+        // 사용자가 검색어를 입력한 경우 해당 검색어 사용
+        dynamicQueries = [query.trim()];
+      } else {
+        // 검색어가 없는 경우 AI가 동적으로 쿼리 생성
+        dynamicQueries = await this.generateDynamicSearchQueries(category);
+      }
+      console.log(`🔍 [TopicRec] 수집 대상 쿼리: ${dynamicQueries.join(" | ")}`);
 
       // 2. 데이터 수집 (Tavily + Naver)
       let combinedData = "";
