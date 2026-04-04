@@ -204,3 +204,10 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ============================================================
 🔗 발생 URL: https://www.naver.com/
 --------------------------------------------------
+
+==================================================
+[2026. 3. 31. 오후 5:06:13]
+📍 대상 포스트: 2026년 7% 고금리 시대, 월급 절반이 이자로? 몰라서 손해 볼 뻔한 가계부채 관리 전략
+❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------
