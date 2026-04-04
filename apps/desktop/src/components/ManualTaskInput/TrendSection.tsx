@@ -114,6 +114,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
               fontWeight: "bold",
               cursor: "pointer",
               whiteSpace: "nowrap",
+              flexShrink: 0, // 버튼이 압축되지 않도록 고정
               boxShadow: trendType === cat.key ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
               transition: "all 0.2s"
             }}
