@@ -8,9 +8,13 @@ trigger: always_on
 
 # 🌍 Project Global Rules: Aiden (Blog Automation)
 
+## 필수 참조
+
+@include: ../../../../../.agents/rules/global.md
+
 ## 0. Hierarchy of Rules
 
-1. 상위 프로젝트(`.agents/rules/global.md`)의 원칙을 계승하며, 이 파일은 `automatic-blogs` 프로젝트 내부의 특수한 상황에 대해 우선권을 가집니다.
+1. 상위 프로젝트(`/Users/itaeeon/Desktop/Personal/.agents/rules/global.md`)의 원칙을 계승하며, 이 파일은 `automatic-blogs` 프로젝트 내부의 특수한 상황에 대해 우선권을 가집니다.
    Inherit principles from the parent project's global rules, while this file takes precedence for specific situations within the `automatic-blogs` project.
 
 ## 1. Core Tech Stack (Aiden Standard)

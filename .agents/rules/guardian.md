@@ -10,7 +10,7 @@ trigger: always_on
 
 ## 필수 참조
 
-@includes: ./blog_global.md
+@includes: ./global.md
 
 ## 🏛️ 역할 정의 (Role Definition)
 
