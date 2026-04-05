@@ -43,6 +43,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "검증되지 않은 투자 권유, 뜬구름 잡는 담론",
       },
     },
+    visualStrategy: {
+      charts: "최소 2개 이상의 'line' 또는 'bar' 차트를 사용하여 시계열 추이나 시장 점유율을 시각화하세요.",
+      tables: "본문 중단에 기술 스펙이나 수치 데이터를 요약하는 3열 마크다운 표를 반드시 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🔮 [Insight 2026] 해당 분야의 미래 전망과 산업 파급력 분석",
+      "## 📊 [Deep-Dive] 통계 자료로 보는 핵심 변동 지표 요약",
+    ],
   },
 
   // 2. 후기성 (The Reviewer)
@@ -83,6 +91,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "관광지의 역사 등 검색하면 나오는 일반 정보",
       },
     },
+    visualStrategy: {
+      charts: "본인만의 주관적 평가 점수(기능성, 디자인, 가격 등)를 'horizontalBar' 또는 'pie' 차트로 1개 삽입하세요.",
+      tables: "본문 하단에 '장점'과 '단점'을 극명하게 대비시키는 2열 마크다운 표를 반드시 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🛠️ [Troubleshooting] 직접 겪어본 사람만 아는 돌발 상황 해결법",
+      "## 💡 [Secret-Tip] 공식 홈페이지에도 없는 200% 활용 노하우",
+    ],
   },
 
   // 3. 뉴스형 (The Reporter)
@@ -119,6 +135,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "너무 학술적이거나 지나치게 깊은 역사적 배경",
       },
     },
+    visualStrategy: {
+      charts: "온라인 커뮤니티나 SNS의 긍정/부정 여론 반응을 'pie' 또는 'doughnut' 차트로 1개 삽입하세요.",
+      tables: "이슈의 흐름을 한눈에 보는 '주요 사건 타임라인' 표를 2열(시간/내용)로 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🌐 [Netizen-Talk] 실시간 온라인 커뮤니티 반응 및 여론 온도",
+      "## 🕒 [Timeline] 사건 발생부터 현재까지의 핵심 경과 재구성",
+    ],
   },
 
   // 4. 엔터형 (The Fan/Watcher)
@@ -155,6 +179,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "제작진의 화려한 스펙 나열",
       },
     },
+    visualStrategy: {
+      charts: "출연진 화제성 지수나 시청률 추이를 'line' 차트로 1개 삽입하세요.",
+      tables: "인물 관계도나 출연진 핵심 프로필 요약 표를 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🎬 [Scene-Review] 잊지 못할 명장면 및 비하인드 스토리 분석",
+      "## 👀 [Check-Point] 다음 화를 더 재밌게 즐기기 위한 관전 포인트",
+    ],
   },
 
   // 6. 여행 가이드 (The Travel Guide)
@@ -191,6 +223,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "항공편 정보는 간략하게만",
       },
     },
+    visualStrategy: {
+      charts: "여행 경비 배분(숙박, 식비, 교통 등)을 'pie' 또는 'doughnut' 차트로 1개 삽입하세요.",
+      tables: "추천 여행 동선을 시간대별로 정리한 '타임라인 스케줄' 표를 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 📍 [Ultimate-Schedule] 실패 없는 테마별/시간대별 추천 여행 동선",
+      "## 🎒 [Must-Check] 여행 전 반드시 챙겨야 할 현지 필수 체크리스트",
+    ],
   },
 
   // 7. 재테크/금융 전문가 (The Finance Master)
@@ -227,6 +267,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "복잡한 거시경제 이론",
       },
     },
+    visualStrategy: {
+      charts: "이자 부담 변화나 예상 수익률 비교를 위해 최소 2개의 'line' 또는 'bar' 차트를 삽입하세요.",
+      tables: "본문 중단에 금융 상품/정책별 핵심 혜택 및 자격 요건 비교 표를 반드시 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🧮 [ROI-Simulator] 당신의 지갑을 지키는 현실적인 수익성 시뮬레이션",
+      "## 🚀 [Final-Action] 지금 당장 실행해야 할 경제적 자유 3단계 로드맵",
+    ],
   },
 
   // 8. 건강/의학 큐레이터 (The Health Expert)
@@ -263,6 +311,14 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
         avoidOverEmphasis: "특정 브랜드 광고",
       },
     },
+    visualStrategy: {
+      charts: "주요 영양 성분 함량이나 증상 개선 정도를 'bar' 또는 'doughnut' 차트로 1개 삽입하세요.",
+      tables: "증상별 맞춤 해결책이나 섭취 시 주의사항(부작용) 요약 표를 삽입하세요.",
+    },
+    exclusiveSections: [
+      "## 🧪 [Ingredient-Synergy] 시너지를 높이는 핵심 성분 조합 및 상충 요인 분석",
+      "## ⚠️ [Safety-First] 오남용을 막기 위해 반드시 확인해야 할 부작용 체크리스트",
+    ],
   },
 };
 

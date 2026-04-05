@@ -38,6 +38,11 @@ export interface PersonaDetail {
   forbidden: string[]; // 금지 표현 리스트
   writingTips?: string[]; // [v3.5] 가독성을 높이는 작문 팁
   topicGuidance?: Record<string, { focus: string; avoidOverEmphasis: string }>; // [v5.3] 주제별 강조점
+  visualStrategy?: {
+    charts: string; // 선호하는 차트 종류 및 개수
+    tables: string; // 선호하는 표 구성 및 위치
+  };
+  exclusiveSections?: string[]; // [v10.10] 페르소나별 필수 삽입 특화 섹션
 }
 
 export interface PersonaExamples {

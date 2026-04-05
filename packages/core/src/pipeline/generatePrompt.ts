@@ -137,6 +137,11 @@ ${
 ## 🏗️ [CRITICAL] 글의 전개 구조 (Persona Structure)
 당신은 **${personaDetail.role}**입니다. 반드시 아래 구조에 맞춰 글을 전개하세요:
 ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
+${
+  personaDetail.exclusiveSections
+    ? `\n**[페르소나 전용 특화 섹션 (필수 삽입)]**:\n${personaDetail.exclusiveSections.map((section) => `- ${section}`).join("\n")}`
+    : ""
+}
 
 **각 섹션(소제목) 작성 가이드**:
 1. **도입 소문단**: 핵심 주장 제시 (2~3문장)
@@ -150,6 +155,13 @@ ${personaDetail.structure.map((step) => `- ${step}`).join("\n")}
 
 ## 📊 데이터 시각화 및 구조화 (List, Table & Chart)
 - **리스트 최우선**: 정보형 콘텐츠에서는 서술형 문단보다 **마크다운 리스트(\`-\`)**를 최우선으로 사용하세요. 3개 이상의 항목 나열 시 반드시 리스트를 사용해야 합니다.
+${
+  personaDetail.visualStrategy
+    ? `- **[페르소나 맞춤형 시각화 전략] [ULTRA CRITICAL]**:
+  * **차트(Chart)**: ${personaDetail.visualStrategy.charts}
+  * **표(Table)**: ${personaDetail.visualStrategy.tables}`
+    : ""
+}
 - **[ULTRA CRITICAL] 차트 삽입 의무**: 수치 데이터(비교, 통계, 비율, 순위, 변동률 등)가 본문에 **1건이라도 포함**되면 반드시 **최소 1개 이상**의 **[차트: {JSON 데이터}]** 태그를 삽입해야 합니다. **차트를 삽입하지 않으면 실패로 간주합니다.**
   - **[규칙]**: 마크다운 코드 블록(\` \`\`\`json \`)으로 감싸지 마세요. 오직 \`[차트: {...}]\` 형식만 허용합니다.
   - 유형 가이드: \`bar\`(세로 비교), \`horizontalBar\`(가로 순위), \`pie\`/\`doughnut\`(비율), \`line\`(추세)
