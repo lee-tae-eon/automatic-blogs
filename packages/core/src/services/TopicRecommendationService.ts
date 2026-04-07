@@ -131,7 +131,7 @@ export class TopicRecommendationService {
 
       // ─── 2-1. Tavily 최신 뉴스 수집 ───────────────────────────────────
       const newsResults = await Promise.all(
-        dynamicQueries.map(q => this.tavilyService.searchLatestNews(q).catch(() => ({ context: "" })))
+        dynamicQueries.map(q => this.tavilyService.searchLatestNews(q, "day").catch(() => ({ context: "" })))
       );
       combinedData += newsResults.map(r => r.context).join("\n\n");
 

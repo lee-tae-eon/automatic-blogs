@@ -209,27 +209,39 @@ export async function generatePost({
           naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
-        /* ✅ [TEMP DISABLED v10.2] 유튜브 영상 소스 문제로 임시 주석 처리
-        onProgress?.("🎬 관련 유튜브 영상 검색 및 검증 중...");
-        const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
+        // ✅ [v10.11] 관련 유튜브 영상 자동 검색 및 AI 연관성 검증
+        onProgress?.("🎬 관련 유튜브 영상 검색 및 AI 검증 중...");
         let youtubeContext = "";
-        
-        if (videoInfo && videoInfo.title && videoInfo.url) {
-          const { title, url } = videoInfo;
-          // [Relevance Check] 주제의 단어가 영상 제목에 포함되어 있는지 확인 (더 완화된 체크)
-          const topicWords = cleanTopic.split(/\s+/).filter(w => w.length >= 2);
-          const isRelevant = topicWords.some(word => title.includes(word)) || 
-                             title.includes(cleanTopic.slice(0, 5));
+        try {
+          const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
           
-          if (isRelevant || true) { // 임시로 검증 통과 허용하여 동작 확인
-            youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${title}\n- URL: ${url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${url}] 태그를 독립된 줄에 삽입하세요.)`;
-            console.log(`✅ [YouTube] 검증 완료된 영상: ${title}`);
-          } else {
-            console.log(`⚠️ [YouTube] 연관성 부족으로 제외: ${title}`);
+          if (videoInfo && videoInfo.title && videoInfo.url) {
+            const { title, url } = videoInfo;
+            
+            // [AI Relevance Check] 영상 제목과 블로그 주제의 연관성을 AI가 직접 판단
+            const checkPrompt = `
+              [블로그 주제]: ${cleanTopic}
+              [유튜브 영상 제목]: ${title}
+              
+              위 유튜브 영상이 해당 블로그 주제와 밀접한 연관이 있는 유익한 영상인지 판단해줘.
+              단순히 단어가 겹치는 것을 넘어, 독자에게 도움이 되는 정보성/후기성 영상이어야 해.
+              
+              응답은 반드시 아래 JSON 형식으로만 해줘:
+              { "isRelevant": boolean, "reason": "간략한 이유" }
+            `;
+            
+            const verification = await client.generateJson<{ isRelevant: boolean; reason: string }>(checkPrompt);
+            
+            if (verification.isRelevant) {
+              youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${title}\n- URL: ${url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${url}] 태그를 독립된 줄에 삽입하세요.)`;
+              console.log(`✅ [YouTube] AI 검증 완료 (${verification.reason}): ${title}`);
+            } else {
+              console.log(`⚠️ [YouTube] AI 검증 탈락 (${verification.reason}): ${title}`);
+            }
           }
+        } catch (ytError: any) {
+          console.warn(`⚠️ [YouTube] 검색/검증 과정 중 오류 발생 (무시하고 진행): ${ytError.message}`);
         }
-        */
-        const youtubeContext = ""; // 임시 비활성화
 
         // 데이터 통합
         newsContext = `

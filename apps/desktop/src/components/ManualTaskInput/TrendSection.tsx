@@ -103,6 +103,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
             onClick={() => {
               setTrendType(cat.key);
               setTrends([]);
+              setTrendQuery(""); // [v10.12] 카테고리 변경 시 검색어 초기화
             }}
             style={{
               padding: "6px 12px",

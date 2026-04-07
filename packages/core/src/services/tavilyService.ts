@@ -8,7 +8,7 @@ export class TavilyService {
     this.apiKey = (process.env.VITE_TAVILY_API_KEY || "").trim();
   }
 
-  async searchLatestNews(query: string): Promise<{ context: string; rawResults: { name: string; url: string }[] }> {
+  async searchLatestNews(query: string, timeRange: "day" | "week" | "month" | "year" = "week"): Promise<{ context: string; rawResults: { name: string; url: string }[] }> {
     try {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
@@ -17,6 +17,7 @@ export class TavilyService {
         max_results: 3,
         include_images: false,
         include_raw_content: true, // 본문 전체 텍스트 포함
+        time_range: timeRange // [v10.12] 최신성 확보를 위한 시간 범위 추가
       });
 
       const results = response.data.results || [];
@@ -56,8 +57,9 @@ export class TavilyService {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query,
-        search_depth: "basic",
+        search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
         max_results: 8,
+        time_range: "day" // [v10.12] 최근 24시간 이내의 결과만 수집
       });
       return response.data.results;
     } catch (error) {
@@ -79,8 +81,9 @@ export class TavilyService {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query,
-        search_depth: "basic",
+        search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
         max_results: 8,
+        time_range: "day" // [v10.12] 최근 24시간 이내의 결과만 수집
       });
       return response.data.results;
     } catch (error) {
@@ -94,9 +97,8 @@ export class TavilyService {
    */
   async searchYoutubeVideo(topic: string): Promise<{ title: string; url: string } | null> {
     try {
-      // 432 에러(Unsupported Parameter/Limit)를 피하기 위해 가장 최소한의 파라미터만 사용
-      // 쿼리 내에 site:youtube.com을 넣어 도메인 제한 효과 유도
-      const query = `site:youtube.com ${topic} 관련 영상`;
+      // [v10.11] 고퀄리티 영상을 찾기 위해 쿼리 보강 (공식, 정보성 키워드 추가)
+      const query = `site:youtube.com ${topic} 공식 정보 가이드 리뷰 영상`;
       
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
