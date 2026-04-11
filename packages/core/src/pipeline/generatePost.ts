@@ -8,6 +8,7 @@ import { DbService } from "../services/dbService";
 import { analyzeTopicIntent } from "../util/autoInference";
 import { KeywordScoutService } from "../services/KeywordScoutService";
 import { ChartService } from "../services/chartService";
+import { ImageProcessorService } from "../services/ImageProcessorService";
 import { NanoBananaService, AntiGravityBridge } from "../services/NanoBananaService";
 import path from "path";
 import fs from "fs";
@@ -488,6 +489,17 @@ ${youtubeContext}
           }
           
           if (heroImagePath) {
+            // 🎨 [v11.0] AI 썸네일 제너레이터 적용
+            onProgress?.("🎨 고품질 썸네일 제작 중...");
+            const imageProcessor = new ImageProcessorService();
+            const thumbPath = await imageProcessor.generateThumbnail(heroImagePath, {
+              title: sanitizedPublication.thumbnailHook || sanitizedPublication.title,
+              category: task.category === "동적 카테고리 (계정별)" ? undefined : task.category
+            });
+            
+            // 썸네일 경로로 업데이트
+            heroImagePath = thumbPath;
+
             // 프리미엄 이미지를 찾은 경우 본문에 삽입
             const hasImageTag = /\[이미지\s*:.*?\]/i.test(sanitizedPublication.content);
             if (hasImageTag) {
@@ -498,7 +510,7 @@ ${youtubeContext}
             } else {
               sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
             }
-            console.log(`✅ [HeroImage] 프리미엄 이미지 적용 완료: ${path.basename(heroImagePath)}`);
+            console.log(`✅ [HeroImage] 썸네일 및 프리미엄 이미지 적용 완료: ${path.basename(heroImagePath)}`);
           } else {
             console.warn("⚠️ [HeroImage] 프리미엄 이미지를 확보하지 못했습니다. (수동 지정 없음 + 안티그래비티 폴더 비어있음)");
             console.log("⏭️ [HeroImage] Pexels 자동 검색으로 전환합니다.");

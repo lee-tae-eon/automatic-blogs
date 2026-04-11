@@ -109,6 +109,7 @@ export interface AiGeneratedPost {
   }[];
   imageAltTexts?: string[];
   references?: { name: string; url: string }[];
+  thumbnailHook?: string; // [v11.0] 썸네일 전용 짧고 강렬한 후킹 문구
 }
 export interface Publication extends AiGeneratedPost {
   category: string;
