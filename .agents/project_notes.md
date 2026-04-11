@@ -11,6 +11,16 @@
 - **다음 단계**:
   - v10.11 YouTube 검색 엔진 고도화 작업 지원.
 
+### 2026-04-05 | [Lead Constructor] | v11.0 AI Thumbnail Hook Generator
+- Changes: Added `thumbnailHook` property to AI Prompt (`generatePrompt.ts`) and Types (`blog.ts`). Replaced full title with the generated hook in thumbnail generation logic.
+- Result: PASSED. AI now generates CTR-optimized copy for thumbnails.
+- Next: Begin research on v11.1 Golden Keyword Scoring Engine.
+
+### 2026-04-05 | [Lead Constructor] | v10.11 & v10.12 Implementation
+- Changes: Restored YouTube logic with AI relevance check (v10.11). Implemented UI input reset on category change and added 24h time-range constraint to Tavily searches (v10.12).
+- Result: PASSED. Build is stable and features are functional.
+- Next: Final user verification of live data recency.
+
 ### 2026-04-05 | [Lead Constructor] | v10.10 Implementation
 - **상세**: `PersonaDetail` 인터페이스 확장 및 `persona.config.ts`, `generatePrompt.ts` 업데이트.
 - **결과**: 페르소나별 시각적 전략 및 전용 콘텐츠 섹션 구현 성공.
