@@ -476,31 +476,34 @@ ${youtubeContext}
         try {
           // 🚀 [v8.8] 프리미엄 이미지 확보 우선순위: 1. 수동 지정 -> 2. 안티그래비티 -> 3. Pexels 폴백
           let heroImagePath: string | null = null;
+          let isPhotographic = false; // 실사 이미지 여부
 
-          // 1단계: 사용자가 직접 경로를 입력한 경우 (최우선)
+          // 1단계: 사용자가 직접 경로를 입력한 경우
           if (task.heroImagePath && fs.existsSync(task.heroImagePath)) {
-            console.log(`✅ [HeroImage] 사용자가 직접 지정한 경로를 사용합니다: ${task.heroImagePath}`);
             heroImagePath = task.heroImagePath;
+            isPhotographic = !path.basename(heroImagePath).startsWith("chart_");
           } 
           // 2단계: 안티그래비티 폴더에서 최신 이미지 검색
           else {
-            console.log(`🔍 [HeroImage] 안티그래비티 폴더에서 이미지를 확인합니다...`);
             heroImagePath = await antiGravity.getLatestDynamicImage();
+            if (heroImagePath) isPhotographic = !path.basename(heroImagePath).startsWith("chart_");
+          }
+
+          // [v11.1] 썸네일용 실사 이미지가 없으면 Pexels에서 강제 확보
+          if (!heroImagePath || !isPhotographic) {
+            console.log("🔍 [HeroImage] 실사 이미지가 없어 Pexels에서 썸네일용 배경을 검색합니다...");
+            const pexels = new PexelsService();
+            // 주제에서 앞의 2~3단어를 키워드로 사용
+            const searchKeyword = task.topic.split(/\s+/).slice(0, 3).join(" ");
+            const downloaded = await pexels.downloadImage(searchKeyword, saveDir);
+            if (downloaded) {
+              heroImagePath = downloaded;
+              isPhotographic = true;
+            }
           }
           
-          if (heroImagePath) {
-            // 🎨 [v11.0] AI 썸네일 제너레이터 적용
-            onProgress?.("🎨 고품질 썸네일 제작 중...");
-            const imageProcessor = new ImageProcessorService();
-            const thumbPath = await imageProcessor.generateThumbnail(heroImagePath, {
-              title: sanitizedPublication.thumbnailHook || sanitizedPublication.title,
-              category: task.category === "동적 카테고리 (계정별)" ? undefined : task.category
-            });
-            
-            // 썸네일 경로로 업데이트
-            heroImagePath = thumbPath;
-
-            // 프리미엄 이미지를 찾은 경우 본문에 삽입
+          if (heroImagePath && isPhotographic) {
+            // [v11.0 보류] 썸네일 합성 임시 중단 - 사용자의 전용 심볼/캐리커처 이미지를 기본으로 사용하기 위함
             const hasImageTag = /\[이미지\s*:.*?\]/i.test(sanitizedPublication.content);
             if (hasImageTag) {
               sanitizedPublication.content = sanitizedPublication.content.replace(
@@ -510,10 +513,10 @@ ${youtubeContext}
             } else {
               sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
             }
-            console.log(`✅ [HeroImage] 썸네일 및 프리미엄 이미지 적용 완료: ${path.basename(heroImagePath)}`);
-          } else {
-            console.warn("⚠️ [HeroImage] 프리미엄 이미지를 확보하지 못했습니다. (수동 지정 없음 + 안티그래비티 폴더 비어있음)");
-            console.log("⏭️ [HeroImage] Pexels 자동 검색으로 전환합니다.");
+            console.log(`✅ [HeroImage] 프리미엄 이미지 적용 완료: ${path.basename(heroImagePath)}`);
+          } else if (heroImagePath) {
+            // 그래프 이미지 등은 텍스트 없이 그대로 삽입
+            sanitizedPublication.content = `[프리미엄이미지: ${heroImagePath}]\n\n${sanitizedPublication.content}`;
           }
         } catch (e) {
           console.error("❌ [HeroImage] 프리미엄 이미지 전략 실행 중 오류:", e);

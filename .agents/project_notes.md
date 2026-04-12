@@ -11,6 +11,10 @@
 - **다음 단계**:
   - v10.11 YouTube 검색 엔진 고도화 작업 지원.
 
+### 2026-04-05 | [Lead Constructor] | v11.1 Q&A Fix & Revert Thumbnail Hook
+- Changes: Reverted `thumbnailHook` logic in `generatePrompt.ts` and `generatePost.ts` to accommodate custom blog hero images (caricatures). Added strict prompt rules preventing line breaks after the 'A.' prefix in Q&A sections.
+- Result: PASSED. AI Q&A formats correctly, and the image pipeline uses raw images as the premium hero image without overlay text.
+
 ### 2026-04-05 | [Lead Constructor] | v11.0 AI Thumbnail Hook Generator
 - Changes: Added `thumbnailHook` property to AI Prompt (`generatePrompt.ts`) and Types (`blog.ts`). Replaced full title with the generated hook in thumbnail generation logic.
 - Result: PASSED. AI now generates CTR-optimized copy for thumbnails.
