@@ -34,6 +34,9 @@ export const TrendDiscovery: React.FC<TrendDiscoveryProps> = (props) => {
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+        maxHeight: "550px", // [v11.3] 전체 높이 제한 추가
+        display: "flex",
+        flexDirection: "column"
       }}
     >
       {/* 장식용 배경 요소 */}
@@ -67,7 +70,7 @@ export const TrendDiscovery: React.FC<TrendDiscoveryProps> = (props) => {
         </div>
       </div>
 
-      <div style={{ minHeight: "350px", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         <TrendSection {...props} />
       </div>
 
