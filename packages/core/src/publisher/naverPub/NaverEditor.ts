@@ -280,6 +280,32 @@ export class NaverEditor {
             await this.page.keyboard.press("Enter");
             break;
 
+          case "thumbnail_only":
+            if (block.path && fs.existsSync(block.path)) {
+              console.log("🎨 [ThumbnailOnly] 대표 이미지 전용 업로드 시작...");
+              await this.page.keyboard.press("Enter");
+              await this.uploadImage(this.page, block.path);
+              await this.page.waitForTimeout(2000); // 업로드 및 렌더링 대기
+              
+              // [v11.1] 대표 이미지로 지정 시도 (첫 번째 이미지면 자동으로 대표가 되기도 하지만 명시적 처리)
+              try {
+                // 이미지 블록 선택 및 대표 버튼 클릭 (네이버 에디터 내부 구조 대응)
+                await this.page.keyboard.press("ArrowUp");
+                await this.page.waitForTimeout(300);
+                // '대표' 버튼 클릭 (텍스트 기반)
+                const heroButton = await this.page.$("button:has-text('대표')");
+                if (heroButton) await heroButton.click();
+                
+                // 본문에서 삭제 (백스페이스)
+                await this.page.keyboard.press("Backspace");
+                console.log("✅ [ThumbnailOnly] 대표 설정 후 본문에서 제거 완료");
+              } catch (e) {
+                console.warn("⚠️ [ThumbnailOnly] 대표 버튼 클릭 실패 (수동 설정 권장):", e);
+              }
+              await this.page.keyboard.press("ArrowDown");
+            }
+            break;
+
           case "direct_image":
             if (block.path && fs.existsSync(block.path)) {
               await this.page.keyboard.press("Enter");
@@ -432,6 +458,13 @@ export class NaverEditor {
       const rawHtml = $el.html() || "";
 
       // 1. 이미지 태그 처리
+      const thumbnailOnlyRegex = /\[썸네일전용\s*:\s*(.*?)\]/i;
+      const thumbnailMatch = textContent.match(thumbnailOnlyRegex);
+      if (thumbnailMatch) {
+        blocks.push({ type: "thumbnail_only", path: thumbnailMatch[1].trim() });
+        return;
+      }
+
       const premiumImageRegex = /\[프리미엄이미지\s*:\s*(.*?)\]/i;
       const premiumMatch = textContent.match(premiumImageRegex);
       if (premiumMatch) {
