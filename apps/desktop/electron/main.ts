@@ -165,7 +165,14 @@ function registerIpcHandlers() {
             clientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
             clientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
           };
-          const service = new TopicRecommendationService(client, naverConfig);
+          const scoutConfig = {
+            searchClientId: process.env.VITE_NAVER_SEARCH_API_CLIENT || "",
+            searchClientSecret: process.env.VITE_NAVER_SEARCH_API_KEY || "",
+            adLicense: process.env.VITE_NAVER_SEARCH_AD_API_LICENSE || "",
+            adSecret: process.env.VITE_NAVER_SEARCH_AD_API_KEY || "",
+            adCustomerId: process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
+          };
+          const service = new TopicRecommendationService(client, naverConfig, scoutConfig);
 
           const logMsg = `🔍 [추천 시스템] 키 #${idx + 1} (${modelName}) 시도 중 (검색어: ${query || "없음"})...`;
           if (mainWindow) mainWindow.webContents.send("process-log", logMsg);

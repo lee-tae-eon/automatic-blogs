@@ -2,6 +2,7 @@ import { GeminiClient } from "../ai/geminiClient";
 import { RssService } from "./RssService";
 import { TavilyService } from "./tavilyService";
 import { NaverSearchService, NaverSearchConfig } from "./naverSearchService";
+import { KeywordScoutService, ScoutConfig } from "./KeywordScoutService";
 
 export interface RecommendedTopic {
   keyword: string;
@@ -11,6 +12,9 @@ export interface RecommendedTopic {
   hotness: number; // 1-100
   persona?: string; // 추천 페르소나 (v9.0)
   tone?: string;    // 추천 톤 (v9.0)
+  goldenScore?: number;      // [v11.4] 황금키워드 점수
+  searchVolume?: number;     // [v11.4] 월간 검색량
+  competitionIndex?: number; // [v11.4] 경쟁 지수
 }
 
 export type RecommendCategory = "trending" | "tech" | "economy" | "finance" | "entertainment" | "life" | "travel" | "health" | "parenting";
@@ -44,14 +48,20 @@ export class TopicRecommendationService {
   private rssService = new RssService();
   private tavilyService = new TavilyService();
   private naverSearchService?: NaverSearchService;
+  private keywordScoutService?: KeywordScoutService;
 
   constructor(
     private aiClient: GeminiClient,
-    naverConfig?: NaverSearchConfig
+    naverConfig?: NaverSearchConfig,
+    scoutConfig?: ScoutConfig
   ) {
     if (naverConfig && naverConfig.clientId && naverConfig.clientSecret) {
       this.naverSearchService = new NaverSearchService(naverConfig);
       console.log("✅ [TopicRec] 네이버 블로그 검색 연동 활성화");
+    }
+    if (scoutConfig) {
+      this.keywordScoutService = new KeywordScoutService(scoutConfig);
+      console.log("✅ [TopicRec] 황금키워드 스코어링 엔진 활성화");
     }
   }
 
@@ -192,11 +202,39 @@ export class TopicRecommendationService {
 
       const curated = await this.aiClient.generateJson<any[]>(prompt);
       
-      return curated.map(item => ({
+      const topics: RecommendedTopic[] = curated.map(item => ({
         ...item,
         category: CATEGORY_MAP[category],
         source: "AI Curated (Dynamic Multi-Source)",
       }));
+
+      // [v11.4] 황금키워드 스코어링 적용
+      if (this.keywordScoutService) {
+        console.log(`📊 [TopicRec] ${topics.length}개 토픽에 대해 황금키워드 분석 시작...`);
+        
+        // 병렬 분석 실행 (API 부하를 고려하여 순차적 병렬 처리 등 고려 가능하나 일단 단순 병렬)
+        const analyzedTopics = await Promise.all(
+          topics.map(async (topic) => {
+            try {
+              const analysis = await this.keywordScoutService!.analyzeKeyword(topic.keyword);
+              return {
+                ...topic,
+                goldenScore: analysis.score,
+                searchVolume: analysis.totalSearchCnt,
+                competitionIndex: analysis.competitionIndex
+              };
+            } catch (err) {
+              console.warn(`⚠️ [TopicRec] '${topic.keyword}' 분석 실패:`, err);
+              return topic;
+            }
+          })
+        );
+
+        // 점수순으로 정렬하여 반환
+        return analyzedTopics.sort((a, b) => (b.goldenScore || 0) - (a.goldenScore || 0));
+      }
+      
+      return topics;
 
     } catch (error) {
       console.error(`❌ [TopicRec] ${category} 추천 생성 실패:`, error);

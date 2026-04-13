@@ -7,6 +7,9 @@ export interface TrendTopic {
   keywords: string[];
   persona?: Persona;
   tone?: Tone;
+  goldenScore?: number;      // [v11.4]
+  searchVolume?: number;     // [v11.4]
+  competitionIndex?: number; // [v11.4]
 }
 
 export type TrendCategory = 
@@ -266,6 +269,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
                   borderRadius: "8px",
                   cursor: "pointer",
                   transition: "all 0.2s",
+                  position: "relative"
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = "#f1f3f5";
@@ -276,16 +280,41 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
                   e.currentTarget.style.borderColor = "#e9ecef";
                 }}
               >
-                <strong
-                  style={{
-                    fontSize: "0.9rem",
-                    display: "block",
-                    marginBottom: "4px",
-                    color: "#2d3436",
-                  }}
-                >
-                  {t.topic}
-                </strong>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+                  <strong
+                    style={{
+                      fontSize: "0.9rem",
+                      color: "#2d3436",
+                      flex: 1,
+                      paddingRight: "10px"
+                    }}
+                  >
+                    {t.topic}
+                  </strong>
+                  
+                  {/* [v11.4] 황금 점수 배지 */}
+                  {t.goldenScore !== undefined && (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+                      <span style={{ 
+                        fontSize: "0.7rem", 
+                        padding: "2px 6px", 
+                        borderRadius: "4px", 
+                        backgroundColor: t.goldenScore >= 70 ? "#dcfce7" : t.goldenScore >= 40 ? "#fff9db" : "#fff5f5",
+                        color: t.goldenScore >= 70 ? "#166534" : t.goldenScore >= 40 ? "#f08c00" : "#c92a2a",
+                        fontWeight: "bold",
+                        whiteSpace: "nowrap"
+                      }}>
+                        ✨ {t.goldenScore}점
+                      </span>
+                      {t.searchVolume !== undefined && (
+                        <span style={{ fontSize: "0.6rem", color: "#868e96" }}>
+                          🔍 {t.searchVolume.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {(t.persona || t.tone) && (
                   <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
                     {t.persona && (

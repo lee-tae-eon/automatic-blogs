@@ -62,10 +62,18 @@ export const App: React.FC = () => {
             keywords: [item.keyword],
             persona: item.persona,
             tone: item.tone,
+            goldenScore: item.goldenScore,
+            searchVolume: item.searchVolume,
+            competitionIndex: item.competitionIndex
           }));
           setTrends(formatted);
         } else {
-          setTrends(result.data);
+          // 헐리우드/한국 트렌드도 필드가 있으면 포함
+          setTrends(result.data.map((item: any) => ({
+            ...item,
+            goldenScore: item.goldenScore,
+            searchVolume: item.searchVolume
+          })));
         }
       } else {
         alert("트렌드를 가져오지 못했습니다: " + (result?.error || "알 수 없는 오류"));
