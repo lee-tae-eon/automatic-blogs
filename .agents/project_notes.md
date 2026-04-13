@@ -2,6 +2,11 @@
 
 ## 📅 Dev Logs (Reverse Chronological Order)
 
+### 2026-04-14 | [Lead Constructor] | v11.4 Golden Keyword Scoring Engine
+- Changes: Integrated `KeywordScoutService` with `TopicRecommendationService`. Now fetches real-time PC/Mobile search volume and blog post count for every curated topic. Added `goldenScore`, `searchVolume`, and `competitionIndex` fields.
+- Result: PASSED. AI-recommended topics are automatically ranked by their inflow probability. UI displays 점수(Score) and 검색량(Volume) badges for data-driven topic selection.
+- Next: Final system audit and roadmap for Phase 12 (Multi-platform & Scaling).
+
 ### 2026-04-13 | [Lead Constructor] | v11.3 TrendDiscovery Scroll Layout Fix
 - **상세**: `TrendDiscovery` 컴포넌트에 `maxHeight: "550px"` 및 `flex: 1`을 적용하여 내부 스크롤 활성화.
 - **결과**: 검색 결과가 많아져도 메인 페이지가 길어지지 않고 박스 내에서 스크롤 가능해짐 (UI 안정성 확보).
