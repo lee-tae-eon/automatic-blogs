@@ -11,6 +11,16 @@
 - **다음 단계**:
   - v10.11 YouTube 검색 엔진 고도화 작업 지원.
 
+### 2026-04-12 | [Lead Constructor] | v11.3 TrendDiscovery Scroll Layout Fix
+- Changes: Applied `maxHeight: "550px"` and `flex: 1` to `TrendDiscovery` component. 
+- Result: PASSED. Trend search results now scroll within the box, preventing the main page from becoming excessively long.
+- Next: Implement v11.4 Golden Keyword Scoring Engine.
+
+### 2026-04-12 | [Lead Constructor] | v11.2 UI Consolidation & Layout Optimization
+- Changes: Removed legacy `AutoPilotControl`. Created `TrendDiscovery` component by lifting trend states to `App.tsx`. Integrated `TrendDiscovery` at the top level for a streamlined UX. Removed trend section from `ManualTaskInput`.
+- Result: PASSED. UI is much cleaner, and data flow between trend selection and form input is seamless. Passed TypeScript check.
+- Next: Implement v11.3 Golden Keyword Scoring Engine using Naver Search AD API.
+
 ### 2026-04-05 | [Lead Constructor] | v11.1 Q&A Fix & Revert Thumbnail Hook
 - Changes: Reverted `thumbnailHook` logic in `generatePrompt.ts` and `generatePost.ts` to accommodate custom blog hero images (caricatures). Added strict prompt rules preventing line breaks after the 'A.' prefix in Q&A sections.
 - Result: PASSED. AI Q&A formats correctly, and the image pipeline uses raw images as the premium hero image without overlay text.
