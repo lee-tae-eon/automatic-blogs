@@ -2,6 +2,11 @@
 
 ## 📅 Dev Logs (Reverse Chronological Order)
 
+### 2026-04-14 | [Lead Constructor] | v11.6 Trend Diversity & Recency Enhancement
+- Changes: Updated `TopicRecommendationService` to include HH:MM in dynamic queries. Strengthened AI curation instructions to ensure topic allocation across at least 5 different sub-fields (politics, tech, entertainment, etc.).
+- Result: PASSED. Real-time trend results are now more varied and focused on the latest breaking news, preventing repetitive outputs.
+- Next: Phase 11 final audit.
+
 ### 2026-04-14 | [Lead Constructor] | v11.5 TrendSection Layout Stability Fix
 - Changes: Applied `flexShrink: 0` to the category tabs and search input containers in `TrendSection.tsx`.
 - Result: PASSED. The category selection area now maintains its fixed size and does not shrink when the search results list expands.
