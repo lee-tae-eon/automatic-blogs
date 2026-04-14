@@ -2,6 +2,11 @@
 
 ## 📅 Dev Logs (Reverse Chronological Order)
 
+### 2026-04-14 | [Lead Constructor] | v11.5 TrendSection Layout Stability Fix
+- Changes: Applied `flexShrink: 0` to the category tabs and search input containers in `TrendSection.tsx`.
+- Result: PASSED. The category selection area now maintains its fixed size and does not shrink when the search results list expands.
+- Next: Final Phase 11 audit.
+
 ### 2026-04-14 | [Lead Constructor] | v11.4 Golden Keyword Scoring Engine
 - Changes: Integrated `KeywordScoutService` with `TopicRecommendationService`. Now fetches real-time PC/Mobile search volume and blog post count for every curated topic. Added `goldenScore`, `searchVolume`, and `competitionIndex` fields.
 - Result: PASSED. AI-recommended topics are automatically ranked by their inflow probability. UI displays 점수(Score) and 검색량(Volume) badges for data-driven topic selection.

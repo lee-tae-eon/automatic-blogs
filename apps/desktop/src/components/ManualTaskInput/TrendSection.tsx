@@ -88,8 +88,9 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
           padding: "4px",
           overflowX: "auto",
           gap: "4px",
-          scrollbarWidth: "none", // Firefox
-          msOverflowStyle: "none", // IE
+          scrollbarWidth: "none", 
+          msOverflowStyle: "none",
+          flexShrink: 0, // [v11.5] 영역 압축 방지
         }}
         className="hide-scrollbar"
       >
@@ -106,7 +107,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
             onClick={() => {
               setTrendType(cat.key);
               setTrends([]);
-              setTrendQuery(""); // [v10.12] 카테고리 변경 시 검색어 초기화
+              setTrendQuery(""); 
             }}
             style={{
               padding: "6px 12px",
@@ -118,7 +119,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
               fontWeight: "bold",
               cursor: "pointer",
               whiteSpace: "nowrap",
-              flexShrink: 0, // 버튼이 압축되지 않도록 고정
+              flexShrink: 0, 
               boxShadow: trendType === cat.key ? "0 2px 4px rgba(0,0,0,0.05)" : "none",
               transition: "all 0.2s"
             }}
@@ -128,7 +129,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
         ))}
       </div>
 
-      <div style={{ marginBottom: "15px" }}>
+      <div style={{ marginBottom: "15px", flexShrink: 0 }}>
         <h3
           style={{
             margin: "0 0 10px 0",
