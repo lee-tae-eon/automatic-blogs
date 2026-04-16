@@ -171,9 +171,14 @@ export async function generatePost({
       const dbPath = projectRoot || process.cwd();
       const db = new DbService(dbPath);
 
-      // ✅ [v5.2] 내부 링크(Internal Linking) 추천 데이터 확보
-      // 현재 분석된 세만틱 키워드를 기반으로 과거 포스팅 조회
-      const internalLinks = db.getRelatedPosts(semanticKeywords, 5); // ✅ [v5.3] SEO: 내부 링크 최대 5개로 확장
+      // ✅ [v5.2.2] 계정별 내부 링크 격리 (Account Isolation)
+      // 카테고리에 따른 네이버 계정 매핑
+      const targetAccount = task.category === "이슈슈" 
+        ? "prettyhihihi@naver.com" 
+        : "eongon@naver.com";
+
+      // 현재 분석된 세만틱 키워드 + 현재 계정 정보를 기반으로 과거 포스팅 조회
+      const internalLinks = db.getRelatedPosts(semanticKeywords, 5, targetAccount); // ✅ [v5.3] SEO: 내부 링크 최대 5개로 확장
       if (internalLinks && internalLinks.length > 0) {
         inputParams.internalLinkSuggestions = internalLinks;
         console.log(

@@ -36,9 +36,11 @@ export class NaverPublisher implements IBlogPublisher {
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
   private db: DbService;
+  private naverId: string; // ✅ [v5.2.2] 계정 식별자 추가
 
   constructor(customProjectRoot?: string, userId: string = "default") {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
+    this.naverId = userId; // ✅ [v5.2.2]
     // 유저별로 별도의 인증 디렉토리 설정
     this.userDataDir = path.join(this.projectRoot, `.auth/naver_${userId}`);
     this.db = new DbService(this.projectRoot);
@@ -435,9 +437,9 @@ export class NaverPublisher implements IBlogPublisher {
       const publicationManager = new NaverPublicationManager(page);
       const publishedUrl = await publicationManager.publish(tags, category);
 
-      // ✅ [v5.2] 발행 성공 정보 DB 저장
+      // ✅ [v5.2.2] 발행 성공 정보 DB 저장 (계정 정보 포함)
       if (publishedUrl) {
-        this.db.savePublishedPost(title, publishedUrl, tags, category || "");
+        this.db.savePublishedPost(title, publishedUrl, tags, category || "", this.naverId);
       }
 
       onProgress?.("블로그 발행 완료");

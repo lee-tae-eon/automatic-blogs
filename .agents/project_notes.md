@@ -2,6 +2,15 @@
 
 ## 📅 Dev Logs (Reverse Chronological Order)
 
+### 2026-04-15 | [Lead Constructor] | v11.7 Account-based Data Isolation & Internal Linking
+- Changes: 
+  - Added `account` column to `published_posts` table in SQLite.
+  - Updated `IStorage`, `SqliteStorage`, and `DbService` to support account-specific filtering.
+  - Refined `generatePost.ts` to fetch internal links only from the current account's history (mapped by category).
+  - Synchronized `NaverPublisher` to store the active Naver ID during publication.
+- Result: PASSED. Multi-account operations now maintain separate internal link structures, preventing cross-account link contamination.
+- Next: Final Phase 11 audit and UI history tab implementation.
+
 ### 2026-04-14 | [Lead Constructor] | v11.6 Trend Diversity & Recency Enhancement
 - Changes: Updated `TopicRecommendationService` to include HH:MM in dynamic queries. Strengthened AI curation instructions to ensure topic allocation across at least 5 different sub-fields (politics, tech, entertainment, etc.).
 - Result: PASSED. Real-time trend results are now more varied and focused on the latest breaking news, preventing repetitive outputs.

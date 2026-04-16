@@ -56,30 +56,37 @@ export class SqliteStorage implements IStorage {
   }
 
   // ✅ [v5.2] 발행 성공 정보 저장
-  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = ""): void {
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = ""): void {
     const stmt = this.db.prepare(`
-      INSERT OR IGNORE INTO published_posts (title, url, keywords, category)
-      VALUES (?, ?, ?, ?)
+      INSERT OR IGNORE INTO published_posts (title, url, keywords, category, account)
+      VALUES (?, ?, ?, ?, ?)
     `);
-    stmt.run(title, url, keywords.join(","), category);
+    stmt.run(title, url, keywords.join(","), category, account);
   }
 
-  // ✅ [v5.2] 연관 포스팅 검색 (키워드 기반)
-  getRelatedPosts(queryKeywords: string[], limit: number = 2): { title: string; url: string }[] {
+  // ✅ [v5.2] 연관 포스팅 검색 (키워드 기반 + 계정 필터링)
+  getRelatedPosts(queryKeywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
     if (!queryKeywords || queryKeywords.length === 0) return [];
     
-    // 키워드가 하나라도 포함된 포스팅 검색
-    const conditions = queryKeywords.map(() => "keywords LIKE ?").join(" OR ");
-    const params = queryKeywords.map(k => `%${k}%`);
-    
-    const stmt = this.db.prepare(`
+    // 키워드 조건 구성
+    const keywordConditions = queryKeywords.map(() => "keywords LIKE ?").join(" OR ");
+    let query = `
       SELECT DISTINCT title, url FROM published_posts
-      WHERE ${conditions}
-      ORDER BY published_at DESC
-      LIMIT ?
-    `);
+      WHERE (${keywordConditions})
+    `;
+    const params: any[] = queryKeywords.map(k => `%${k}%`);
+
+    // 계정 필터링 추가
+    if (account) {
+      query += ` AND account = ?`;
+      params.push(account);
+    }
+
+    query += ` ORDER BY published_at DESC LIMIT ?`;
+    params.push(limit);
     
-    return stmt.all(...params, limit) as { title: string; url: string }[];
+    const stmt = this.db.prepare(query);
+    return stmt.all(...params) as { title: string; url: string }[];
   }
 
   saveNews(topic: string, content: string, references: { name: string; url: string }[]): void {

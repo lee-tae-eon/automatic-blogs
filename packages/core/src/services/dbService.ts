@@ -40,12 +40,12 @@ export class DbService implements IStorage {
     return this.storage.getCachedPost(topic, persona, tone);
   }
 
-  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = ""): void {
-    this.storage.savePublishedPost(title, url, keywords, category);
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = ""): void {
+    this.storage.savePublishedPost(title, url, keywords, category, account);
   }
 
-  getRelatedPosts(keywords: string[], limit: number = 2): { title: string; url: string }[] {
-    return this.storage.getRelatedPosts(keywords, limit);
+  getRelatedPosts(keywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
+    return this.storage.getRelatedPosts(keywords, limit, account);
   }
 
   close(): void {

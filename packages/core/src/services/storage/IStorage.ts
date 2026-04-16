@@ -39,12 +39,12 @@ export interface IStorage {
   /**
    * ✅ [v5.2] 발행된 포스트 정보 저장
    */
-  savePublishedPost(title: string, url: string, keywords: string[], category: string): void;
+  savePublishedPost(title: string, url: string, keywords: string[], category: string, account?: string): void;
 
   /**
    * ✅ [v5.2] 연관된 포스트 추천 조회
    */
-  getRelatedPosts(keywords: string[], limit?: number): { title: string; url: string }[];
+  getRelatedPosts(keywords: string[], limit?: number, account?: string): { title: string; url: string }[];
 
   /**
    * 연결 종료

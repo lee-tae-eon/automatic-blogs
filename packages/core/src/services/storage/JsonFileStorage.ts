@@ -82,11 +82,11 @@ export class JsonFileStorage implements IStorage {
     return this.data.posts[key]?.content || null;
   }
 
-  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = ""): void {
-    // JSON 저장소는 구현 생략
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = ""): void {
+    // JSON 저장소는 구현 생략 (SQLite 우선)
   }
 
-  getRelatedPosts(keywords: string[], limit: number = 2): { title: string; url: string }[] {
+  getRelatedPosts(keywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
     return [];
   }
 
