@@ -38,7 +38,7 @@ const NAVER_BLOG_QUERIES: Record<RecommendCategory, string> = {
   economy: "비즈니스 산업 동향 뉴스",
   finance: "재테크 경제 금융 투자 보험",
   entertainment: "연예 드라마 방송 핫이슈",
-  life: "생활정보 꿀팁",
+  life: "생활정보 꿀팁 정부지원금 장려금 혜택",
   travel: "해외여행 국내여행 추천여행지",
   health: "건강관리 의료 웰빙",
   parenting: "육아 아이 교육",
@@ -68,30 +68,40 @@ export class TopicRecommendationService {
   /**
    * 동적 검색 쿼리를 생성합니다. (v10.0)
    * 매번 다른 주제를 탐색하기 위해 AI가 검색어를 제안합니다.
+   * [v11.5] 사용자 입력(userQuery)이 있을 경우 해당 맥락을 반영하도록 강화
    */
-  private async generateDynamicSearchQueries(category: RecommendCategory): Promise<string[]> {
+  private async generateDynamicSearchQueries(category: RecommendCategory, userQuery?: string): Promise<string[]> {
     const now = new Date();
-    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}`; // [v11.6] 시/분 추가로 최신성 강화
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
     const categoryName = CATEGORY_MAP[category];
 
     const prompt = `
       당신은 블로그 트렌드 분석가입니다. 현재 시각은 **${dateStr}**입니다.
       '**${categoryName}**' 카테고리에 대해, **지금 이 순간** 가장 유입이 폭발할만한 구체적인 검색어 3개를 생성하세요.
 
+      ${userQuery ? `[사용자 집중 키워드]: "${userQuery}"
+      위 키워드와 관련된 구체적인 하위 주제나 연관 트렌드 위주로 검색어를 생성하세요. 절대 주제와 상관없는 나물, 벚꽃 같은 계절 이슈로 이탈하지 마세요.` : ""}
+
       [제약 조건]:
-      1. **최신성 극대화**: 방금 발생한 뉴스, 오늘 오전/오후의 핫이슈, 현재 실시간 검색량이 급증하는 주제를 반영하세요.
-      2. **다양성**: 매번 비슷한 결과가 나오지 않도록, 3개의 쿼리는 완전히 다른 분야(예: 정치, 사회, 연예, 스포츠 중 무작위 조합)여야 합니다.
-      3. **보험/금융 배제 (중요)**: 만약 카테고리가 '금융/재테크/보험'이 **아니라면**, 절대 보험이나 대출 관련 쿼리를 생성하지 마세요.
+      1. **주제 일치성 (CRITICAL)**: 사용자 집중 키워드가 제공된 경우, 반드시 해당 주제의 범주 내에서만 쿼리를 생성하세요. (예: '장려금' 입력 시 -> 근로장려금 신청, 자녀장려금 자격, 지역별 지원금 등)
+      2. **최신성 극대화**: 방금 발생한 뉴스, 오늘 오전/오후의 핫이슈를 반영하세요.
+      3. **보험/금융 배제**: 만약 카테고리가 '금융/재테크/보험'이 아니라면, 절대 보험이나 대출 관련 쿼리를 생성하지 마세요.
       4. **형식**: 오직 검색어만 쉼표로 구분하여 출력하세요.
     `;
 
     try {
       const response = await this.aiClient.generateText(prompt);
       const queries = response.split(",").map(q => q.trim()).filter(q => q.length > 0);
-      return queries.length > 0 ? queries : [NAVER_BLOG_QUERIES[category]];
+      
+      // 사용자 쿼리가 있다면 첫 번째는 무조건 포함
+      if (userQuery && !queries.includes(userQuery)) {
+        queries.unshift(userQuery);
+      }
+      
+      return queries.length > 0 ? queries.slice(0, 3) : [userQuery || NAVER_BLOG_QUERIES[category]];
     } catch (e) {
       console.error("⚠️ [TopicRec] 동적 쿼리 생성 실패, 기본값 사용");
-      return [NAVER_BLOG_QUERIES[category]];
+      return [userQuery || NAVER_BLOG_QUERIES[category]];
     }
   }
 
@@ -126,8 +136,8 @@ export class TopicRecommendationService {
       // 1. 쿼리 준비
       let dynamicQueries: string[] = [];
       if (query && query.trim()) {
-        // 사용자가 검색어를 입력한 경우 해당 검색어 사용
-        dynamicQueries = [query.trim()];
+        // 사용자가 검색어를 입력한 경우 AI가 해당 맥락을 반영하여 쿼리 확장
+        dynamicQueries = await this.generateDynamicSearchQueries(category, query.trim());
       } else {
         // 검색어가 없는 경우 AI가 동적으로 쿼리 생성
         dynamicQueries = await this.generateDynamicSearchQueries(category);
@@ -177,13 +187,17 @@ export class TopicRecommendationService {
         [수집된 데이터]:
         ${combinedData}
 
+        ${query ? `[사용자 집중 키워드]: "${query}"
+        **중요**: 모든 추천 토픽은 반드시 "${query}"와(과) 직접적으로 연관된 주제여야 합니다. 
+        데이터에 있더라도 나물, 벚꽃, 연예인 소식 등 "${query}"와 관계없는 내용은 절대 추천하지 마세요.` : ""}
+
         [선정 지침 - 절대 준수]:
-        1. **보험/금융 엄격 분리 (CRITICAL)**:
-           - 현재 카테고리가 '**금융/재테크/보험**'이 **아니라면**, 절대 금융 상품 관련 주제를 포함하지 마세요.
-        2. **초단위 최신성**: 검색 데이터 중 **가장 최근에 발생한(방금 올라온)** 뉴스나 화젯거리를 최우선으로 선정하세요.
-        3. **극강의 다양성 (Anti-Repetition)**: 매번 비슷한 결과가 나오지 않도록 하세요. 정치, 사회, 경제, 테크, 스포츠, 문화 등 최소 5가지 이상의 서로 다른 하위 분야에서 토픽을 골고루 배분하세요.
-        4. **유입 잠재력**: 검색량이 급증하고 있거나, 커뮤니티에서 갑자기 화제가 된 '불타는 감자' 같은 주제를 찾으세요.
-        5. **이유 명시**: 선정 이유에 '왜 지금 이 주제가 유입이 잘 될지' 분석적인 내용을 포함하세요.
+        1. **주제 일관성 (URGENT)**: 사용자 집중 키워드("${query || "없음"}")가 있다면, 그 범위를 절대 벗어나지 마세요. 
+           - 예: '장려금' 입력 시 -> 근로장려금, 자녀장려금, 환급금, 지자체 지원금 등만 추천.
+        2. **보험/금융 엄격 분리**: 현재 카테고리가 '금융/재테크/보험'이 아니라면, 금융 상품 관련 주제를 포함하지 마세요. (단, 정부 지원금/장려금은 생활/정보 카테고리 허용)
+        3. **초단위 최신성**: 검색 데이터 중 가장 최근에 발생한 뉴스를 최우선으로 선정하세요.
+        4. **극강의 다양성**: 동일 주제 내에서도 신청방법, 자격요건, 후기, 지급일 등 다양한 관점으로 배분하세요.
+        5. **이유 명시**: '왜 지금 이 주제가 유입이 잘 될지' 분석적인 내용을 포함하세요.
 
         [출력 형식]: 반드시 아래 JSON 배열 형식으로만 응답하세요.
         [

@@ -94,42 +94,46 @@ export class TavilyService {
 
   /**
    * 주제와 관련된 최신/인기 유튜브 영상 정보를 검색합니다.
+   * [v11.0] 검색 품질 개선: 쿼리 유연화 및 상위 후보군 추출 (AI 검증용)
    */
-  async searchYoutubeVideo(topic: string): Promise<{ title: string; url: string } | null> {
+  async searchYoutubeVideo(topic: string): Promise<{ title: string; url: string }[]> {
     try {
-      // [v10.11] 고퀄리티 영상을 찾기 위해 쿼리 보강 (공식, 정보성 키워드 추가)
-      const query = `site:youtube.com ${topic} 공식 정보 가이드 리뷰 영상`;
+      // [v11.0] 쿼리 유연화: 너무 구체적인 키워드보다는 핵심 주제 위주로 검색
+      const query = `site:youtube.com ${topic} 최신 정보 리뷰 가이드`;
       
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query: query,
-        max_results: 10 // 필터 없이 많이 가져온 후 로컬에서 거름
+        max_results: 15 // 충분한 후보군 확보
       }, {
         headers: { "Content-Type": "application/json" },
         timeout: 10000
       });
 
       const results = response.data.results || [];
-      console.log(`🎬 [Tavily YouTube] 필터 없이 ${results.length}개 결과 확보`);
+      console.log(`🎬 [Tavily YouTube] 전체 결과 ${results.length}개 중 유효 영상 필터링 중...`);
 
-      // 로컬에서 유튜브 URL 정밀 필터링
-      const video = results.find((r: any) => 
-        r.url.toLowerCase().includes("youtube.com/watch") || 
-        r.url.toLowerCase().includes("youtu.be/") ||
-        r.url.toLowerCase().includes("youtube.com/v/")
-      );
-      
-      if (video) {
-        console.log(`✅ [Tavily YouTube] 유효 영상 발견: ${video.title}`);
-        return {
-          title: video.title.replace(/<[^>]*>?/gm, "").trim(),
-          url: video.url
-        };
+      // 1. 유튜브 URL 정밀 필터링 및 제목 정제
+      const validVideos = results
+        .filter((r: any) => 
+          r.url.toLowerCase().includes("youtube.com/watch") || 
+          r.url.toLowerCase().includes("youtu.be/") ||
+          r.url.toLowerCase().includes("youtube.com/v/")
+        )
+        .map((v: any) => ({
+          title: v.title.replace(/<[^>]*>?/gm, "").trim(),
+          url: v.url
+        }))
+        .slice(0, 3); // 상위 3개만 후보로 선정
+
+      if (validVideos.length > 0) {
+        console.log(`✅ [Tavily YouTube] ${validVideos.length}개의 유효 후보 영상 발견`);
+        return validVideos;
       }
-      return null;
+      return [];
     } catch (error: any) {
       console.error(`❌ [Tavily YouTube] 검색 실패: ${error.message}`);
-      return null;
+      return [];
     }
   }
 }

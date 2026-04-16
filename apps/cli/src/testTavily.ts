@@ -11,11 +11,12 @@ async function testYoutubeSearch() {
   console.log(`\n🔍 [TEST] 유튜브 검색 테스트 시작: "${topic}"`);
   
   try {
-    const video = await tavily.searchYoutubeVideo(topic);
-    if (video) {
-      console.log(`✅ 검색 성공!`);
-      console.log(`- 제목: ${video.title}`);
-      console.log(`- URL: ${video.url}`);
+    const videoCandidates = await tavily.searchYoutubeVideo(topic);
+    if (videoCandidates.length > 0) {
+      console.log(`✅ ${videoCandidates.length}개의 영상 후보 발견!`);
+      videoCandidates.forEach((video, i) => {
+        console.log(`[${i + 1}] 제목: ${video.title} / URL: ${video.url}`);
+      });
     } else {
       console.warn(`⚠️ 검색 결과가 없습니다.`);
     }

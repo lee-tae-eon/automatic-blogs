@@ -215,39 +215,38 @@ export async function generatePost({
           naverSearch.searchBlog(cleanTopic, 3),
         ]);
 
-        // ✅ [v10.11] 관련 유튜브 영상 자동 검색 및 AI 연관성 검증
+        /*
+        // ✅ [v11.0] 관련 유튜브 영상 자동 검색 및 AI 연관성 검증 (품질 강화) - [잠시 보류]
         onProgress?.("🎬 관련 유튜브 영상 검색 및 AI 검증 중...");
-        let youtubeContext = "";
         try {
-          const videoInfo = await tavily.searchYoutubeVideo(cleanTopic);
+          const videoCandidates = await tavily.searchYoutubeVideo(cleanTopic);
           
-          if (videoInfo && videoInfo.title && videoInfo.url) {
-            const { title, url } = videoInfo;
-            
-            // [AI Relevance Check] 영상 제목과 블로그 주제의 연관성을 AI가 직접 판단
+          if (videoCandidates.length > 0) {
             const checkPrompt = `
               [블로그 주제]: ${cleanTopic}
-              [유튜브 영상 제목]: ${title}
+              [후보 유튜브 영상들]:
+              ${videoCandidates.map((v, i) => `${i + 1}. 제목: ${v.title} / URL: ${v.url}`).join("\n")}
               
-              위 유튜브 영상이 해당 블로그 주제와 밀접한 연관이 있는 유익한 영상인지 판단해줘.
-              단순히 단어가 겹치는 것을 넘어, 독자에게 도움이 되는 정보성/후기성 영상이어야 해.
-              
+              위 후보 중 블로그 주제와 밀접한 연관이 있고 독자에게 유익한 정보/후기를 제공하는 최적의 영상 1개를 선택해줘.
               응답은 반드시 아래 JSON 형식으로만 해줘:
-              { "isRelevant": boolean, "reason": "간략한 이유" }
+              { "bestIndex": number, "isRelevant": boolean, "reason": "선택한 이유" }
             `;
             
-            const verification = await client.generateJson<{ isRelevant: boolean; reason: string }>(checkPrompt);
+            const verification = await client.generateJson<{ bestIndex: number; isRelevant: boolean; reason: string }>(checkPrompt);
             
-            if (verification.isRelevant) {
-              youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${title}\n- URL: ${url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${url}] 태그를 독립된 줄에 삽입하세요.)`;
-              console.log(`✅ [YouTube] AI 검증 완료 (${verification.reason}): ${title}`);
-            } else {
-              console.log(`⚠️ [YouTube] AI 검증 탈락 (${verification.reason}): ${title}`);
+            if (verification.isRelevant && verification.bestIndex > 0) {
+              const selectedVideo = videoCandidates[verification.bestIndex - 1];
+              if (selectedVideo) {
+                youtubeContext = `\n\n# [🎬 관련 유튜브 영상]\n- 제목: ${selectedVideo.title}\n- URL: ${selectedVideo.url}\n(이 영상은 주제와 연관된 유익한 정보를 담고 있습니다. 독자의 이해를 돕기 위해 본문 중간, 특히 요약이나 핵심 설명 직후에 반드시 [영상: ${selectedVideo.url}] 태그를 독립된 줄에 삽입하세요.)`;
+                console.log(`✅ [YouTube] AI 검증 완료: ${selectedVideo.title}`);
+              }
             }
           }
         } catch (ytError: any) {
-          console.warn(`⚠️ [YouTube] 검색/검증 과정 중 오류 발생 (무시하고 진행): ${ytError.message}`);
+          console.warn(`⚠️ [YouTube] 검색/검증 과정 중 오류 발생: ${ytError.message}`);
         }
+        */
+        let youtubeContext = ""; // 보류 상태이므로 빈 값 유지
 
         // 데이터 통합
         newsContext = `
@@ -387,17 +386,25 @@ ${youtubeContext}
           /x\.com/i,
           /pstatic/i,
           /kakaocdn/i,
+          /tistory\.com/i,
+          /egloos\.com/i,
+          /brunch\.co\.kr/i,
+          /blog\.me/i,
+          /cafe\.naver/i,
+          /cafe\.daum/i,
         ];
 
-        const filteredRefs = sanitizedPublication.references.filter((ref) => {
-          const name = ref.name.toLowerCase();
+        const filteredRefs = (sanitizedPublication.references || []).filter((ref) => {
           const url = ref.url.toLowerCase();
+          const name = (ref.name || "").toLowerCase();
 
-          // 1. URL 패턴 체크
+          // 1. 블로그/커뮤니티 패턴 체크 (더 엄격하게)
           const isBlockedUrl =
             blockedPatterns.some((p) => p.test(url)) ||
-            url.includes("/blog/") ||
-            url.includes(".blog.");
+            url.includes("/blog") ||
+            url.includes("blog.") ||
+            url.includes("/article") ||
+            url.includes("/post/");
           // 2. 이름 체크 (블로그, 카페 등의 단어가 들어간 매체 제외)
           const isBlockedName = /블로그|카페|brunch|티스토리|개인|포스트/i.test(
             name,
