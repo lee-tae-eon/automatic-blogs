@@ -248,13 +248,23 @@ export async function generatePost({
         */
         let youtubeContext = ""; // 보류 상태이므로 빈 값 유지
 
-        // 데이터 통합
+        // 데이터 통합 및 유튜브 링크 강제 필터링 (보류 조치)
+        const filteredTavilyContext = (tavilyResult.context || "")
+          .split("\n")
+          .filter(line => !line.toLowerCase().includes("youtube.com") && !line.toLowerCase().includes("youtu.be"))
+          .join("\n");
+        
+        const filteredNaverResult = (naverResult || "")
+          .split("\n")
+          .filter(line => !line.toLowerCase().includes("youtube.com") && !line.toLowerCase().includes("youtu.be"))
+          .join("\n");
+
         newsContext = `
 # [웹 검색 및 분석 데이터 (Tavily)]
-${tavilyResult.context}
+${filteredTavilyContext}
 
 # [네이버 블로그 실시간 동향 (Naver)]
-${naverResult}
+${filteredNaverResult}
 ${youtubeContext}
         `.trim();
 
