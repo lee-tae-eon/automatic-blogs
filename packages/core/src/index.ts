@@ -18,6 +18,7 @@ export * from "./ai/geminiClient";
 
 // 서비스 (외부 연동 및 DB)
 export * from "./services/tavilyService";
+export * from "./services/PerformanceService";
 export * from "./services/pexelImageService";
 export * from "./services/dbService";
 export * from "./services/KeywordScoutService";

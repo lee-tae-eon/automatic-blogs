@@ -218,3 +218,87 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/prettyhihihi/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:22:43]
+📍 대상 포스트: 2026년 청년창업지원금 최대 1억원 신청 전 몰라서 손해 볼 뻔한 핵심 정보 가이드
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:25:19]
+📍 대상 포스트: 2026년 4월 미국 연준 금리 결정과 CPI의 상관관계 분석: 내 자산을 지키는 필승 전략
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:27:59]
+📍 대상 포스트: 2026년 소상공인 경영안정 바우처 사용처 및 배달앱 제외 기준, 직접 써보고 정리한 알짜 정보
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:30:27]
+📍 대상 포스트: SK하이닉스 vs TSMC 영업이익률 비교: 반도체 패권의 향방과 투자 전략
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:33:05]
+📍 대상 포스트: 2026년 소상공인 경영안정지원금 25만원 신청 방법, 몰라서 손해 볼 뻔한 핵심 조건 정리
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:35:47]
+📍 대상 포스트: 2026년 서울시 소상공인 폐업지원금 신청 전, 몰라서 손해 볼 뻔한 점포 철거비 증액 정보 정리
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 8:38:17]
+📍 대상 포스트: 2026 소상공인 AI 활용 지원사업 최대 4,000만 원 신청 자격과 핵심 전략
+❌ 에러 메시지: page.waitForURL: Timeout 120000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "https://blog.naver.com/**" until "load"
+============================================================
+🔗 발생 URL: https://nid.naver.com/nidlogin.login
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 9:19:57]
+📍 대상 포스트: 2026년 청년창업지원금 최대 1억원 신청 전 몰라서 손해 볼 뻔한 핵심 정보 가이드
+❌ 에러 메시지: page.waitForTimeout: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/PostView.naver?blogId=eongon&Redirect=View&logNo=224255327505&categoryNo=11&isAfterWrite=true&isMrblogPost=false&isHappyBeanLeverage=true&contentLength=96676
+--------------------------------------------------
+
+==================================================
+[2026. 4. 17. 오전 9:21:14]
+📍 대상 포스트: 2026년 4월 미국 연준 금리 결정과 CPI의 상관관계 분석: 내 자산을 지키는 필승 전략
+❌ 에러 메시지: keyboard.press: Target page, context or browser has been closed
+🔗 발생 URL: https://blog.naver.com/eongon/postwrite
+--------------------------------------------------

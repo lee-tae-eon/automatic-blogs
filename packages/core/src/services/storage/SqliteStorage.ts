@@ -42,7 +42,7 @@ export class SqliteStorage implements IStorage {
     this.db.exec(createPostTable);
     this.db.exec("CREATE INDEX IF NOT EXISTS idx_post_cache_keys ON post_cache (topic, persona, tone)");
 
-    // ✅ [v5.2] 발행된 포스팅 추적 테이블 추가
+    // ✅ [v11.9] 발행된 포스팅 추적 테이블 및 성과 데이터 컬럼 확장
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS published_posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,18 +50,61 @@ export class SqliteStorage implements IStorage {
         url TEXT UNIQUE NOT NULL,
         keywords TEXT,
         category TEXT,
-        published_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        account TEXT,
+        persona TEXT,
+        tone TEXT,
+        views INTEGER DEFAULT 0,
+        likes INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
+        published_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // 기존 테이블에 컬럼이 없는 경우를 위한 Migration (단순 처리)
+    try {
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN account TEXT");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN persona TEXT");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN tone TEXT");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN views INTEGER DEFAULT 0");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN likes INTEGER DEFAULT 0");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN comments INTEGER DEFAULT 0");
+      this.db.exec("ALTER TABLE published_posts ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+    } catch (e) {
+      // 이미 컬럼이 존재하는 경우 무시
+    }
   }
 
-  // ✅ [v5.2] 발행 성공 정보 저장
-  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = ""): void {
+  // ✅ [v5.2] 발행 성공 정보 저장 (v11.9 persona, tone 추가)
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = "", persona: string = "", tone: string = ""): void {
     const stmt = this.db.prepare(`
-      INSERT OR IGNORE INTO published_posts (title, url, keywords, category, account)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO published_posts (title, url, keywords, category, account, persona, tone, published_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
-    stmt.run(title, url, keywords.join(","), category, account);
+    stmt.run(title, url, keywords.join(","), category, account, persona, tone);
+  }
+
+  // ✅ [v11.9] 성과 데이터 업데이트
+  updatePostMetrics(url: string, metrics: { views: number; likes: number; comments: number }): void {
+    const stmt = this.db.prepare(`
+      UPDATE published_posts 
+      SET views = ?, likes = ?, comments = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE url = ?
+    `);
+    stmt.run(metrics.views, metrics.likes, metrics.comments, url);
+  }
+
+  // ✅ [v11.9] 최고 성과 페르소나/톤 조합 조회
+  getBestPerformingStyles(limit: number = 3): { persona: string; tone: string; avgViews: number }[] {
+    const stmt = this.db.prepare(`
+      SELECT persona, tone, AVG(views) as avgViews 
+      FROM published_posts
+      WHERE persona IS NOT NULL AND persona != ''
+      GROUP BY persona, tone
+      ORDER BY avgViews DESC
+      LIMIT ?
+    `);
+    return stmt.all(limit) as { persona: string; tone: string; avgViews: number }[];
   }
 
   // ✅ [v5.2] 연관 포스팅 검색 (키워드 기반 + 계정 필터링)

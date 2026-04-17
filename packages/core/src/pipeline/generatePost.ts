@@ -276,6 +276,13 @@ ${youtubeContext}
         }
       }
 
+      // ✅ [v11.9] 성과 분석 피드백 루프: 과거 최고 성과 스타일 분석
+      const bestStyles = db.getBestPerformingStyles(3);
+      if (bestStyles.length > 0) {
+        const styleContext = bestStyles.map(s => `- ${s.persona}/${s.tone} (평균 조회수: ${s.avgViews.toFixed(1)})`).join("\n");
+        inputParams.latestNews = (inputParams.latestNews || "") + `\n\n# 📈 [성과 분석 데이터] 과거 가장 반응이 좋았던 스타일\n${styleContext}\nAI는 위 데이터를 참고하여 독자들이 선호하는 문체와 구성을 적극 반영하세요.`;
+      }
+
       onProgress?.("AI 포스팅 초안 생성 중...");
       const aiPost = await generatePostSingleCall(client, inputParams);
 

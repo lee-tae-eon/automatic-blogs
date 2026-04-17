@@ -39,12 +39,22 @@ export interface IStorage {
   /**
    * ✅ [v5.2] 발행된 포스트 정보 저장
    */
-  savePublishedPost(title: string, url: string, keywords: string[], category: string, account?: string): void;
+  savePublishedPost(title: string, url: string, keywords: string[], category: string, account?: string, persona?: string, tone?: string): void;
 
   /**
    * ✅ [v5.2] 연관된 포스트 추천 조회
    */
   getRelatedPosts(keywords: string[], limit?: number, account?: string): { title: string; url: string }[];
+
+  /**
+   * ✅ [v11.9] 포스팅 성과 데이터 업데이트
+   */
+  updatePostMetrics(url: string, metrics: { views: number; likes: number; comments: number }): void;
+
+  /**
+   * ✅ [v11.9] 최고 성과 페르소나/톤 조합 조회
+   */
+  getBestPerformingStyles(limit?: number): { persona: string; tone: string; avgViews: number }[];
 
   /**
    * 연결 종료

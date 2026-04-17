@@ -5,11 +5,24 @@ import { IStorage, NewsCache } from "./IStorage";
 interface JsonData {
   news: Record<string, NewsCache>;
   posts: Record<string, { content: any; created_at: string }>;
+  publishedPosts: { 
+    title: string; 
+    url: string; 
+    keywords: string[]; 
+    category: string; 
+    account: string;
+    persona: string;
+    tone: string;
+    views: number;
+    likes: number;
+    comments: number;
+    published_at: string;
+  }[];
 }
 
 export class JsonFileStorage implements IStorage {
   private filePath: string;
-  private data: JsonData = { news: {}, posts: {} };
+  private data: JsonData = { news: {}, posts: {}, publishedPosts: [] };
 
   constructor(rootDir: string) {
     const dataDir = path.join(rootDir, "data");
@@ -27,9 +40,10 @@ export class JsonFileStorage implements IStorage {
         this.data = JSON.parse(raw);
         if (!this.data.news) this.data.news = {};
         if (!this.data.posts) this.data.posts = {};
+        if (!this.data.publishedPosts) this.data.publishedPosts = [];
       } catch (e) {
         console.warn("JSON Storage load failed, resetting.");
-        this.data = { news: {}, posts: {} };
+        this.data = { news: {}, posts: {}, publishedPosts: [] };
       }
     }
   }
@@ -82,12 +96,63 @@ export class JsonFileStorage implements IStorage {
     return this.data.posts[key]?.content || null;
   }
 
-  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = ""): void {
-    // JSON 저장소는 구현 생략 (SQLite 우선)
+  savePublishedPost(title: string, url: string, keywords: string[] = [], category: string = "", account: string = "", persona: string = "", tone: string = ""): void {
+    const existingIndex = this.data.publishedPosts.findIndex(p => p.url === url);
+    const newPost = {
+      title, url, keywords, category, account, persona, tone,
+      views: 0, likes: 0, comments: 0,
+      published_at: new Date().toISOString()
+    };
+    
+    if (existingIndex > -1) {
+      this.data.publishedPosts[existingIndex] = { ...this.data.publishedPosts[existingIndex], ...newPost };
+    } else {
+      this.data.publishedPosts.push(newPost);
+    }
+    this.save();
+  }
+
+  updatePostMetrics(url: string, metrics: { views: number; likes: number; comments: number }): void {
+    const post = this.data.publishedPosts.find(p => p.url === url);
+    if (post) {
+      post.views = metrics.views;
+      post.likes = metrics.likes;
+      post.comments = metrics.comments;
+      this.save();
+    }
+  }
+
+  getBestPerformingStyles(limit: number = 3): { persona: string; tone: string; avgViews: number }[] {
+    const stats: Record<string, { totalViews: number; count: number }> = {};
+    
+    this.data.publishedPosts.forEach(p => {
+      if (!p.persona || !p.tone) return;
+      const key = `${p.persona}|${p.tone}`;
+      if (!stats[key]) stats[key] = { totalViews: 0, count: 0 };
+      stats[key].totalViews += p.views;
+      stats[key].count += 1;
+    });
+
+    return Object.entries(stats)
+      .map(([key, data]) => {
+        const [persona, tone] = key.split("|");
+        return { persona, tone, avgViews: data.totalViews / data.count };
+      })
+      .sort((a, b) => b.avgViews - a.avgViews)
+      .slice(0, limit);
   }
 
   getRelatedPosts(keywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
-    return [];
+    let filtered = this.data.publishedPosts;
+    if (account) {
+      filtered = filtered.filter(p => p.account === account);
+    }
+
+    return filtered
+      .filter(p => keywords.some(k => p.keywords.includes(k)))
+      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+      .slice(0, limit)
+      .map(p => ({ title: p.title, url: p.url }));
   }
 
   close(): void {

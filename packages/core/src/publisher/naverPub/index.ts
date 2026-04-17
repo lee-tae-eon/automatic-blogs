@@ -437,9 +437,9 @@ export class NaverPublisher implements IBlogPublisher {
       const publicationManager = new NaverPublicationManager(page);
       const publishedUrl = await publicationManager.publish(tags, category);
 
-      // ✅ [v5.2.2] 발행 성공 정보 DB 저장 (계정 정보 포함)
+      // ✅ [v5.2.2] 발행 성공 정보 DB 저장 (계정 정보 포함, v11.9 persona/tone 추가)
       if (publishedUrl) {
-        this.db.savePublishedPost(title, publishedUrl, tags, category || "", this.naverId);
+        this.db.savePublishedPost(title, publishedUrl, tags, category || "", this.naverId, post.persona, post.tone);
       }
 
       onProgress?.("블로그 발행 완료");
