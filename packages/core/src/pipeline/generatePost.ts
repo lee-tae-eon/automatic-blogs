@@ -171,19 +171,16 @@ export async function generatePost({
       const dbPath = projectRoot || process.cwd();
       const db = new DbService(dbPath);
 
-      // ✅ [v5.2.2] 계정별 내부 링크 격리 (Account Isolation)
-      // 카테고리에 따른 네이버 계정 매핑
-      const targetAccount = task.category === "이슈슈" 
-        ? "prettyhihihi@naver.com" 
-        : "eongon@naver.com";
+      // ✅ [v11.9.1] 지능형 내부 링크 그래프: 계정별 데이터 격리 및 최적 매핑
+      // task.naverId가 명시적으로 있으면 최우선 사용, 없으면 카테고리 기반 매핑
+      const targetAccount = task.naverId || (task.category === "이슈슈" ? "prettyhihihi" : "eongon");
 
       // 현재 분석된 세만틱 키워드 + 현재 계정 정보를 기반으로 과거 포스팅 조회
-      const internalLinks = db.getRelatedPosts(semanticKeywords, 5, targetAccount); // ✅ [v5.3] SEO: 내부 링크 최대 5개로 확장
+      // [v11.9.1] 키워드 기반 정밀 매핑 (최대 5개)
+      const internalLinks = db.getRelatedPosts(semanticKeywords, 5, targetAccount);
       if (internalLinks && internalLinks.length > 0) {
         inputParams.internalLinkSuggestions = internalLinks;
-        console.log(
-          `🔗 [InternalLink] ${internalLinks.length}개의 연관 포스팅을 발견했습니다.`,
-        );
+        console.log(`🔗 [InternalLink] 계정(${targetAccount})에서 ${internalLinks.length}개의 연관 포스팅을 발견했습니다.`);
       }
 
       // 캐시 확인

@@ -145,5 +145,6 @@ export interface BatchTask {
   naverCategory2?: string; // v5.4: 수동 발행 계정별 게시판 스냅샷 저장
   coupangLink?: string; // v5.6: 쿠팡 파트너스 단축 링크
   targetAccount?: "naver1" | "naver2"; // v5.6: 단일 타겟 계정 직접 지정 (쿠팡 등)
+  naverId?: string; // v11.9.1: 계정 고유 ID (내부 링크 매핑용)
   heroImagePath?: string; // 🍌 [v8.8] 사용자가 직접 지정한 대표 이미지 경로
 }

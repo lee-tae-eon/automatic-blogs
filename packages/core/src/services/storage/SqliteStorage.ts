@@ -61,17 +61,29 @@ export class SqliteStorage implements IStorage {
       )
     `);
     
-    // 기존 테이블에 컬럼이 없는 경우를 위한 Migration (단순 처리)
-    try {
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN account TEXT");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN persona TEXT");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN tone TEXT");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN views INTEGER DEFAULT 0");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN likes INTEGER DEFAULT 0");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN comments INTEGER DEFAULT 0");
-      this.db.exec("ALTER TABLE published_posts ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
-    } catch (e) {
-      // 이미 컬럼이 존재하는 경우 무시
+    // ✅ [v11.9.2] Migration: 컬럼 존재 여부 확인 후 누락된 컬럼 추가
+    const tableInfo = this.db.prepare("PRAGMA table_info(published_posts)").all() as any[];
+    const columns = tableInfo.map(info => info.name);
+    
+    const requiredColumns = [
+      { name: "account", type: "TEXT" },
+      { name: "persona", type: "TEXT" },
+      { name: "tone", type: "TEXT" },
+      { name: "views", type: "INTEGER DEFAULT 0" },
+      { name: "likes", type: "INTEGER DEFAULT 0" },
+      { name: "comments", type: "INTEGER DEFAULT 0" },
+      { name: "updated_at", type: "DATETIME DEFAULT CURRENT_TIMESTAMP" }
+    ];
+
+    for (const col of requiredColumns) {
+      if (!columns.includes(col.name)) {
+        console.log(`🔧 [SqliteStorage] Migration: ${col.name} 컬럼 추가 중...`);
+        try {
+          this.db.exec(`ALTER TABLE published_posts ADD COLUMN ${col.name} ${col.type}`);
+        } catch (e: any) {
+          console.error(`❌ [SqliteStorage] ${col.name} 컬럼 추가 실패:`, e.message);
+        }
+      }
     }
   }
 
