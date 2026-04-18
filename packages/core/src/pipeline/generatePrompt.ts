@@ -42,11 +42,20 @@ export function generateBlogPrompt(input: BlogPostInput): string {
 ${input.latestNews || ""}
 
 ${
-  internalLinkText
+  input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0
     ? `
-## 🔗 추천 관련 글
-글의 마지막 부분에 아래 링크들을 '함께 읽어보세요' 섹션으로 자연스럽게 삽입하세요.
-${internalLinkText}
+## 🕸️ [ULTRA CRITICAL] 지능형 내부 링크 그래프 (Internal Link Graph)
+현재 작성 중인 글과 연관된 과거 포스팅들입니다. 이를 본문에 **전략적으로** 삽입하세요.
+
+[과거 포스팅 목록]:
+${input.internalLinkSuggestions.map((link) => `- 제목: ${link.title} / URL: ${link.url}`).join("\n")}
+
+[삽입 및 후킹 규칙]:
+1. **분산 배치 (Contextual Insertion)**: 링크들을 글 하단에 몰아넣지 마세요. 본문 **중간(약 30% 지점)**과 **후반부(약 70% 지점)**에 문맥과 어울리는 링크를 각각 1개씩 **독립된 문단**으로 자연스럽게 삽입하세요. 나머지는 글 마지막 '함께 읽어보세요' 섹션에 넣으세요.
+2. **심리적 후킹 (Psychological Hooking)**: 단순히 제목을 나열하지 마세요. 클릭을 유도하는 **호기심/이득/불안 자극 문구**를 반드시 링크 앞에 붙이세요.
+   - ✅ 예시: "이미 장려금을 신청하셨나요? 하지만 **'이것'**을 놓치면 환급금이 절반으로 줄어들 수 있습니다." [링크: URL]
+   - ✅ 예시: "방금 설명드린 내용과 함께 읽으면 수익이 2배가 되는 꿀팁이 여기 숨어있습니다." [링크: URL]
+3. **자연스러운 연결**: "관련 글 보기:" 같은 기계적인 표현을 지양하고, 글의 흐름 속에서 추천하는 방식을 취하세요. 본문 출처 마커와 동일하게 \`[링크: URL]\` 형식을 사용하되, 앞부분에 후킹 멘트를 적절히 섞으세요.
 `
     : ""
 }

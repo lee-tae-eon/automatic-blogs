@@ -137,7 +137,8 @@ export class SqliteStorage implements IStorage {
       params.push(account);
     }
 
-    query += ` ORDER BY published_at DESC LIMIT ?`;
+    // ✅ [v11.9.3] 성과 기반 가중치 부여 (조회수 높은 순 -> 최신순)
+    query += ` ORDER BY views DESC, published_at DESC LIMIT ?`;
     params.push(limit);
     
     const stmt = this.db.prepare(query);

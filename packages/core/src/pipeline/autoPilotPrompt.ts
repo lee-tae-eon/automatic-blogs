@@ -25,29 +25,33 @@ export function generateAutoPilotPrompt(input: BlogPostInput): string {
     input.latestNews ||
     (input.internalLinkSuggestions && input.internalLinkSuggestions.length > 0)
   ) {
-    // [v6.0] 추천 링크 중복 제거 (URL 기준)
-    const uniqueLinks = Array.from(new Map((input.internalLinkSuggestions || []).map(link => [link.url, link])).values());
-    const internalLinkText = uniqueLinks
-      .map((link) => `- [${link.title}](${link.url})`)
+    const internalLinkText = (input.internalLinkSuggestions || [])
+      .map((link) => `- 제목: ${link.title} / URL: ${link.url}`)
       .join("\n");
 
     newsInstruction = `
-# 📰 실시간 최신 정보 및 출처 원칙 (2026년 2월 기준)
+# 📰 실시간 최신 정보 및 내부 링크 원칙 (2026년 2월 기준)
 당신의 내장 지식보다 아래 정보를 최우선순위로 반영하되, 다음 원칙을 **절대 준수**하세요.
 
 ## 🚫 [ULTRA CRITICAL] 정보원 및 출처 표기 금지 규칙
 1. **블로그/카페 배제**: 제공된 정보 중 블로그(Naver, Tistory 등), 카페(Naver, Daum 등), 커뮤니티(DC, Ruliweb 등) 성격의 글은 **절대 정보원으로 사용하지 마세요.** 오직 공식 뉴스, 보도자료, 전문 사이트의 정보만 신뢰하세요.
 2. **본문 내 출처 기재 금지**: 본문(\`content\`) 내에 \`(매체명)\`, \`[뉴스]\`, \`[1]\`, \`출처: ...\` 등 어떠한 형태의 출처 마커도 붙이지 마세요. 출처는 오직 JSON의 \`references\` 필드에만 포함해야 합니다.
-3. **언어 원칙**: 제공된 정보가 영어라도 **반드시 100% 한국어**로만 작성하세요.
 
 ${input.latestNews || ""}
 
 ${
   internalLinkText
     ? `
-# 🔗 함께 읽으면 좋은 관련 글 (내부 링크)
-글의 맨 마지막 섹션(결론 뒤)에 아래 링크들을 '함께 읽으면 좋은 글'이라는 소제목과 함께 자연스럽게 포함하세요.
+## 🕸️ [ULTRA CRITICAL] 지능형 내부 링크 그래프 (Internal Link Graph)
+현재 작성 중인 글과 연관된 과거 포스팅들입니다. 이를 본문에 **전략적으로** 삽입하세요.
+
+[과거 포스팅 목록]:
 ${internalLinkText}
+
+[삽입 및 후킹 규칙]:
+1. **분산 배치 (Contextual Insertion)**: 링크들을 글 하단에 몰아넣지 마세요. 본문 **중간(약 30% 지점)**과 **후반부(약 70% 지점)**에 문맥과 어울리는 링크를 각각 1개씩 **독립된 문단**으로 자연스럽게 삽입하세요. 나머지는 글 마지막 '함께 읽어보세요' 섹션에 넣으세요.
+2. **심리적 후킹 (Psychological Hooking)**: 단순히 제목을 나열하지 마세요. 클릭을 유도하는 **호기심/이득/불안 자극 문구**를 반드시 링크 앞에 붙이세요. 본문 출처 마커와 동일하게 \`[링크: URL]\` 형식을 사용하세요.
+   - ✅ 예시: "이미 장려금을 신청하셨나요? 하지만 **'이것'**을 놓치면 환급금이 절반으로 줄어들 수 있습니다." [링크: URL]
 `
     : ""
 }

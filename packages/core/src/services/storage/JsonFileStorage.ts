@@ -150,7 +150,11 @@ export class JsonFileStorage implements IStorage {
 
     return filtered
       .filter(p => keywords.some(k => p.keywords.includes(k)))
-      .sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
+      .sort((a, b) => {
+        // ✅ [v11.9.3] 성과 기반 가중치 부여
+        if (b.views !== a.views) return b.views - a.views;
+        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+      })
       .slice(0, limit)
       .map(p => ({ title: p.title, url: p.url }));
   }
