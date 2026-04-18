@@ -101,6 +101,15 @@ ${examples.transitions.length > 0 ? `\n**자연스러운 문장 연결 예시**:
 아래 리스트의 표현을 단 하나라도 사용하면 글의 전문성이 무너집니다. **절대 금지**:
 ${personaDetail.forbidden.map((f) => ` - **${f}**`).join("\n")}
 
+${
+  personaDetail.enhancementStrategy
+    ? `
+## 🚀 [ULTRA CRITICAL] 퀄리티 강화 전략 (${personaDetail.enhancementStrategy.module.toUpperCase()})
+- **실행 지침**: ${personaDetail.enhancementStrategy.instruction}
+`
+    : ""
+}
+
 ## 🎵 기본 톤앤매너 (Tone)
 ${toneInstruction}
 

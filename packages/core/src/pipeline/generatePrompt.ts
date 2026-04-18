@@ -96,6 +96,17 @@ ${toneInstruction}
 - **핵심 원칙**: ${personaDetail.principle}
 - **🚫 절대 금지**: ${personaDetail.forbidden.join(", ")}
 ${topicGuidanceText}
+
+${
+  personaDetail.enhancementStrategy
+    ? `
+## 🚀 [ULTRA CRITICAL] 퀄리티 강화 전략 (${personaDetail.enhancementStrategy.module.toUpperCase()})
+이 섹션은 이 글의 성패를 결정짓는 핵심 지침입니다. **반드시 준수**하세요:
+- **실행 지침**: ${personaDetail.enhancementStrategy.instruction}
+`
+    : ""
+}
+
 ## ✅ 작문 스타일 및 모범 사례 (Style Examples)
 글을 쓸 때 아래 예시의 느낌과 리듬을 반드시 반영하세요:
 ${examples.goodSentences.map((s) => `- "${s}"`).join("\n")}

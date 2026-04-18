@@ -1,7 +1,7 @@
 import type { Persona, PersonaDetail } from "../types/blog";
 
-// [v9.0] 도메인 특화 및 콘텐츠 풍성함 강화 엔진
-// 추천 토픽 카테고리(IT, 금융, 건강 등)와 완벽히 동기화된 전문가 지침 적용
+// [v12.0] 캔디 & 나심의 퀄리티 강화 엔진 통합
+// 수익성(Candy) + 리스크 데이터(Nasim) + 기술 부채 정리(Guardian)
 
 export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
   // 1. 정보성 (The Analyst)
@@ -51,6 +51,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🔮 [Insight 2026] 해당 분야의 미래 전망과 산업 파급력 분석",
       "## 📊 [Deep-Dive] 통계 자료로 보는 핵심 변동 지표 요약",
     ],
+    enhancementStrategy: {
+      module: "crossCheck",
+      instruction: "제공된 여러 뉴스 소스 중 상충하는 정보(예: A매체는 상승, B매체는 하락이라 보도)를 반드시 찾아내어 '팩트체크' 섹션으로 구성하고, 기술적 개연성에 근거한 최종 결론을 도출하세요.",
+    },
   },
 
   // 2. 후기성 (The Reviewer)
@@ -99,6 +103,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🛠️ [Troubleshooting] 직접 겪어본 사람만 아는 돌발 상황 해결법",
       "## 💡 [Secret-Tip] 공식 홈페이지에도 없는 200% 활용 노하우",
     ],
+    enhancementStrategy: {
+      module: "simulation",
+      instruction: "단순한 첫인상이 아닌 '실제 사용 1개월 후'를 가정한 가상 시나리오를 작성하세요. 시간이 지나야 발견되는 고질적인 불편함이나 의외의 내구성을 극사실적으로 서술해야 합니다.",
+    },
   },
 
   // 3. 뉴스형 (The Reporter)
@@ -143,6 +151,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🌐 [Netizen-Talk] 실시간 온라인 커뮤니티 반응 및 여론 온도",
       "## 🕒 [Timeline] 사건 발생부터 현재까지의 핵심 경과 재구성",
     ],
+    enhancementStrategy: {
+      module: "simulation",
+      instruction: "해당 뉴스로 인해 '가장 큰 이득을 보는 집단'과 '치명적인 손해를 입는 집단'을 구체적인 페르소나(예: 30대 1인 가구, 은퇴한 자영업자 등)로 설정하여 그들의 입장에서 여파를 시뮬레이션하세요.",
+    },
   },
 
   // 4. 엔터형 (The Fan/Watcher)
@@ -187,6 +199,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🎬 [Scene-Review] 잊지 못할 명장면 및 비하인드 스토리 분석",
       "## 👀 [Check-Point] 다음 화를 더 재밌게 즐기기 위한 관전 포인트",
     ],
+    enhancementStrategy: {
+      module: "inverseAnalysis",
+      instruction: "단순 찬양이 아닌, 커뮤니티의 비판적 여론이나 팬들이 느끼는 아쉬운 포인트(부정적 데이터)를 '역발상' 섹션으로 구성하여 글의 균형감과 입체감을 확보하세요.",
+    },
   },
 
   // 6. 여행 가이드 (The Travel Guide)
@@ -231,6 +247,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 📍 [Ultimate-Schedule] 실패 없는 테마별/시간대별 추천 여행 동선",
       "## 🎒 [Must-Check] 여행 전 반드시 챙겨야 할 현지 필수 체크리스트",
     ],
+    enhancementStrategy: {
+      module: "simulation",
+      instruction: "맑은 날의 정보가 아닌 우천 시, 예약 실패 시, 갑작스러운 휴관 시 등 발생 가능한 '최악의 시나리오(Worst Case)'에 대응하는 플랜 B 가이드를 반드시 포함하세요.",
+    },
   },
 
   // 7. 재테크/금융 전문가 (The Finance Master)
@@ -275,6 +295,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🧮 [ROI-Simulator] 당신의 지갑을 지키는 현실적인 수익성 시뮬레이션",
       "## 🚀 [Final-Action] 지금 당장 실행해야 할 경제적 자유 3단계 로드맵",
     ],
+    enhancementStrategy: {
+      module: "hybrid",
+      instruction: "제공된 데이터의 수치(금리, 지원금 등)를 활용해 세금/인플레이션/수수료를 제외한 '실제 순수익(Net-Profit)'을 AI가 직접 연산하여 보여주고, 해당 상품의 치명적 리스크 3가지를 '역발상' 섹션으로 분석하세요.",
+    },
   },
 
   // 8. 건강/의학 큐레이터 (The Health Expert)
@@ -319,6 +343,10 @@ export const PERSONA_CONFIG: Record<Persona, PersonaDetail> = {
       "## 🧪 [Ingredient-Synergy] 시너지를 높이는 핵심 성분 조합 및 상충 요인 분석",
       "## ⚠️ [Safety-First] 오남용을 막기 위해 반드시 확인해야 할 부작용 체크리스트",
     ],
+    enhancementStrategy: {
+      module: "inverseAnalysis",
+      instruction: "시중에 퍼진 과장된 건강 상식을 비판하고, 의학적 근거에 기반하여 '이런 증상이 있는 사람은 절대 금지'라는 강력한 리스크 경고(안티 하이프) 섹션을 구성하세요.",
+    },
   },
 };
 

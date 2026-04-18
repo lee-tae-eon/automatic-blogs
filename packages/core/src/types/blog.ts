@@ -43,6 +43,11 @@ export interface PersonaDetail {
     tables: string; // 선호하는 표 구성 및 위치
   };
   exclusiveSections?: string[]; // [v10.10] 페르소나별 필수 삽입 특화 섹션
+  // ✅ [v12.0] 캔디 & 나심의 퀄리티 강화 전략
+  enhancementStrategy?: {
+    module: "crossCheck" | "simulation" | "inverseAnalysis" | "hybrid";
+    instruction: string; // AI에게 전달할 구체적 강화 지침
+  };
 }
 
 export interface PersonaExamples {
