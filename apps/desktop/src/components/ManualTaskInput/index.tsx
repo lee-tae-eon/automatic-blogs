@@ -63,6 +63,8 @@ export const ManualTaskInput: React.FC<ManualTaskInputProps> = ({
       heroImagePath: heroImagePath.trim(),
       useNotebookLM,
       notebookMode,
+      naverId: credentials.naverId, // ✅ [v11.10.1] 계정 식별자 명시적 추가
+      naverId2: credentials.naverId2, // ✅ [v11.10.1]
       naverCategory: credentials.naverCategory,
       naverCategory2: credentials.naverCategory2,
       status: "대기",

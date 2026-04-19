@@ -171,12 +171,14 @@ export async function generatePost({
       const dbPath = projectRoot || process.cwd();
       const db = new DbService(dbPath);
 
-      // ✅ [v11.9.1] 지능형 내부 링크 그래프: 계정별 데이터 격리 및 최적 매핑
-      // task.naverId가 명시적으로 있으면 최우선 사용, 없으면 카테고리 기반 매핑
-      const targetAccount = task.naverId || (task.category === "이슈슈" ? "prettyhihihi" : "eongon");
+      // ✅ [v11.10.1] 지능형 내부 링크 그래프: 계정 정규화 및 정밀 매핑
+      // 1. 현재 활성화된 계정 ID 추출 (naverId가 우선, 없으면 카테고리 기반 추론)
+      let rawAccount = task.naverId || (task.category === "이슈슈" ? "prettyhihihi" : "eongon");
+      
+      // 2. ID 정규화 (이메일 도메인 제거: prettyhihihi@naver.com -> prettyhihihi)
+      const targetAccount = rawAccount.split("@")[0].trim();
 
-      // 현재 분석된 세만틱 키워드 + 현재 계정 정보를 기반으로 과거 포스팅 조회
-      // [v11.9.1] 키워드 기반 정밀 매핑 (최대 5개)
+      // 현재 분석된 세만틱 키워드 + 정규화된 계정 정보를 기반으로 과거 포스팅 조회
       const internalLinks = db.getRelatedPosts(semanticKeywords, 5, targetAccount);
       if (internalLinks && internalLinks.length > 0) {
         inputParams.internalLinkSuggestions = internalLinks;
