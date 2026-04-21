@@ -123,13 +123,32 @@ export class SqliteStorage implements IStorage {
   getRelatedPosts(queryKeywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
     if (!queryKeywords || queryKeywords.length === 0) return [];
     
+    // [v11.10.2] 검색 정밀도 및 범위 개선: 공백 제거 및 단어 단위 분할
+    const expandedKeywords = new Set<string>();
+    queryKeywords.forEach(kw => {
+      const clean = kw.trim();
+      if (clean) {
+        expandedKeywords.add(clean);
+        expandedKeywords.add(clean.replace(/\s+/g, "")); // 공백 제거 버전 추가
+        
+        // 2단어 이상인 경우 단어별로도 분할 (예: "수족구 합병증" -> "수족구", "합병증")
+        if (clean.includes(" ")) {
+          clean.split(/\s+/).forEach(word => {
+            if (word.length >= 2) expandedKeywords.add(word);
+          });
+        }
+      }
+    });
+
+    const finalKeywords = Array.from(expandedKeywords);
+    
     // 키워드 조건 구성
-    const keywordConditions = queryKeywords.map(() => "keywords LIKE ?").join(" OR ");
+    const keywordConditions = finalKeywords.map(() => "keywords LIKE ?").join(" OR ");
     let query = `
       SELECT DISTINCT title, url FROM published_posts
       WHERE (${keywordConditions})
     `;
-    const params: any[] = queryKeywords.map(k => `%${k}%`);
+    const params: any[] = finalKeywords.map(k => `%${k}%`);
 
     // 계정 필터링 추가
     if (account) {

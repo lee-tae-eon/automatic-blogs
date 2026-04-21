@@ -130,7 +130,13 @@ export async function generatePost({
 
       // 1. 세만틱 키워드 보강 (v3.29 전역 적용)
       let semanticKeywords = task.keywords || [];
-      if (semanticKeywords.length < 3) {
+      const cleanTopic = task.topic.split("\n")[0].trim();
+
+      // [v11.10.2] 핵심 단어 강제 추가 (내부 링크 매핑 성공률 제고)
+      const coreWords = cleanTopic.split(" ").filter(w => w.length >= 2).slice(0, 2);
+      semanticKeywords = [...new Set([...semanticKeywords, ...coreWords])];
+
+      if (semanticKeywords.length < 5) {
         onProgress?.("🔍 연관 키워드 분석 중...");
         try {
           const scout = new KeywordScoutService({
@@ -142,7 +148,6 @@ export async function generatePost({
               process.env.VITE_NAVER_SEARCH_AD_API_CUSTOMER_ID || "",
           });
           // [v4.3] 너무 긴 주제는 API에서 에러가 나므로 앞의 2~3단어만 추출하여 분석
-          const cleanTopic = task.topic.split("\n")[0].trim();
           const scoutKeyword = cleanTopic.split(" ").slice(0, 3).join(" ");
           const volumeData = await scout.getMonthlySearchVolume(scoutKeyword);
           if (volumeData.related && volumeData.related.length > 0) {
@@ -247,22 +252,33 @@ export async function generatePost({
         */
         let youtubeContext = ""; // 보류 상태이므로 빈 값 유지
 
-        // 데이터 통합 및 유튜브 링크 강제 필터링 (보류 조치)
-        const filteredTavilyContext = (tavilyResult.context || "")
-          .split("\n")
-          .filter(line => !line.toLowerCase().includes("youtube.com") && !line.toLowerCase().includes("youtu.be"))
-          .join("\n");
-        
-        const filteredNaverResult = (naverResult || "")
-          .split("\n")
-          .filter(line => !line.toLowerCase().includes("youtube.com") && !line.toLowerCase().includes("youtu.be"))
-          .join("\n");
+        // [v11.10.3] 스팸 및 비공식 정보원(블로그/카페/커뮤니티) 강력 필터링
+        const blacklistedDomains = [
+          "blog.naver.com", "m.blog.naver.com", "cafe.naver.com", "cafe.daum.net",
+          "tistory.com", "brunch.co.kr", "dcinside.com", "fmkorea.com", "ruliweb.com",
+          "theqoo.net", "instiz.net", "clien.net", "slrclub.com", "youtube.com", "youtu.be"
+        ];
+
+        const filterContext = (text: string) => {
+          return (text || "")
+            .split("\n")
+            .filter(line => !blacklistedDomains.some(domain => line.toLowerCase().includes(domain)))
+            .join("\n");
+        };
+
+        const filteredTavilyContext = filterContext(tavilyResult.context);
+        const filteredNaverResult = filterContext(naverResult);
+
+        // References에서도 블로그 링크 제거
+        const safeReferences = (tavilyResult.rawResults || []).filter(
+          (ref: any) => !blacklistedDomains.some(domain => ref.url.toLowerCase().includes(domain))
+        );
 
         newsContext = `
 # [웹 검색 및 분석 데이터 (Tavily)]
 ${filteredTavilyContext}
 
-# [네이버 블로그 실시간 동향 (Naver)]
+# [네이버 포털 실시간 동향]
 ${filteredNaverResult}
 ${youtubeContext}
         `.trim();
@@ -270,8 +286,7 @@ ${youtubeContext}
         inputParams.latestNews = newsContext || "최신 정보 없음";
 
         if (newsContext && newsContext.length > 100) {
-          // 참고자료는 Tavily의 원문 위주로 저장 (네이버는 요약만 활용)
-          db.saveNews(task.topic, newsContext, tavilyResult.rawResults);
+          db.saveNews(task.topic, newsContext, safeReferences);
         }
       }
 

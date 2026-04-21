@@ -100,6 +100,9 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     // 4. 전략 기반 콘텐츠 생성 (Strategic Generation)
     log(`🤖 맞춤형 콘텐츠 생성 중...`);
 
+    // [v11.10.2] 내부 링크 매핑을 위해 첫 번째 계정 정보를 태스크에 미리 주입
+    const firstNaverId = credentials.navers?.[0]?.id || credentials.naver?.id;
+
     // v3.13: 오토파일럿 전용 모드 및 전략 데이터 전달
     const task: BatchTask = {
       topic: bestTarget.keyword,
@@ -108,6 +111,7 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       useImage,
       status: "진행",
       category: "정보/리뷰",
+      naverId: firstNaverId, // ✅ 계정 정보 주입
       keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], // 세만틱 키워드 주입
       mode: "auto",
       strategy: {
