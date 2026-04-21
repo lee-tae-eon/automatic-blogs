@@ -100,7 +100,7 @@ export async function runAutoPilot(options: AutoPilotOptions) {
     // 4. 전략 기반 콘텐츠 생성 (Strategic Generation)
     log(`🤖 맞춤형 콘텐츠 생성 중...`);
 
-    // [v11.10.2] 내부 링크 매핑을 위해 첫 번째 계정 정보를 태스크에 미리 주입
+    // [v13.0] 인플루언서형 체류시간 극대화 전략 주입
     const firstNaverId = credentials.navers?.[0]?.id || credentials.naver?.id;
 
     // v3.13: 오토파일럿 전용 모드 및 전략 데이터 전달
@@ -111,14 +111,14 @@ export async function runAutoPilot(options: AutoPilotOptions) {
       useImage,
       status: "진행",
       category: "정보/리뷰",
-      naverId: firstNaverId, // ✅ 계정 정보 주입
-      keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], // 세만틱 키워드 주입
+      naverId: firstNaverId,
+      keywords: [bestTarget.keyword, ...bestTarget.relatedKeywords.slice(0, 5)], 
       mode: "auto",
       strategy: {
         headings: strategy.headings,
         suggestedOutline: strategy.suggestedOutline,
-        differentiationStrategy: strategy.differentiationStrategy,
-        styleDNA: strategy.styleDNA,
+        differentiationStrategy: `${strategy.differentiationStrategy}\n- [v13.0] 도입부에서 커뮤니티(맘카페, 뉴스 댓글 등)의 실제 반응을 언급하며 공감대를 형성하세요.\n- [v13.0] "저도 이번에 정리하면서 알게 된 사실인데"와 같이 1인칭 관찰자 시점의 추임새를 섞으세요.`,
+        styleDNA: `${strategy.styleDNA}\n- 모바일 최적화: 한 문단은 최대 2문장으로 제한.\n- 독자 유도: 문단 사이사이에 "진짜 중요한 건 지금부터예요"와 같은 리딩 멘트 삽입.`,
         estimatedLength: strategy.estimatedLength,
         hasTable: strategy.hasTable,
       },
