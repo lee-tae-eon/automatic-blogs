@@ -4,15 +4,18 @@ import fs from "fs";
 import { findProjectRoot } from "../../util/findProjectRoot";
 import { IBlogPublisher, PublishOptions } from "../interface";
 import { Publication } from "../../types/blog";
+import { DbService } from "../../services/dbService";
 
 export class TistoryPublisher implements IBlogPublisher {
   private userDataDir: string;
   private projectRoot: string;
   private currentContext: BrowserContext | null = null;
+  private db: DbService;
 
   constructor(customProjectRoot?: string) {
     this.projectRoot = customProjectRoot || findProjectRoot(__dirname);
     this.userDataDir = path.join(this.projectRoot, ".auth/tistory");
+    this.db = new DbService(this.projectRoot);
 
     if (!fs.existsSync(this.userDataDir)) {
       fs.mkdirSync(this.userDataDir, { recursive: true });
@@ -119,15 +122,29 @@ export class TistoryPublisher implements IBlogPublisher {
         await page.fill('#tagText', tags.join(","));
         await page.keyboard.press("Enter");
       }
-
       // 5. 발행 버튼 클릭
       onProgress?.("발행 버튼 클릭 중...");
-      await page.click('.btn_primitive.btn_post'); // 완료 버튼
-      await page.waitForTimeout(1000);
-      await page.click('#publish-button'); // 실제 발행 버튼 (셀렉터는 실제와 다를 수 있음)
+      const activePage = page;
+      if (!activePage) throw new Error("브라우저 페이지가 유효하지 않습니다.");
 
-      onProgress?.("티스토리 발행 완료");
-      await page.waitForTimeout(3000);
+      await activePage.click('.btn_primitive.btn_post'); // 완료 버튼
+      await activePage.waitForTimeout(1000);
+      
+      // 실제 발행 버튼 클릭 (티스토리 에디터 하단 레이어의 발행 버튼)
+      await Promise.all([
+        activePage.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 }).catch(() => null),
+        activePage.click('#publish-button').catch(() => activePage.keyboard.press("Enter")), // 실제 발행 버튼
+      ]);
+
+      await activePage.waitForTimeout(3000);
+      const publishedUrl = activePage.url();
+      if (publishedUrl && !publishedUrl.includes("/manage/post")) {
+        onProgress?.("티스토리 발행 완료");
+        this.db.savePublishedPost(title, publishedUrl, tags, "", blogId, post.persona, post.tone);
+        return;
+      } else {
+        throw new Error("티스토리 발행 후 페이지 이동을 확인하지 못했습니다.");
+      }
 
     } catch (error: any) {
       console.error("❌ 티스토리 발행 오류:", error);

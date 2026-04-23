@@ -8,6 +8,7 @@ import { TaskTable } from "./components/TaskTable";
 import { LogConsole } from "./components/LogConsole";
 import { CoupangTaskInput } from "./components/CoupangTaskInput"; 
 import { TrendDiscovery } from "./components/TrendDiscovery"; // [v11.2] 신규 추가
+import { HistoryTable } from "./components/HistoryTable"; // [v11.10] 신규 추가
 import { TrendTopic, TrendCategory } from "./components/ManualTaskInput/TrendSection";
 import { Persona, Tone } from "@blog-automation/core/types/blog";
 
@@ -19,6 +20,10 @@ export const App: React.FC = () => {
     credentials,
     logs,
   } = state;
+
+  // [v11.10] 탭 상태 및 히스토리 데이터
+  const [activeTab, setActiveTab] = React.useState<"tasks" | "history">("tasks");
+  const [history, setHistory] = React.useState<any[]>([]);
 
   // [v11.2] 통합 상태 관리 (TrendDiscovery <-> ManualTaskInput)
   const [topic, setTopic] = useState("");
@@ -112,6 +117,23 @@ export const App: React.FC = () => {
     setTrendQuery("");
   };
 
+  const fetchHistory = async () => {
+    try {
+      const result = await window.ipcRenderer.invoke("fetch-history", { limit: 50 });
+      if (result.success) {
+        setHistory(result.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch history:", e);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === "history") {
+      fetchHistory();
+    }
+  }, [activeTab]);
+
   return (
     <div
       className="container"
@@ -122,71 +144,111 @@ export const App: React.FC = () => {
         onChange={actions.handleCredentialChange}
       />
 
-      {/* v11.2 통합 트렌드 탐색 영역 (기존 AutoPilot 대체) */}
-      <TrendDiscovery
-        trendType={trendType}
-        setTrendType={setTrendType}
-        trends={trends}
-        setTrends={setTrends}
-        trendQuery={trendQuery}
-        setTrendQuery={setTrendQuery}
-        isFetchingTrends={isFetchingTrends}
-        fetchTrends={fetchTrends}
-        selectTrend={selectTrend}
-        clearTrends={clearTrends}
-        persona={persona}
-        setPersona={setPersona}
-      />
+      {/* v11.10 탭 내비게이션 */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
+        <button
+          onClick={() => setActiveTab("tasks")}
+          style={{
+            padding: "8px 20px",
+            backgroundColor: activeTab === "tasks" ? "#007aff" : "#f1f3f5",
+            color: activeTab === "tasks" ? "white" : "#495057",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          🚀 작업 대기열
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          style={{
+            padding: "8px 20px",
+            backgroundColor: activeTab === "history" ? "#007aff" : "#f1f3f5",
+            color: activeTab === "history" ? "white" : "#495057",
+            border: "none",
+            borderRadius: "6px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          📋 발행 히스토리
+        </button>
+      </div>
 
-      {/* 쿠팡 파트너스 전용 입력 패널 */}
-      <CoupangTaskInput
-        onAddTask={actions.handleAddTask}
-        credentials={credentials}
-        onChange={actions.handleCredentialChange}
-      />
+      {activeTab === "tasks" ? (
+        <>
+          {/* v11.2 통합 트렌드 탐색 영역 (기존 AutoPilot 대체) */}
+          <TrendDiscovery
+            trendType={trendType}
+            setTrendType={setTrendType}
+            trends={trends}
+            setTrends={setTrends}
+            trendQuery={trendQuery}
+            setTrendQuery={setTrendQuery}
+            isFetchingTrends={isFetchingTrends}
+            fetchTrends={fetchTrends}
+            selectTrend={selectTrend}
+            clearTrends={clearTrends}
+            persona={persona}
+            setPersona={setPersona}
+          />
 
-      {/* 메인 입력 영역 (트렌드 섹션 제거됨) */}
-      <ManualTaskInput
-        onAddTask={actions.handleAddTask}
-        credentials={credentials}
-        onChange={actions.handleCredentialChange}
-        topic={topic}
-        setTopic={setTopic}
-        keywords={keywords}
-        setKeywords={setKeywords}
-        persona={persona}
-        setPersona={setPersona}
-        tone={tone}
-        setTone={setTone}
-        useImage={useImage}
-        setUseImage={setUseImage}
-        heroImagePath={heroImagePath}
-        setHeroImagePath={setHeroImagePath}
-        useNotebookLM={useNotebookLM}
-        setUseNotebookLM={setUseNotebookLM}
-        notebookMode={notebookMode}
-        setNotebookMode={setNotebookMode}
-      />
+          {/* 쿠팡 파트너스 전용 입력 패널 */}
+          <CoupangTaskInput
+            onAddTask={actions.handleAddTask}
+            credentials={credentials}
+            onChange={actions.handleCredentialChange}
+          />
 
-      {/* 제어 영역: 엑셀 업로드 및 실행 버튼 */}
-      <ActionButtons
-        hasTasks={tasks.length > 0}
-        isProcessing={isManualProcessing}
-        logs={logs}
-        onClear={actions.handleClearAll}
-        onStop={actions.handleStop}
-        onPublish={actions.handlePublishAll}
-        onFileUpload={actions.processFile}
-      />
+          {/* 메인 입력 영역 (트렌드 섹션 제거됨) */}
+          <ManualTaskInput
+            onAddTask={actions.handleAddTask}
+            credentials={credentials}
+            onChange={actions.handleCredentialChange}
+            topic={topic}
+            setTopic={setTopic}
+            keywords={keywords}
+            setKeywords={setKeywords}
+            persona={persona}
+            setPersona={setPersona}
+            tone={tone}
+            setTone={setTone}
+            useImage={useImage}
+            setUseImage={setUseImage}
+            heroImagePath={heroImagePath}
+            setHeroImagePath={setHeroImagePath}
+            useNotebookLM={useNotebookLM}
+            setUseNotebookLM={setUseNotebookLM}
+            notebookMode={notebookMode}
+            setNotebookMode={setNotebookMode}
+          />
 
-      {/* 작업 목록 영역 */}
-      <TaskTable
-        tasks={tasks}
-        onPersonaChange={actions.handlePersonaChange}
-        onToneChnage={actions.handleToneChange}
-        onUseImageChange={actions.handleUseImageChange}
-        onApprove={actions.handleApproveTask}
-      />
+          {/* 제어 영역: 엑셀 업로드 및 실행 버튼 */}
+          <ActionButtons
+            hasTasks={tasks.length > 0}
+            isProcessing={isManualProcessing}
+            logs={logs}
+            onClear={actions.handleClearAll}
+            onStop={actions.handleStop}
+            onPublish={actions.handlePublishAll}
+            onFileUpload={actions.processFile}
+          />
+
+          {/* 작업 목록 영역 */}
+          <TaskTable
+            tasks={tasks}
+            onPersonaChange={actions.handlePersonaChange}
+            onToneChnage={actions.handleToneChange}
+            onUseImageChange={actions.handleUseImageChange}
+            onApprove={actions.handleApproveTask}
+          />
+        </>
+      ) : (
+        <HistoryTable history={history} onRefresh={fetchHistory} />
+      )}
 
       <LogConsole logs={logs} />
     </div>

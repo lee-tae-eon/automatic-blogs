@@ -45,12 +45,19 @@ import {
   KeywordScoutService,
   TopicRecommendationService, // 추가
   RssService,
+  DbService,
 } from "@blog-automation/core";
 
 // ==========================================
 // 2. 스토어 초기화
 // ==========================================
 const store = new Store();
+
+// ✅ [v11.10] DB 서비스 초기화
+const userDataPath = !app.isPackaged 
+  ? path.join(__dirname, "../../..") 
+  : app.getPath("userData");
+const dbService = new DbService(userDataPath);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -885,6 +892,18 @@ function registerIpcHandlers() {
       }
     },
   );
+
+  // ----------------------------------------
+  // [History] 발행 내역 가져오기 (New v11.10)
+  // ----------------------------------------
+  ipcMain.handle("fetch-history", async (event, { limit, account }) => {
+    try {
+      const history = dbService.getPublishedHistory(limit, account);
+      return { success: true, data: history };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 // ==========================================

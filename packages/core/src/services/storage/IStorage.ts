@@ -52,9 +52,9 @@ export interface IStorage {
   updatePostMetrics(url: string, metrics: { views: number; likes: number; comments: number }): void;
 
   /**
-   * ✅ [v11.9] 최고 성과 페르소나/톤 조합 조회
+   * ✅ [v11.10] 발행 내역 전체 조회
    */
-  getBestPerformingStyles(limit?: number): { persona: string; tone: string; avgViews: number }[];
+  getPublishedHistory(limit?: number, account?: string): any[];
 
   /**
    * 연결 종료

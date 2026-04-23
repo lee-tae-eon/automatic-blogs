@@ -36,6 +36,8 @@ trigger: always_on
 
 - 모든 에이전트 간의 핸드오프(Handoff) 및 로그 기록은 반드시 **한국어 문장. English sentence.** 형식을 유지합니다.
 - All handoffs and logs between agents must maintain the **Korean sentence. English sentence.** format.
+- 사용자 요청이 **한글**이면 → 요청내용만 영문으로 번역해서 상단에 제공한다
+- 사용자 요청이 **영문**이면 → 요청내용만 원어민 수준으로 refine해서 상단에 제공한다
 
 ## 4. Safety & Ethics
 

@@ -14,11 +14,13 @@
 - [x] v11.5: 트렌드 섹션 카테고리 탭 영역 높이 고정 (flex-shrink 적용) ✅
 - [x] v11.6: 실시간 트렌드 다양성 및 최신성 강화 (시/분 동적 쿼리 도입) ✅
 - [x] v11.7: 계정별 발행 데이터 격리 및 내부 링크 최적화 (Multi-ID 지원) ✅
+- [x] v11.10: UI 히스토리 연동 및 발행 내역 조회 기능 구현 ✅
+- [x] v11.11: 리스트-박스 간 개행 누락으로 인한 렌더링 버그(불릿 포인트 중첩) 수정 ✅
 
 ---
 
 ## 📌 현재 위치 / Current Position
 ```
-DONE: Account Isolation & Internal Linking Enhanced ✅
-NOW:  Phase 11 최종 사용자 검증 및 UI 히스토리 연동 대기 🛠️
+DONE: Spacing Fix for List/Box Overlap ✅
+NOW:  Phase 11 최종 사용자 검증 및 안정화 🛠️
 ```

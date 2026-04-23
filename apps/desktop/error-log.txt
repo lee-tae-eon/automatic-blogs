@@ -302,3 +302,13 @@ waiting for navigation to "https://blog.naver.com/**" until "load"
 ❌ 에러 메시지: keyboard.press: Target page, context or browser has been closed
 🔗 발생 URL: https://blog.naver.com/eongon/postwrite
 --------------------------------------------------
+
+==================================================
+[2026. 4. 20. 오후 12:49:49]
+📍 대상 포스트: 아이 비염 콧물 빼기, 코 세척기 안전하게 사용하는 법과 1개월 실전 노하우
+❌ 에러 메시지: page.goto: net::ERR_NETWORK_IO_SUSPENDED at https://blog.naver.com/eongon/postwrite
+Call log:
+[2m  - navigating to "https://blog.naver.com/eongon/postwrite", waiting until "domcontentloaded"[22m
+
+🔗 발생 URL: about:blank
+--------------------------------------------------

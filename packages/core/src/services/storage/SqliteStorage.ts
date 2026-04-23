@@ -159,9 +159,26 @@ export class SqliteStorage implements IStorage {
     // ✅ [v11.9.3] 성과 기반 가중치 부여 (조회수 높은 순 -> 최신순)
     query += ` ORDER BY views DESC, published_at DESC LIMIT ?`;
     params.push(limit);
-    
+
     const stmt = this.db.prepare(query);
     return stmt.all(...params) as { title: string; url: string }[];
+  }
+
+  // ✅ [v11.10] 발행 내역 전체 조회 (최신순)
+  getPublishedHistory(limit: number = 50, account?: string): any[] {
+    let query = `SELECT * FROM published_posts`;
+    const params: any[] = [];
+
+    if (account) {
+      query += ` WHERE account = ?`;
+      params.push(account);
+    }
+
+    query += ` ORDER BY published_at DESC LIMIT ?`;
+    params.push(limit);
+
+    const stmt = this.db.prepare(query);
+    return stmt.all(...params);
   }
 
   saveNews(topic: string, content: string, references: { name: string; url: string }[]): void {

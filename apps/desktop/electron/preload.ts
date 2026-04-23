@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
       "run-autopilot-step2",
       "fetch-recommended-topics",
       "select-image",
+      "fetch-history",
     ];
     if (validChannels.includes(channel)) {
       return ipcRenderer.invoke(channel, ...args);

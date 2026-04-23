@@ -49,11 +49,18 @@ export class DbService implements IStorage {
   }
 
   getBestPerformingStyles(limit: number = 3): { persona: string; tone: string; avgViews: number }[] {
-    return this.storage.getBestPerformingStyles(limit);
+    if ((this.storage as any).getBestPerformingStyles) {
+      return (this.storage as any).getBestPerformingStyles(limit);
+    }
+    return [];
   }
 
   getRelatedPosts(keywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
     return this.storage.getRelatedPosts(keywords, limit, account);
+  }
+
+  getPublishedHistory(limit: number = 50, account?: string): any[] {
+    return this.storage.getPublishedHistory(limit, account);
   }
 
   close(): void {

@@ -159,6 +159,14 @@ export class JsonFileStorage implements IStorage {
       .map(p => ({ title: p.title, url: p.url }));
   }
 
+  getPublishedHistory(limit: number = 50, account?: string): any[] {
+    let posts = [...this.data.publishedPosts].reverse();
+    if (account) {
+      posts = posts.filter(p => p.account === account);
+    }
+    return posts.slice(0, limit);
+  }
+
   close(): void {
     // 파일 기반이므로 별도 종료 없음
   }
