@@ -40,8 +40,30 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     });
   });
 
-  // 4. [중요] 불필요한 인라인 스타일 제거 (기타 요소들은 유지)
+  // 4. [v13.3] 인라인 스타일 주입 (에디터 코드 노출 방지)
+  const $ = (await import("cheerio")).load(html, null, false);
+  
+  // 본문 요소 (500px 제한)
+  $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint").each((_, el) => {
+    const $el = $(el);
+    const existingStyle = $el.attr("style") || "";
+    $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+  });
 
-  // 컨테이너도 스타일 없이 깔끔하게
-  return `<div class="post-content">${html}</div>`;
+  // 리스트 특수 처리 (불릿과 텍스트 그룹화 중앙 정렬)
+  $("ul, ol").each((_, el) => {
+    const $el = $(el);
+    const existingStyle = $el.attr("style") || "";
+    $el.attr("style", `display: inline-block; text-align: left; max-width: 500px; margin: 0 auto; word-break: keep-all; line-height: 1.8; padding-left: 20px; ${existingStyle}`);
+    $el.wrap('<div style="text-align: center; width: 100%; margin: 10px 0;"></div>');
+  });
+
+  // 소제목 요소 (전체 너비 유지)
+  $("h2, h3").each((_, el) => {
+    const $el = $(el);
+    const existingStyle = $el.attr("style") || "";
+    $el.attr("style", `width: 100%; text-align: center; margin-left: 0; margin-right: 0; ${existingStyle}`);
+  });
+
+  return `<div class="post-content">${$.html()}</div>`;
 }

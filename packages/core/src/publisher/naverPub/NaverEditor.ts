@@ -19,16 +19,18 @@ const getHeadingStyle = (persona: string) => {
   const theme = PERSONA_THEMES[persona] || PERSONA_THEMES.informative;
   return `
     display: block;
-    border-left: 6px solid ${theme.color};
-    padding: 12px 15px;
-    margin-top: 45px;
-    margin-bottom: 20px;
-    font-size: 20px;
+    text-align: center;
+    padding: 15px;
+    margin-top: 50px;
+    margin-bottom: 25px;
+    font-size: 22px;
     font-weight: bold;
     color: ${theme.color};
     line-height: 1.4;
     background-color: ${theme.bgColor};
-    border-radius: 0 8px 8px 0;
+    border-top: 2px solid ${theme.color};
+    border-bottom: 2px solid ${theme.color};
+    word-break: keep-all;
   `;
 };
 
@@ -36,12 +38,15 @@ const getQuoteStyle = (persona: string) => {
   const theme = PERSONA_THEMES[persona] || PERSONA_THEMES.informative;
   return `
     display: block;
-    border-left: 4px solid ${theme.color};
-    padding: 15px 20px;
-    margin: 25px 0;
-    color: #444;
-    line-height: 1.7;
-    background-color: white;
+    max-width: 500px;
+    margin: 30px auto;
+    text-align: center;
+    padding: 20px;
+    color: #555;
+    line-height: 1.8;
+    background-color: #fcfcfc;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
     font-style: italic;
   `;
 };
@@ -50,9 +55,10 @@ const getQuoteStyle = (persona: string) => {
 const getCheckpointStyle = () => {
   return `
     display: block;
-    border: 10px solid #f2f2f2;
-    padding: 40px 30px;
+    max-width: 500px;
     margin: 40px auto;
+    border: 10px solid #f2f2f2;
+    padding: 30px 20px;
     color: #333;
     line-height: 1.8;
     background-color: white;
@@ -122,7 +128,8 @@ export class NaverEditor {
   private async pasteHtml(htmlContent: string) {
     // 강조 문법 적용
     const coloredHtml = this.applyColoringGrammar(htmlContent);
-    const wrapper = `<div style="text-align: left;">${coloredHtml}</div>`;
+    // [v13.1] 모바일 가독성을 위해 기본 정렬을 중앙(center)으로 변경
+    const wrapper = `<div style="text-align: center;">${coloredHtml}</div>`;
 
     await this.page.evaluate((html) => {
       const type = "text/html";
@@ -243,13 +250,14 @@ export class NaverEditor {
           case "table":
             if (!block.html) break;
 
-            // cheerio를 사용해 <table> 내부에 직접 인라인 스타일 추가
+            // [v13.2] 표도 500px 제한 및 중앙 정렬
             const $table = cheerio.load(block.html, null, false);
 
             $table("table").css({
+              "max-width": "500px",
               width: "100%",
+              margin: "0 auto 20px auto",
               "border-collapse": "collapse",
-              "margin-bottom": "20px",
               "font-size": "14px",
               "text-align": "center",
             });
@@ -274,8 +282,8 @@ export class NaverEditor {
             break;
 
           case "list":
-            // 리스트는 글자 크기 등을 본문과 맞춤
-            const styledList = `<div style="font-size: 15px; line-height: 1.8; color: #333; font-weight: 400; font-style: normal;">${block.html}</div>`;
+            // [v13.4] 리스트 불릿과 텍스트가 함께 중앙에 오도록 스타일 정밀 조정
+            const styledList = `<div style="text-align: center; margin: 10px 0;"><ul style="display: inline-block; text-align: left; max-width: 500px; margin: 0 auto; font-size: 15px; line-height: 1.8; color: #333; list-style-position: outside; padding-left: 20px;">${block.html.replace(/<ul[^>]*>/, "").replace(/<\/ul>/, "")}</ul></div>`;
             await this.pasteHtml(styledList);
             await this.page.keyboard.press("Enter");
             break;
@@ -423,10 +431,9 @@ export class NaverEditor {
           default:
             if (!block.html) break;
 
-            // 문단은 p 태그로 감싸고 스타일 지정 (상속 방지를 위해 color, font-weight 등 명시)
-            // margin-bottom 등을 인라인으로 줘서 청킹 효과 유지
+            // [v13.2] 본문만 500px 제한 및 가독성 스타일 적용
             await this.pasteHtml(
-              `<p style="font-size: 15px; line-height: 1.8; color: #333; font-weight: 400; font-style: normal;">${block.html}</p>`,
+              `<div style="max-width: 500px; margin: 0 auto; text-align: center;"><p style="font-size: 15px; line-height: 1.8; color: #333; font-weight: 400; word-break: keep-all; margin: 0;">${block.html}</p></div>`,
             );
             await this.page.keyboard.press("Enter");
             await this.page.keyboard.press("Enter");

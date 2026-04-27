@@ -26,3 +26,4 @@ export * from "./services/TopicExpanderService";
 export * from "./services/TopicRecommendationService";
 export * from "./services/CompetitorAnalyzerService";
 export * from "./services/RssService";
+export * from "./services/NateNewsService";

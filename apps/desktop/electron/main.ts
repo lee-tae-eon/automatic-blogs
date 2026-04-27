@@ -43,10 +43,12 @@ import {
   runAutoPilot,
   TopicExpanderService,
   KeywordScoutService,
-  TopicRecommendationService, // 추가
+  TopicRecommendationService,
   RssService,
   DbService,
-} from "@blog-automation/core";
+  NateNewsService,
+  } from "@blog-automation/core";
+
 
 // ==========================================
 // 2. 스토어 초기화
@@ -141,6 +143,23 @@ function registerIpcHandlers() {
   // [Discovery] 추천 토픽 가져오기 (New v3.0, v10.7 사용자 검색어 지원)
   // ----------------------------------------
   ipcMain.handle("fetch-recommended-topics", async (event, { category, query }: { category: any; query?: string }) => {
+    // [Nate News Ranking] 특수 처리
+    if (category === "nate") {
+      try {
+        const nateService = new NateNewsService();
+        const rankings = await nateService.fetchTopRankings(15);
+        const data = rankings.map(r => ({
+          topic: r.title,
+          summary: `네이트 실시간 랭킹 ${r.rank}위 (${r.medium})`,
+          keywords: r.title.split(" ").slice(0, 2),
+          sourceUrl: r.link
+        }));
+        return { success: true, data };
+      } catch (error: any) {
+        return { success: false, error: `네이트 랭킹 수집 실패: ${error.message}` };
+      }
+    }
+
     const credentials: any = store.get("user-credentials");
     // ... (apiKey 설정 로직)
     const { geminiKey, subGemini, thirdGemini } = credentials || {};

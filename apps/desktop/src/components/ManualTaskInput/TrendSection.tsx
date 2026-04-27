@@ -15,6 +15,7 @@ export interface TrendTopic {
 export type TrendCategory = 
   | "hollywood" 
   | "korea" 
+  | "nate"
   | "tech" 
   | "economy" 
   | "finance"
@@ -56,6 +57,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
   const categories: { key: TrendCategory; label: string; icon: string; color: string }[] = [
     { key: "hollywood", label: "헐리우드", icon: "🎬", color: "#ff4757" },
     { key: "korea", label: "한국 트렌드", icon: "🇰🇷", color: "#03c75a" },
+    { key: "nate", label: "네이트 랭킹", icon: "🔥", color: "#e74c3c" },
     { key: "tech", label: "IT/테크", icon: "💻", color: "#4834d4" },
     { key: "economy", label: "경제/비즈", icon: "💰", color: "#f0932b" },
     { key: "finance", label: "금융/보험", icon: "🏦", color: "#2f3542" },
