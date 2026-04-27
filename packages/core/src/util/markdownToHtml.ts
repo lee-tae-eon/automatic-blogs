@@ -30,6 +30,7 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     "summary-box": "background-color: #f0f7ff; border: 1px solid #d0e3ff; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "tip-box": "background-color: #f6fff5; border: 1px solid #e1f5e0; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "warning-box": "background-color: #fff9f0; border: 1px solid #ffe8d0; padding: 20px; border-radius: 12px; margin: 20px 0;",
+    "related-box": "background-color: #f8fbff; border: 2px dashed #6366f1; padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;",
     "checkpoint": "background-color: #f8f9fa; border-left: 5px solid #03c75a; padding: 15px 20px; margin: 20px 0; font-style: italic;"
   };
 
@@ -44,7 +45,7 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   const $ = (await import("cheerio")).load(html, null, false);
   
   // 본문 요소 (500px 제한)
-  $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint").each((_, el) => {
+  $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint, .related-box").each((_, el) => {
     const $el = $(el);
     const existingStyle = $el.attr("style") || "";
     $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
@@ -54,8 +55,8 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   $("ul, ol").each((_, el) => {
     const $el = $(el);
     const existingStyle = $el.attr("style") || "";
-    $el.attr("style", `display: inline-block; text-align: left; max-width: 500px; margin: 0 auto; word-break: keep-all; line-height: 1.8; padding-left: 20px; ${existingStyle}`);
-    $el.wrap('<div style="text-align: center; width: 100%; margin: 10px 0;"></div>');
+    $el.attr("style", `max-width: 500px; margin: 0 auto; text-align: center; list-style-position: inside; padding: 0; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+    $el.find("li").css({ "text-align": "center", "margin-bottom": "8px" });
   });
 
   // 소제목 요소 (전체 너비 유지)

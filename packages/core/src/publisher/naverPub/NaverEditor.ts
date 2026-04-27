@@ -282,9 +282,25 @@ export class NaverEditor {
             break;
 
           case "list":
-            // [v13.4] 리스트 불릿과 텍스트가 함께 중앙에 오도록 스타일 정밀 조정
-            const styledList = `<div style="text-align: center; margin: 10px 0;"><ul style="display: inline-block; text-align: left; max-width: 500px; margin: 0 auto; font-size: 15px; line-height: 1.8; color: #333; list-style-position: outside; padding-left: 20px;">${block.html.replace(/<ul[^>]*>/, "").replace(/<\/ul>/, "")}</ul></div>`;
-            await this.pasteHtml(styledList);
+            // [v13.5] 리스트 불릿이 텍스트와 함께 중앙에 오도록 inside 정렬 및 중앙 정렬 강제
+            const $list = cheerio.load(block.html, null, false);
+            $list("ul, ol").css({
+              "display": "block",
+              "max-width": "500px",
+              "margin": "0 auto",
+              "padding": "0",
+              "text-align": "center",
+              "list-style-position": "inside",
+              "font-size": "15px",
+              "line-height": "1.8",
+              "color": "#333"
+            });
+            $list("li").css({
+              "text-align": "center",
+              "margin-bottom": "8px"
+            });
+            
+            await this.pasteHtml($list.html());
             await this.page.keyboard.press("Enter");
             break;
 
