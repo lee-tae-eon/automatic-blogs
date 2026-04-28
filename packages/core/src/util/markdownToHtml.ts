@@ -51,12 +51,12 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
   });
 
-  // 리스트 특수 처리 (불릿과 텍스트 그룹화 중앙 정렬)
+  // 리스트 특수 처리 (블록 단위 중앙 정렬 + 내부 정렬 유지)
   $("ul, ol").each((_, el) => {
     const $el = $(el);
     const existingStyle = $el.attr("style") || "";
-    $el.attr("style", `max-width: 500px; margin: 0 auto; text-align: center; list-style-position: inside; padding: 0; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
-    $el.find("li").css({ "text-align": "center", "margin-bottom": "8px" });
+    $el.attr("style", `display: table; max-width: 500px; margin: 15px auto; text-align: left; list-style-position: outside; padding-left: 25px; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+    $el.find("li").css({ "margin-bottom": "8px" });
   });
 
   // 소제목 요소 (전체 너비 유지)

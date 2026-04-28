@@ -282,22 +282,22 @@ export class NaverEditor {
             break;
 
           case "list":
-            // [v13.5] 리스트 불릿이 텍스트와 함께 중앙에 오도록 inside 정렬 및 중앙 정렬 강제
+            // [v13.8] 리스트 정밀 중앙 정렬: 블록은 중앙에 배치하되 내부 불릿-텍스트 정렬은 유지
             const $list = cheerio.load(block.html, null, false);
             $list("ul, ol").css({
-              "display": "block",
+              "display": "table", // 컨텐츠 너비만큼만 차지
+              "margin": "15px auto",
+              "padding-left": "25px", // 불릿 공간 확보
+              "text-align": "left", // 내부 텍스트는 왼쪽 정렬 (불릿과 정렬 유지)
               "max-width": "500px",
-              "margin": "0 auto",
-              "padding": "0",
-              "text-align": "center",
-              "list-style-position": "inside",
               "font-size": "15px",
               "line-height": "1.8",
-              "color": "#333"
+              "color": "#333",
+              "list-style-position": "outside" // 불릿을 텍스트 영역 밖으로
             });
             $list("li").css({
-              "text-align": "center",
-              "margin-bottom": "8px"
+              "margin-bottom": "8px",
+              "word-break": "keep-all"
             });
             
             await this.pasteHtml($list.html());
