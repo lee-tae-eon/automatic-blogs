@@ -145,9 +145,11 @@ function registerIpcHandlers() {
   ipcMain.handle("fetch-recommended-topics", async (event, { category, query }: { category: any; query?: string }) => {
     // [Nate News Ranking] 특수 처리
     if (category === "nate") {
+      console.log("🌐 [IPC] 네이트 뉴스 랭킹 수집 요청 수신");
       try {
         const nateService = new NateNewsService();
         const rankings = await nateService.fetchTopRankings(15);
+        console.log(`✅ [IPC] 네이트 랭킹 ${rankings.length}개 수집 성공`);
         const data = rankings.map(r => ({
           topic: r.title,
           summary: `네이트 실시간 랭킹 ${r.rank}위 (${r.medium})`,
@@ -156,6 +158,7 @@ function registerIpcHandlers() {
         }));
         return { success: true, data };
       } catch (error: any) {
+        console.error("❌ [IPC] 네이트 랭킹 수집 에러:", error);
         return { success: false, error: `네이트 랭킹 수집 실패: ${error.message}` };
       }
     }

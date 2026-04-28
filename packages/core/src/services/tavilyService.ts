@@ -16,8 +16,8 @@ export class TavilyService {
         search_depth: "advanced",
         max_results: 3,
         include_images: false,
-        include_raw_content: true, // 본문 전체 텍스트 포함
-        time_range: timeRange // [v10.12] 최신성 확보를 위한 시간 범위 추가
+        include_raw_content: true // 본문 전체 텍스트 포함
+        // time_range 제거 (432 에러 방지)
       });
 
       const results = response.data.results || [];
@@ -58,8 +58,8 @@ export class TavilyService {
         api_key: this.apiKey,
         query,
         search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
-        max_results: 8,
-        time_range: "day" // [v10.12] 최근 24시간 이내의 결과만 수집
+        max_results: 8
+        // time_range: "day" 제거 (432 에러 방지)
       });
       return response.data.results;
     } catch (error) {
@@ -82,8 +82,8 @@ export class TavilyService {
         api_key: this.apiKey,
         query,
         search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
-        max_results: 8,
-        time_range: "day" // [v10.12] 최근 24시간 이내의 결과만 수집
+        max_results: 8
+        // time_range: "day" 제거 (432 에러 방지)
       });
       return response.data.results;
     } catch (error) {
