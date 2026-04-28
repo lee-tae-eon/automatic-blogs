@@ -119,49 +119,59 @@ export class SqliteStorage implements IStorage {
     return stmt.all(limit) as { persona: string; tone: string; avgViews: number }[];
   }
 
-  // ✅ [v5.2] 연관 포스팅 검색 (키워드 기반 + 계정 필터링)
+  // ✅ [v13.7] 지능형 연관 포스팅 검색 (매칭 점수제 도입)
   getRelatedPosts(queryKeywords: string[], limit: number = 2, account?: string): { title: string; url: string }[] {
     if (!queryKeywords || queryKeywords.length === 0) return [];
     
-    // [v11.10.2] 검색 정밀도 및 범위 개선: 공백 제거 및 단어 단위 분할
-    const expandedKeywords = new Set<string>();
-    queryKeywords.forEach(kw => {
-      const clean = kw.trim();
-      if (clean) {
-        expandedKeywords.add(clean);
-        expandedKeywords.add(clean.replace(/\s+/g, "")); // 공백 제거 버전 추가
-        
-        // 2단어 이상인 경우 단어별로도 분할 (예: "수족구 합병증" -> "수족구", "합병증")
-        if (clean.includes(" ")) {
-          clean.split(/\s+/).forEach(word => {
-            if (word.length >= 2) expandedKeywords.add(word);
-          });
-        }
-      }
+    // 1. 키워드 정제 및 중복 제거
+    const cleanKeywords = Array.from(new Set(
+      queryKeywords
+        .map(kw => kw.trim())
+        .filter(kw => kw.length >= 2) // 2글자 이상만 유효
+    ));
+
+    if (cleanKeywords.length === 0) return [];
+
+    // 2. 가중치 점수 계산을 위한 SQL 표현식 생성
+    // 각 키워드가 포함될 때마다 1점씩 부여
+    const scoreExpressions = cleanKeywords.map(() => 
+      "(CASE WHEN title LIKE ? THEN 2 WHEN keywords LIKE ? THEN 1 ELSE 0 END)"
+    ).join(" + ");
+
+    const params: any[] = [];
+    cleanKeywords.forEach(k => {
+      params.push(`%${k}%`); // title 매칭 (2점)
+      params.push(`%${k}%`); // keywords 매칭 (1점)
     });
 
-    const finalKeywords = Array.from(expandedKeywords);
-    
-    // 키워드 조건 구성
-    const keywordConditions = finalKeywords.map(() => "keywords LIKE ?").join(" OR ");
     let query = `
-      SELECT DISTINCT title, url FROM published_posts
-      WHERE (${keywordConditions})
+      SELECT title, url, (${scoreExpressions}) as match_score 
+      FROM published_posts
+      WHERE match_score > 0
     `;
-    const params: any[] = finalKeywords.map(k => `%${k}%`);
 
-    // 계정 필터링 추가
+    // 계정 필터링
     if (account) {
       query += ` AND account = ?`;
       params.push(account);
     }
 
-    // ✅ [v11.9.3] 성과 기반 가중치 부여 (조회수 높은 순 -> 최신순)
-    query += ` ORDER BY views DESC, published_at DESC LIMIT ?`;
+    // 3. 점수 높은 순 -> 조회수 높은 순 -> 최신 순 정렬
+    query += ` ORDER BY match_score DESC, views DESC, published_at DESC LIMIT ?`;
     params.push(limit);
 
-    const stmt = this.db.prepare(query);
-    return stmt.all(...params) as { title: string; url: string }[];
+    try {
+      const stmt = this.db.prepare(query);
+      const results = stmt.all(...params) as any[];
+      
+      // 최소 연관성 필터링: 점수가 너무 낮은 것은 제외 (주관적 임계치: 2점 이상 선호)
+      return results
+        .filter(r => r.match_score >= 1) 
+        .map(r => ({ title: r.title, url: r.url }));
+    } catch (e: any) {
+      console.error("❌ [RelatedPosts] 검색 실패:", e.message);
+      return [];
+    }
   }
 
   // ✅ [v11.10] 발행 내역 전체 조회 (최신순)
