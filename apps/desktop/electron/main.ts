@@ -373,9 +373,16 @@ function registerIpcHandlers() {
       }
 
       const client = new GeminiClient(apiKeys[0], modelName);
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+
       const prompt = `
-        다음은 현재 대한민국에서 가장 핫한 뉴스 키워드 목록입니다.
-        전문 블로거의 시각에서 이 뉴스들을 분석하여, 블로그 포스팅으로 작성했을 때 유입이 높을 법한 구체적인 '주제'로 재구성하고 적절한 페르소나와 톤을 매칭하세요.
+        현재 날짜는 **${dateStr}**입니다. 당신은 최신 트렌드에 가장 민감한 전문 블로거입니다.
+        아래의 실시간 뉴스 키워드를 분석하여, **반드시 2026년 현재 및 2027년 미래 전망**을 담은 매력적인 블로그 주제로 재구성하세요.
+
+        [🚫 최신성 경고]
+        - 2025년 이전의 낡은 정보나 정책은 절대 추천하지 마세요. 
+        - 만약 뉴스 내용에 과거 연도가 포함되어 있다면, 이를 2026년 시점에서의 '결과'나 '후속 조치' 또는 '2027년 전망'으로 업데이트하여 제안하세요.
 
         [실시간 뉴스]
         ${newsTitles}
