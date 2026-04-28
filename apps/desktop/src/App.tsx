@@ -73,12 +73,17 @@ export const App: React.FC = () => {
           }));
           setTrends(formatted);
         } else {
-          // 헐리우드/한국 트렌드도 필드가 있으면 포함
-          setTrends(result.data.map((item: any) => ({
-            ...item,
+          // [v13.6] 헐리우드/한국 트렌드도 AI 분석 결과를 필드에 매핑
+          const formatted = result.data.map((item: any) => ({
+            topic: item.topic,
+            summary: item.summary,
+            keywords: item.keywords || [],
+            persona: item.persona,
+            tone: item.tone,
             goldenScore: item.goldenScore,
             searchVolume: item.searchVolume
-          })));
+          }));
+          setTrends(formatted);
         }
       } else {
         alert("트렌드를 가져오지 못했습니다: " + (result?.error || "알 수 없는 오류"));

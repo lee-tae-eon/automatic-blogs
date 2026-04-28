@@ -334,32 +334,75 @@ function registerIpcHandlers() {
   });
 
   // ----------------------------------------
-  // [Discovery] 한국 핫이슈 가져오기 (RSS 기반 - 비용 0원)
+  // [Discovery] 한국 핫이슈 가져오기 (RSS + AI 분석)
   // ----------------------------------------
   ipcMain.handle("fetch-korea-trends", async (event, query?: string) => {
+    const credentials: any = store.get("user-credentials");
+    const { geminiKey, subGemini, thirdGemini } = credentials || {};
+
+    const apiKeys = [
+      geminiKey,
+      subGemini,
+      thirdGemini,
+      process.env.VITE_GEMINI_API_KEY,
+    ].filter((k) => !!k && k.trim() !== "");
+
+    if (apiKeys.length === 0) {
+      return { success: false, error: "사용 가능한 API 키가 없습니다." };
+    }
+
     try {
       const rss = new RssService();
-      const trends = await rss.fetchTrendingTopics("KR", query);
+      const rawTrends = await rss.fetchTrendingTopics("KR", query);
 
-      if (!trends || trends.length === 0) {
-        return {
-          success: false,
-          error: "현재 가져올 수 있는 한국 트렌드가 없습니다.",
-        };
+      if (!rawTrends || rawTrends.length === 0) {
+        return { success: false, error: "현재 수집된 트렌드가 없습니다." };
       }
 
-      const formattedTopics = trends.map((t) => ({
-        topic: t.title,
-        summary: `최신 이슈: ${t.title}`,
-        keywords: t.title.split(" ").slice(0, 2),
-      }));
+      // 상위 10개 뉴스를 바탕으로 AI 분석 요청
+      const newsTitles = rawTrends.slice(0, 10).map(t => t.title).join("\n");
+      
+      let modelName = "";
+      switch (credentials.modelType) {
+        case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+        case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+        case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+        case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+        case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+        default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+      }
 
-      return { success: true, data: formattedTopics };
+      const client = new GeminiClient(apiKeys[0], modelName);
+      const prompt = `
+        다음은 현재 대한민국에서 가장 핫한 뉴스 키워드 목록입니다.
+        전문 블로거의 시각에서 이 뉴스들을 분석하여, 블로그 포스팅으로 작성했을 때 유입이 높을 법한 구체적인 '주제'로 재구성하고 적절한 페르소나와 톤을 매칭하세요.
+
+        [실시간 뉴스]
+        ${newsTitles}
+
+        [출력 규칙]
+        1. 반드시 아래 JSON 배열 형식으로만 응답하세요. (마크다운 금지)
+        2. persona는 반드시 [informative, experiential, reporter, entertainment, travel, healthExpert, financeMaster] 중 하나여야 합니다.
+        3. tone은 반드시 [polite, professional, friendly, serious, incisive, empathetic] 중 하나여야 합니다.
+        4. topic은 뉴스 제목 그대로가 아니라, 블로그 제목으로 적합하게 매력적으로 지으세요.
+
+        [
+          { 
+            "topic": "주제", 
+            "summary": "뉴스 요약 및 포스팅 방향", 
+            "keywords": ["키워드1", "키워드2"],
+            "persona": "페르소나",
+            "tone": "말투"
+          },
+          ...
+        ]
+      `;
+
+      const topics = await client.generateJson<any[]>(prompt);
+      return { success: true, data: topics };
     } catch (error: any) {
-      return {
-        success: false,
-        error: "트렌드를 가져오는 중 오류가 발생했습니다.",
-      };
+      console.error("❌ 한국 트렌드 AI 분석 실패:", error);
+      return { success: false, error: "트렌드 분석 중 오류가 발생했습니다." };
     }
   });
 
