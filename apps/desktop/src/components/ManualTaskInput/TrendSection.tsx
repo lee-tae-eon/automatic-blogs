@@ -33,7 +33,7 @@ interface TrendSectionProps {
   trendQuery: string;
   setTrendQuery: (query: string) => void;
   isFetchingTrends: boolean;
-  fetchTrends: () => void;
+  fetchTrends: (forceRefresh?: boolean) => void; // boolean 인자 추가
   selectTrend: (trend: TrendTopic) => void;
   clearTrends: () => void;
   persona: Persona;
@@ -106,11 +106,7 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
         {categories.map((cat) => (
           <button
             key={cat.key}
-            onClick={() => {
-              setTrendType(cat.key);
-              setTrends([]);
-              setTrendQuery(""); 
-            }}
+            onClick={() => setTrendType(cat.key)}
             style={{
               padding: "6px 12px",
               fontSize: "0.75rem",
@@ -161,22 +157,41 @@ export const TrendSection: React.FC<TrendSectionProps> = ({
               outline: "none",
             }}
           />
-          <button
-            onClick={fetchTrends}
-            disabled={isFetchingTrends}
-            style={{
-              padding: "8px 15px",
-              fontSize: "0.85rem",
-              backgroundColor: categories.find(c => c.key === trendType)?.color || "#03c75a",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            {isFetchingTrends ? "..." : "추천받기"}
-          </button>
+          <div style={{ display: "flex", gap: "4px" }}>
+            <button
+              onClick={() => fetchTrends(false)}
+              disabled={isFetchingTrends}
+              style={{
+                padding: "8px 15px",
+                fontSize: "0.85rem",
+                backgroundColor: categories.find(c => c.key === trendType)?.color || "#03c75a",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              {isFetchingTrends ? "..." : "추천받기"}
+            </button>
+            <button
+              onClick={() => fetchTrends(true)} // [v13.9] 강제 새로고침
+              disabled={isFetchingTrends}
+              title="다시 검색하기 (AI 비용 발생)"
+              style={{
+                padding: "8px 10px",
+                fontSize: "1rem",
+                backgroundColor: "#fff",
+                color: "#868e96",
+                border: "1px solid #dee2e6",
+                borderRadius: "6px",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              🔄
+            </button>
+          </div>
         </div>
       </div>
 

@@ -35,17 +35,27 @@ export const App: React.FC = () => {
   const [useNotebookLM, setUseNotebookLM] = useState(false);
   const [notebookMode, setNotebookMode] = useState<"manual" | "auto">("auto");
 
-  // 트렌드 데이터 상태
+  // 트렌드 데이터 상태 (v13.9 캐시 추가)
   const [trends, setTrends] = useState<TrendTopic[]>([]);
+  const [trendCache, setTrendCache] = useState<Record<string, TrendTopic[]>>({}); 
   const [trendQuery, setTrendQuery] = useState("");
   const [isFetchingTrends, setIsFetchingTrends] = useState(false);
-  const [trendType, setTrendType] = useState<TrendCategory>("hollywood");
+  const [trendType, setTrendType] = useState<TrendCategory>("korea");
 
-  const fetchTrends = async () => {
+  const fetchTrends = async (forceRefresh = false) => {
+    if (isFetchingTrends) return;
+
+    // [v13.9] 캐시 확인 로직 (검색어가 없고 새로고침이 아닐 때)
+    const cacheKey = `${trendType}_${trendQuery}`;
+    if (!forceRefresh && !trendQuery && trendCache[cacheKey]) {
+      setTrends(trendCache[cacheKey]);
+      return;
+    }
+
     setIsFetchingTrends(true);
     try {
       let channel = "";
-      let arg: any = trendQuery;
+      let arg: any = null;
 
       if (trendType === "hollywood") {
         channel = "fetch-hollywood-trends";
@@ -53,6 +63,9 @@ export const App: React.FC = () => {
       } else if (trendType === "korea") {
         channel = "fetch-korea-trends";
         arg = trendQuery;
+      } else if (trendType === "nate") {
+        channel = "fetch-recommended-topics";
+        arg = { category: "nate", query: trendQuery };
       } else {
         channel = "fetch-recommended-topics";
         arg = { category: trendType, query: trendQuery }; 
@@ -60,8 +73,9 @@ export const App: React.FC = () => {
 
       const result = await window.ipcRenderer.invoke(channel, arg);
       if (result && result.success) {
-        if (trendType !== "hollywood" && trendType !== "korea") {
-          const formatted = result.data.map((item: any) => ({
+        let formatted: TrendTopic[] = [];
+        if (trendType !== "hollywood" && trendType !== "korea" && trendType !== "nate") {
+          formatted = result.data.map((item: any) => ({
             topic: item.keyword,
             summary: item.reason,
             keywords: [item.keyword],
@@ -71,10 +85,8 @@ export const App: React.FC = () => {
             searchVolume: item.searchVolume,
             competitionIndex: item.competitionIndex
           }));
-          setTrends(formatted);
         } else {
-          // [v13.6] 헐리우드/한국 트렌드도 AI 분석 결과를 필드에 매핑
-          const formatted = result.data.map((item: any) => ({
+          formatted = result.data.map((item: any) => ({
             topic: item.topic,
             summary: item.summary,
             keywords: item.keywords || [],
@@ -83,8 +95,10 @@ export const App: React.FC = () => {
             goldenScore: item.goldenScore,
             searchVolume: item.searchVolume
           }));
-          setTrends(formatted);
         }
+        
+        setTrends(formatted);
+        setTrendCache(prev => ({ ...prev, [cacheKey]: formatted }));
       } else {
         alert("트렌드를 가져오지 못했습니다: " + (result?.error || "알 수 없는 오류"));
       }
@@ -94,6 +108,17 @@ export const App: React.FC = () => {
     } finally {
       setIsFetchingTrends(false);
     }
+  };
+
+  const handleTrendCategoryChange = (type: TrendCategory) => {
+    setTrendType(type);
+    const cacheKey = `${type}_`; 
+    if (trendCache[cacheKey]) {
+      setTrends(trendCache[cacheKey]);
+    } else {
+      setTrends([]);
+    }
+    setTrendQuery("");
   };
 
   const selectTrend = (trend: TrendTopic) => {
@@ -188,7 +213,7 @@ export const App: React.FC = () => {
           {/* v11.2 통합 트렌드 탐색 영역 (기존 AutoPilot 대체) */}
           <TrendDiscovery
             trendType={trendType}
-            setTrendType={setTrendType}
+            setTrendType={handleTrendCategoryChange}
             trends={trends}
             setTrends={setTrends}
             trendQuery={trendQuery}
