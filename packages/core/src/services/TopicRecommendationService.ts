@@ -75,18 +75,32 @@ export class TopicRecommendationService {
     const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
     const categoryName = CATEGORY_MAP[category];
 
+    // [v13.9.1] 카테고리별 집중 지침 생성
+    let categoryFocus = "";
+    switch(category) {
+      case "parenting": categoryFocus = "아동 교육, 육아용품, 영유아 건강, 부모 교육, 어린이집/유치원 소식에 집중하세요. 절대 주식, 코인, AI 테크, 정치 소식을 포함하지 마세요."; break;
+      case "tech": categoryFocus = "IT 신제품, 소프트웨어 업데이트, AI 기술 트렌드, 가젯 리뷰에 집중하세요."; break;
+      case "economy": categoryFocus = "거시 경제, 산업 동향, 부동산 정책, 기업 실적에 집중하세요."; break;
+      case "finance": categoryFocus = "재테크, 주식 시장, 금리 전망, 보험 가이드, 세무 정보에 집중하세요."; break;
+      case "health": categoryFocus = "질병 예방, 영양제 정보, 다이어트, 정신 건강, 운동 가이드에 집중하세요."; break;
+      case "life": categoryFocus = "정부 지원금, 생활 꿀팁, 절약 노하우, 법률 상식에 집중하세요."; break;
+      default: categoryFocus = `${categoryName} 분야의 대중적인 관심사에 집중하세요.`;
+    }
+
     const prompt = `
       당신은 블로그 트렌드 분석가입니다. 현재 시각은 **${dateStr}**입니다.
       '**${categoryName}**' 카테고리에 대해, **지금 이 순간** 가장 유입이 폭발할만한 구체적인 검색어 3개를 생성하세요.
+
+      [카테고리 집중 지침 (CRITICAL)]:
+      ${categoryFocus}
 
       ${userQuery ? `[사용자 집중 키워드]: "${userQuery}"
       위 키워드와 관련된 구체적인 하위 주제나 연관 트렌드 위주로 검색어를 생성하세요. 절대 주제와 상관없는 나물, 벚꽃 같은 계절 이슈로 이탈하지 마세요.` : ""}
 
       [제약 조건]:
-      1. **주제 일치성 (CRITICAL)**: 사용자 집중 키워드가 제공된 경우, 반드시 해당 주제의 범주 내에서만 쿼리를 생성하세요. (예: '장려금' 입력 시 -> 근로장려금 신청, 자녀장려금 자격, 지역별 지원금 등)
-      2. **최신성 극대화**: 방금 발생한 뉴스, 오늘 오전/오후의 핫이슈를 반영하세요.
-      3. **보험/금융 배제**: 만약 카테고리가 '금융/재테크/보험'이 아니라면, 절대 보험이나 대출 관련 쿼리를 생성하지 마세요.
-      4. **형식**: 오직 검색어만 쉼표로 구분하여 출력하세요.
+      1. **주제 일치성 (ULTRA CRITICAL)**: 반드시 '${categoryName}'의 범주 내에서만 쿼리를 생성하세요. 육아 카테고리에 주식이나 테크 주제가 나오는 식의 '카테고리 침범'이 발생하면 실패로 간주합니다.
+      2. **최신성 극대화**: 최근 24시간 이내의 뉴스나 이슈를 반영하세요.
+      3. **형식**: 오직 검색어만 쉼표로 구분하여 출력하세요.
     `;
 
     try {

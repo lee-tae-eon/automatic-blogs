@@ -45,36 +45,43 @@ export const App: React.FC = () => {
   const fetchTrends = async (forceRefresh = false) => {
     if (isFetchingTrends) return;
 
+    // 현재의 타입을 캡처 (상태 지연 및 경쟁 상태 방지)
+    const currentType = trendType;
+    const currentQuery = trendQuery;
+    const cacheKey = `${currentType}_${currentQuery}`;
+
     // [v13.9] 캐시 확인 로직 (검색어가 없고 새로고침이 아닐 때)
-    const cacheKey = `${trendType}_${trendQuery}`;
-    if (!forceRefresh && !trendQuery && trendCache[cacheKey]) {
+    if (!forceRefresh && !currentQuery && trendCache[cacheKey]) {
       setTrends(trendCache[cacheKey]);
       return;
     }
 
     setIsFetchingTrends(true);
+    // 새로운 데이터 수집 시작 시 기존 데이터 비우기 (혼선 방지)
+    setTrends([]);
+
     try {
       let channel = "";
       let arg: any = null;
 
-      if (trendType === "hollywood") {
+      if (currentType === "hollywood") {
         channel = "fetch-hollywood-trends";
-        arg = trendQuery;
-      } else if (trendType === "korea") {
+        arg = currentQuery;
+      } else if (currentType === "korea") {
         channel = "fetch-korea-trends";
-        arg = trendQuery;
-      } else if (trendType === "nate") {
+        arg = currentQuery;
+      } else if (currentType === "nate") {
         channel = "fetch-recommended-topics";
-        arg = { category: "nate", query: trendQuery };
+        arg = { category: "nate", query: currentQuery };
       } else {
         channel = "fetch-recommended-topics";
-        arg = { category: trendType, query: trendQuery }; 
+        arg = { category: currentType, query: currentQuery }; 
       }
 
       const result = await window.ipcRenderer.invoke(channel, arg);
       if (result && result.success) {
         let formatted: TrendTopic[] = [];
-        if (trendType !== "hollywood" && trendType !== "korea" && trendType !== "nate") {
+        if (currentType !== "hollywood" && currentType !== "korea" && currentType !== "nate") {
           formatted = result.data.map((item: any) => ({
             topic: item.keyword,
             summary: item.reason,
@@ -97,6 +104,7 @@ export const App: React.FC = () => {
           }));
         }
         
+        // 여전히 해당 카테고리에 머물러 있을 때만 결과 반영 (선택 사항이지만 안전함)
         setTrends(formatted);
         setTrendCache(prev => ({ ...prev, [cacheKey]: formatted }));
       } else {
