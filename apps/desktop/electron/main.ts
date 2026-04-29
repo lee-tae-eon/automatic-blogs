@@ -352,27 +352,15 @@ function registerIpcHandlers() {
     }
 
     try {
+      if (mainWindow) mainWindow.webContents.send("process-log", "📡 실시간 뉴스 수집 중...");
       const rss = new RssService();
       const rawTrends = await rss.fetchTrendingTopics("KR", query);
 
       if (!rawTrends || rawTrends.length === 0) {
-        return { success: false, error: "현재 수집된 트렌드가 없습니다." };
+        return { success: false, error: "현재 수집된 트렌드가 없습니다. 잠시 후 다시 시도해 주세요." };
       }
 
-      // 상위 10개 뉴스를 바탕으로 AI 분석 요청
-      const newsTitles = rawTrends.slice(0, 10).map(t => t.title).join("\n");
-      
-      let modelName = "";
-      switch (credentials.modelType) {
-        case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
-        case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
-        case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
-        case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
-        case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
-        default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
-      }
-
-      const client = new GeminiClient(apiKeys[0], modelName);
+      const newsTitles = rawTrends.slice(0, 12).map(t => t.title).join("\n");
       const today = new Date();
       const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
@@ -405,11 +393,39 @@ function registerIpcHandlers() {
         ]
       `;
 
-      const topics = await client.generateJson<any[]>(prompt);
-      return { success: true, data: topics };
+      // API 키 순환 및 재시도 로직
+      let lastError: any;
+      for (const [idx, apiKey] of apiKeys.entries()) {
+        try {
+          let modelName = "";
+          switch (credentials.modelType) {
+            case "3.1_pro": modelName = process.env.VITE_GEMINI_MODEL_3_1_PRO || "gemini-3.1-pro-preview"; break;
+            case "3.0_flash": modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview"; break;
+            case "3.1_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_3_1_FLASH_LITE || "gemini-3.1-flash-lite-preview"; break;
+            case "2.5_flash": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH || "gemini-2.5-flash"; break;
+            case "2.5_flash_lite": modelName = process.env.VITE_GEMINI_MODEL_2_5_FLASH_LITE || "gemini-2.5-flash-lite"; break;
+            default: modelName = process.env.VITE_GEMINI_MODEL_3_0_FLASH || "gemini-3-flash-preview";
+          }
+
+          if (mainWindow) mainWindow.webContents.send("process-log", `🤖 AI 트렌드 분석 중 (키 #${idx + 1})...`);
+          const client = new GeminiClient(apiKey, modelName);
+          const topics = await client.generateJson<any[]>(prompt);
+          
+          if (mainWindow) mainWindow.webContents.send("process-log", `✅ 트렌드 분석 완료 (${topics.length}개)`);
+          return { success: true, data: topics };
+        } catch (error: any) {
+          lastError = error;
+          console.warn(`⚠️ [KoreaTrends] 키 #${idx + 1} 실패, 다음 키 시도...`, error.message);
+          continue;
+        }
+      }
+
+      throw lastError || new Error("모든 API 키 호출에 실패했습니다.");
     } catch (error: any) {
-      console.error("❌ 한국 트렌드 AI 분석 실패:", error);
-      return { success: false, error: "트렌드 분석 중 오류가 발생했습니다." };
+      console.error("❌ 한국 트렌드 분석 최종 실패:", error);
+      const errorMsg = error.message || String(error);
+      if (mainWindow) mainWindow.webContents.send("process-log", `❌ 트렌드 분석 실패: ${errorMsg.slice(0, 50)}...`);
+      return { success: false, error: `트렌드 분석 실패: ${errorMsg}` };
     }
   });
 
