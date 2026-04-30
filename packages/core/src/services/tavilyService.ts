@@ -13,7 +13,7 @@ export class TavilyService {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query: query,
-        search_depth: "advanced",
+        search_depth: "basic", // [v12.5] 속도 개선을 위해 basic으로 하향 조정
         max_results: 3,
         include_images: false,
         include_raw_content: true // 본문 전체 텍스트 포함
@@ -57,7 +57,7 @@ export class TavilyService {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query,
-        search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
+        search_depth: "basic", // [v12.5] 속도 개선을 위해 basic으로 하향 조정
         max_results: 8
         // time_range: "day" 제거 (432 에러 방지)
       });
@@ -81,7 +81,7 @@ export class TavilyService {
       const response = await axios.post(this.baseUrl, {
         api_key: this.apiKey,
         query,
-        search_depth: "advanced", // [v10.12] 최신성 확보를 위해 advanced로 상향
+        search_depth: "basic", // [v12.5] 속도 개선을 위해 basic으로 하향 조정
         max_results: 8
         // time_range: "day" 제거 (432 에러 방지)
       });

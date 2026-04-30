@@ -196,7 +196,7 @@ export class TopicRecommendationService {
       
       const prompt = `
         당신은 대한민국 최고의 블로그 콘텐츠 전략가입니다. 오늘은 **${currentDateStr}**입니다.
-        '**${CATEGORY_MAP[category]}**' 카테고리에서 오늘 블로그로 쓰기 가장 좋은 핫 토픽 20개를 선정하세요.
+        '**${CATEGORY_MAP[category]}**' 카테고리에서 오늘 블로그로 쓰기 가장 좋은 핫 토픽 **상위 8개**를 엄선하여 선정하세요.
 
         [수집된 데이터]:
         ${combinedData}

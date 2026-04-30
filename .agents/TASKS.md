@@ -19,8 +19,17 @@
 
 ---
 
+## 🚧 Phase 12: Trend Discovery Performance & Usability Optimization
+- [x] v12.1: Nate News ranking UI integration ✅
+- [x] v12.2: Mobile readability layout constraints (500px, list/quote styling) ✅
+- [x] v12.3: Related Post box formatting and internal link matching refinements ✅
+- [x] v12.4: Trend caching system for repeated views without AI cost ✅
+- [ ] v12.5: Optimize Tavily search depth and enforce fixed JSON array length (max 8) to reduce latency.
+
+---
+
 ## 📌 현재 위치 / Current Position
 ```
-DONE: Spacing Fix for List/Box Overlap ✅
-NOW:  Phase 11 최종 사용자 검증 및 안정화 🛠️
+DONE: Phase 11 & Initial Phase 12 UI/UX enhancements ✅
+NOW:  v12.5 Trend Search Speed Optimization ⚡
 ```
