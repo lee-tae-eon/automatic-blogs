@@ -39,7 +39,8 @@ trigger: always_on
 - 사용자 요청이 **한글**이면 → 요청내용만 영문으로 번역해서 상단에 제공한다
 - 사용자 요청이 **영문**이면 → 요청내용만 원어민 수준으로 refine해서 상단에 제공한다
 
-## 4. Safety & Ethics
+## 5. Engineering Standards & Validation
 
-- 검색 플랫폼(네이버, 티스토리 등)의 서비스 이용 약관을 준수하며, 계정 보호를 위해 무리한 속도의 자동화를 금지합니다.
-- Comply with search platform terms of service; prohibit excessive automation speeds to protect accounts.
+- **[MANDATORY] Build & Test**: 모든 코드 수정 작업 후에는 반드시 `pnpm core:build` (또는 관련 패키지 빌드)를 실행하여 빌드 성공 여부를 확인해야 합니다.
+- **[MANDATORY] Verification**: 빌드 성공 후에는 관련 테스트 스크립트나 앱 실행을 통해 변경 사항이 의도대로 동작하는지 최종 검증해야 합니다.
+- **Surgical Updates**: 코드 변경 시 불필요한 리팩토링은 지양하며, 오직 요청된 기능 및 버그 수정에 집중합니다.
