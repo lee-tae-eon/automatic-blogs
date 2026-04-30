@@ -118,6 +118,12 @@ export const useAppViewModel = () => {
     addLog(`작업 추가됨: ${task.topic}`);
   };
 
+  const handleDeleteTask = (index: number) => {
+    if (isManualProcessing) return;
+    setTasks((prev) => prev.filter((_, i) => i !== index));
+    addLog("작업이 목록에서 삭제되었습니다.");
+  };
+
   const updateTaskState = async (
     index: number,
     updates: {
@@ -487,6 +493,7 @@ export const useAppViewModel = () => {
     actions: {
       handleCredentialChange,
       handleAddTask, // 추가
+      handleDeleteTask, // 추가
       processFile,
       handleClearAll,
       handleStop,

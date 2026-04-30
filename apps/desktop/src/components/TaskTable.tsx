@@ -7,6 +7,7 @@ interface TaskTableProps {
   onToneChnage: (taskIndex: number, newTone: Tone) => void;
   onUseImageChange: (taskIndex: number, useImage: boolean) => void;
   onApprove: (taskIndex: number) => void; // 추가
+  onDelete: (taskIndex: number) => void; // 추가
 }
 
 const personaOptions: { label: string; value: Persona }[] = [
@@ -32,6 +33,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   onToneChnage,
   onUseImageChange,
   onApprove,
+  onDelete,
 }) => {
   // 펼쳐진 행들의 인덱스를 관리
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -81,6 +83,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
             <th style={{ padding: "12px" }}>주제</th>
             <th style={{ padding: "12px" }}>상태</th>
             <th style={{ padding: "12px" }}>키워드</th>
+            <th style={{ padding: "12px", width: "50px" }}></th>
           </tr>
         </thead>
         <tbody>
@@ -147,6 +150,28 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                         ? task.keywords.join(", ")
                         : task.keywords || "-"}
                     </td>
+                    <td style={{ padding: "12px", textAlign: "center" }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("이 작업을 삭제하시겠습니까?")) {
+                            onDelete(idx);
+                          }
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "1.1rem",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          transition: "background 0.2s"
+                        }}
+                        title="삭제"
+                      >
+                        🗑️
+                      </button>
+                    </td>
                   </tr>
 
                   {isExpanded && (
@@ -158,7 +183,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
                     >
                       <td></td>
                       <td
-                        colSpan={3}
+                        colSpan={4}
                         style={{ padding: "15px 12px 20px 12px" }}
                       >
                         <div
@@ -303,7 +328,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           ) : (
             <tr>
               <td
-                colSpan={4}
+                colSpan={5}
                 style={{
                   padding: "40px",
                   textAlign: "center",

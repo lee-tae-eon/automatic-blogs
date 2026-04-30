@@ -282,6 +282,7 @@ export const App: React.FC = () => {
             onToneChnage={actions.handleToneChange}
             onUseImageChange={actions.handleUseImageChange}
             onApprove={actions.handleApproveTask}
+            onDelete={actions.handleDeleteTask}
           />
         </>
       ) : (
