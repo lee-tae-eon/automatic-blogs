@@ -31,11 +31,13 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     "tip-box": "background-color: #f6fff5; border: 1px solid #e1f5e0; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "warning-box": "background-color: #fff9f0; border: 1px solid #ffe8d0; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "related-box": "background-color: #f8fbff; border: 2px dashed #6366f1; padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;",
+    "qna-box": "background-color: #ffffff; border: 1px solid #eaeaea; border-left: 5px solid #6366f1; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.05);",
     "checkpoint": "background-color: #f8f9fa; border-left: 5px solid #03c75a; padding: 15px 20px; margin: 20px 0; font-style: italic;"
   };
 
   Object.entries(boxStyles).forEach(([className, style]) => {
-    const regex = new RegExp(`<div class="${className}">([\\s\\S]*?)<\\/div>`, "gi");
+    // 따옴표(단일/이중) 모두 지원하도록 정규식 개선
+    const regex = new RegExp(`<div class=['"]${className}['"]>([\\s\\S]*?)<\\/div>`, "gi");
     html = html.replace(regex, (match, content) => {
       return `<div style="${style}">${content}</div>`;
     });
@@ -51,12 +53,23 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
   });
 
+  // Q&A 박스는 별도로 처리 (내부 좌측 정렬, 가운데 배치)
+  $(".qna-box").each((_, el) => {
+    const $el = $(el);
+    const existingStyle = $el.attr("style") || "";
+    $el.attr("style", `display: block; max-width: 500px; margin: 25px auto; text-align: left; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+  });
+
   // 리스트 특수 처리 (블록 단위 중앙 정렬 + 내부 정렬 유지)
   $("ul, ol").each((_, el) => {
     const $el = $(el);
     const existingStyle = $el.attr("style") || "";
-    $el.attr("style", `display: table; max-width: 500px; margin: 15px auto; text-align: left; list-style-position: outside; padding-left: 25px; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
-    $el.find("li").css({ "margin-bottom": "8px" });
+    // [v12.7 Hotfix] 리스트 내부 텍스트 좌측 정렬 및 번호/불릿이 잘리지 않도록 padding 조정
+    $el.attr("style", `display: table; max-width: 500px; margin: 20px auto; text-align: left; list-style-position: outside; padding-left: 40px; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+    $el.find("li").css({ "margin-bottom": "12px", "text-align": "left" });
+    
+    // [v12.7 Hotfix] 리스트 뒤에 강제 줄바꿈 삽입하여 다음 요소와의 겹침 방지
+    $el.after('<br style="clear: both;">');
   });
 
   // 소제목 요소 (전체 너비 유지)
