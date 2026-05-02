@@ -25,11 +25,21 @@
 - [x] v12.3: Related Post box formatting and internal link matching refinements ✅
 - [x] v12.4: Trend caching system for repeated views without AI cost ✅
 - [ ] v12.5: Optimize Tavily search depth and enforce fixed JSON array length (max 8) to reduce latency.
+- [x] v12.6: Hotfix - Accurately separate Q&A areas into individual boxes to prevent formatting collapse. ✅
+- [x] v12.7: Hotfix - Enforce mandatory <br> and blank lines after lists to prevent content overlap. ✅
+- [x] v12.8: Mandate the 'Surgical Update Principle' in global rules and GEMINI.md to preserve existing logic. ✅
+
+---
+
+## 🚧 Phase 13: Scaling & Stability (In Progress)
+- [ ] v13.1: Multi-API Key rotation strategy refinement & quota monitoring logic.
+- [ ] v13.2: Error retry loop enhancement for cross-platform publishing (Naver/Tistory).
+- [ ] v13.3: Automated database backup and integrity check script.
 
 ---
 
 ## 📌 현재 위치 / Current Position
 ```
-DONE: Phase 11 & Initial Phase 12 UI/UX enhancements ✅
-NOW:  v12.5 Trend Search Speed Optimization ⚡
+DONE: Phase 12 Layout Hotfixes & Core Principles Update ✅
+NOW:  v13.1 API Key Rotation & Quota Scaling 🚀
 ```

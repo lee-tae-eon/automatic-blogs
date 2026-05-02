@@ -32,6 +32,12 @@ trigger: always_on
 2. **Ryan (Constructor)**: 기능 구현 및 블로그 콘텐츠 생성. (Build Features & Content).
 3. **Blog Inspector (Guardian)**: 품질 검수 및 시스템 정책 최종 승인. (Quality Audit & Final Approval).
 
+**[MANDATORY] Next Task Designation**: 
+작업 완료 시, 반드시 `TASKS.md`에 다음 수행할 작업을 구체적으로 명시하고 `NOW` 상태를 업데이트해야 합니다. (Upon task completion, you MUST specify the next task in `TASKS.md` and update `NOW` status).
+
+**[CRITICAL] Preservation of Existing Logic (Surgical Update Principle)**:
+앞으로의 모든 작업(신규 개발, 에러 수정 등)은 **기존에 안정적으로 작동하는 로직과 구조를 최대한 보존**하며 진행합니다. 파일을 통째로 새로 쓰는 방식(Full Rewrite)을 금지하며, 문제 지점만 정밀하게 수정하는 **'수술적 업데이트'**를 수행하세요. (Every task MUST preserve existing logic and perform only surgical updates).
+
 ## 3. Communication Style
 
 - 모든 에이전트 간의 핸드오프(Handoff) 및 로그 기록은 반드시 **한국어 문장. English sentence.** 형식을 유지합니다.
