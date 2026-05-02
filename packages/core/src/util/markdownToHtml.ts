@@ -13,6 +13,10 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   // 1. Frontmatter 제거
   let content = markdown.replace(/^---\n[\s\S]*?\n---\n/, "");
 
+  // [v13.1 Hotfix] 리스트 종결 처리 보완 (Markdown 전처리)
+  // 리스트 항목(-, 1. 등) 바로 뒤에 빈 줄 없이 일반 텍스트가 오면 강제로 빈 줄을 삽입하여 리스트 합침 현상 방지
+  content = content.replace(/(\n\s*[-*1234567890.]+\s+.+)\n([^\s-*1234567890.\n<])/g, "$1\n\n$2");
+
   // 2. 마크다운 -> HTML 변환 (Pure HTML)
   // [v4.7] 실험적인 줄바꿈 로직 제거 (네이버 에디터 호환성 문제 해결)
   const result = await unified()
@@ -31,7 +35,7 @@ export async function markdownToHtml(markdown: string): Promise<string> {
     "tip-box": "background-color: #f6fff5; border: 1px solid #e1f5e0; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "warning-box": "background-color: #fff9f0; border: 1px solid #ffe8d0; padding: 20px; border-radius: 12px; margin: 20px 0;",
     "related-box": "background-color: #f8fbff; border: 2px dashed #6366f1; padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;",
-    "qna-box": "background-color: #ffffff; border: 1px solid #eaeaea; border-left: 5px solid #6366f1; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.05);",
+    "qna-box": "background-color: #ffffff; border: 1px solid #eaeaea; border-left: 5px solid #6366f1; padding: 20px; border-radius: 8px; margin: 25px 0; text-align: left; box-shadow: 0 2px 10px rgba(0,0,0,0.04);",
     "checkpoint": "background-color: #f8f9fa; border-left: 5px solid #03c75a; padding: 15px 20px; margin: 20px 0; font-style: italic;"
   };
 
@@ -45,15 +49,41 @@ export async function markdownToHtml(markdown: string): Promise<string> {
 
   // 4. [v13.3] 인라인 스타일 주입 (에디터 코드 노출 방지)
   const $ = (await import("cheerio")).load(html, null, false);
+
+  // [v13.0 Hotfix] Q&A 파편화 해결 로직 (Q 문단과 A 문단을 찾아 박스로 통합)
+  const paragraphs = $("p").toArray();
+  for (let i = 0; i < paragraphs.length; i++) {
+    const $p = $(paragraphs[i]);
+    const text = $p.text().trim();
+    
+    if (text.startsWith("Q.")) {
+      const $nextP = $(paragraphs[i + 1]);
+      const nextText = $nextP.text().trim();
+      
+      if (nextText.startsWith("A.")) {
+        // Q와 A를 담을 프리미엄 박스 생성
+        const $qnaBox = $("<div class='qna-box' style='" + boxStyles["qna-box"] + "'></div>");
+        $qnaBox.append($p.clone().html(`<strong style="color: #6366f1; font-size: 1.1em;">${text}</strong>`));
+        $qnaBox.append($nextP.clone().css({"margin-top": "15px", "color": "#333"}));
+        
+        // 원본 위치에 박스 삽입 후 기존 문단 삭제
+        $p.replaceWith($qnaBox);
+        $nextP.remove();
+        i++; // A 문단은 처리했으므로 건너뜀
+      }
+    }
+  }
   
   // 본문 요소 (500px 제한)
-  $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint, .related-box").each((_, el) => {
+  $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint, .related-box, .qna-box").each((_, el) => {
     const $el = $(el);
-    // [v12.9 Hotfix] 리스트 내부의 p 태그는 중앙 정렬에서 제외 (좌측 정렬 유지)
+    // [v12.9 Hotfix] 리스트 내부의 p 태그는 중앙 정렬에서 제외
     if ($el.closest("li").length > 0) return;
 
     const existingStyle = $el.attr("style") || "";
-    $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
+    const isQna = $el.hasClass("qna-box");
+    
+    $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: \${isQna ? "left" : "center"}; word-break: keep-all; line-height: 1.8; \${existingStyle}`);
   });
 
   // Q&A 박스는 별도로 처리 (내부 좌측 정렬, 가운데 배치)
