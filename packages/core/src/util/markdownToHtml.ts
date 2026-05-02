@@ -49,6 +49,9 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   // 본문 요소 (500px 제한)
   $("p, table, .summary-box, .tip-box, .warning-box, .checkpoint, .related-box").each((_, el) => {
     const $el = $(el);
+    // [v12.9 Hotfix] 리스트 내부의 p 태그는 중앙 정렬에서 제외 (좌측 정렬 유지)
+    if ($el.closest("li").length > 0) return;
+
     const existingStyle = $el.attr("style") || "";
     $el.attr("style", `max-width: 500px; margin-left: auto; margin-right: auto; text-align: center; word-break: keep-all; line-height: 1.8; ${existingStyle}`);
   });
