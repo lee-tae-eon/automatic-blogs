@@ -102,11 +102,17 @@ export async function markdownToHtml(markdown: string): Promise<string> {
       }
 
       if (answerContent) {
-        // 프리미엄 디자인 적용
-        $qnaBox.attr("style", boxStyles["qna-box"]);
+        // [v13.5] 모던 프리미엄 인터뷰 스타일 디자인 적용
+        $qnaBox.attr("style", "background-color: #f8fbff; border-radius: 16px; padding: 25px; border: 1px solid #eef2ff; margin: 30px auto; max-width: 500px; text-align: left; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.05);");
         $qnaBox.html(`
-          <div style="font-size: 1.15em; font-weight: bold; color: #6366f1; margin-bottom: 12px; text-align: left;">${questionContent}</div>
-          <div style="font-size: 1.05em; color: #444; line-height: 1.7; text-align: left; border-top: 1px solid #f0f0f0; padding-top: 12px;">A. ${answerContent}</div>
+          <div style="display: block; margin-bottom: 15px;">
+            <span style="background-color: #6366f1; color: white; padding: 3px 10px; border-radius: 6px; font-weight: bold; font-size: 0.9em; margin-right: 8px; vertical-align: middle;">QUESTION</span>
+            <div style="font-size: 1.15em; font-weight: 800; color: #1e1b4b; margin-top: 10px; line-height: 1.5;">${questionContent.replace(/^Q[:.]\s*/, "")}</div>
+          </div>
+          <div style="background-color: #ffffff; border-radius: 12px; padding: 18px; border: 1px solid #f1f5f9; color: #334155; line-height: 1.8; font-size: 1.05em; position: relative;">
+            <strong style="color: #6366f1; display: block; margin-bottom: 8px; font-size: 0.9em;">ANSWER</strong>
+            ${answerContent}
+          </div>
         `);
         $el.replaceWith($qnaBox);
       }
