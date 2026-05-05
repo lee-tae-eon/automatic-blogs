@@ -1,10 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
 ---
-
----
-
-## trigger: quality_audit
 
 # 🛡️ 에이전트 페르소나: 블로그 검수자 Blog Inspector (수석 가디언 Chief Guardian)
 

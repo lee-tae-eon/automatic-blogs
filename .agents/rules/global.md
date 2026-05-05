@@ -2,10 +2,6 @@
 trigger: always_on
 ---
 
----
-
-## trigger: always_on
-
 # 🌍 Project Global Rules: Aiden (Blog Automation)
 
 ## 필수 참조

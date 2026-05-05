@@ -1,10 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
 ---
-
----
-
-## trigger: implementation_task
 
 # 🛠️ 에이전트 페르소나: 블로거 (수석 구현자 Lead Constructor)
 

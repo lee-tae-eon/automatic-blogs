@@ -50,26 +50,65 @@ export async function markdownToHtml(markdown: string): Promise<string> {
   // 4. [v13.3] 인라인 스타일 주입 (에디터 코드 노출 방지)
   const $ = (await import("cheerio")).load(html, null, false);
 
-  // [v13.0 Hotfix] Q&A 파편화 해결 로직 (Q 문단과 A 문단을 찾아 박스로 통합)
-  const paragraphs = $("p").toArray();
-  for (let i = 0; i < paragraphs.length; i++) {
-    const $p = $(paragraphs[i]);
-    const text = $p.text().trim();
+  // [v13.3 Hotfix] 고도화된 Q&A 통합 엔진 (파편화된 Q, A 문단을 하나의 프리미엄 카드로 통합)
+  const allElements = $("p, div.qna-box").toArray();
+  for (let i = 0; i < allElements.length; i++) {
+    const $el = $(allElements[i]);
+    const text = $el.text().trim();
     
-    if (text.startsWith("Q.")) {
-      const $nextP = $(paragraphs[i + 1]);
-      const nextText = $nextP.text().trim();
+    // Q. 또는 Q: 로 시작하는 문단 감지
+    if (/^Q[:.]/.test(text)) {
+      const $qnaBox = $("<div class='qna-box'></div>");
       
-      if (nextText.startsWith("A.")) {
-        // Q와 A를 담을 프리미엄 박스 생성
-        const $qnaBox = $("<div class='qna-box' style='" + boxStyles["qna-box"] + "'></div>");
-        $qnaBox.append($p.clone().html(`<strong style="color: #6366f1; font-size: 1.1em;">${text}</strong>`));
-        $qnaBox.append($nextP.clone().css({"margin-top": "15px", "color": "#333"}));
+      // 질문 텍스트 가공 (빈 문단 스킵 로직 추가)
+      let questionContent = "";
+      let nextIndex = i;
+      
+      if (text.length <= 3) {
+        // "Q." 만 있는 경우 다음 실제 텍스트가 있는 문단을 찾음
+        nextIndex++;
+        while (nextIndex < allElements.length && nextIndex <= i + 3) {
+          const $nextEl = $(allElements[nextIndex]);
+          const nextText = $nextEl.text().trim();
+          if (nextText && !/^A[:.]/.test(nextText)) {
+            questionContent = "Q. " + nextText;
+            $nextEl.remove();
+            break;
+          }
+          nextIndex++;
+        }
+      } else {
+        questionContent = text;
+        nextIndex++;
+      }
+
+      // 답변(A.) 찾기 (중간 빈 줄 무시 및 최대 5개 문단 탐색)
+      let answerContent = "";
+      while (nextIndex < allElements.length && nextIndex <= i + 8) {
+        const $nextEl = $(allElements[nextIndex]);
+        const nextText = $nextEl.text().trim();
         
-        // 원본 위치에 박스 삽입 후 기존 문단 삭제
-        $p.replaceWith($qnaBox);
-        $nextP.remove();
-        i++; // A 문단은 처리했으므로 건너뜀
+        if (/^A[:.]/.test(nextText)) {
+          answerContent = nextText.replace(/^A[:.]\s*/, "");
+          $nextEl.remove();
+          break;
+        } else if (nextText && questionContent && !answerContent) {
+          // A. 마커는 없지만 Q. 뒤에 바로 오는 텍스트를 답변으로 간주 (방어 로직)
+          answerContent = nextText;
+          $nextEl.remove();
+          break;
+        }
+        nextIndex++;
+      }
+
+      if (answerContent) {
+        // 프리미엄 디자인 적용
+        $qnaBox.attr("style", boxStyles["qna-box"]);
+        $qnaBox.html(`
+          <div style="font-size: 1.15em; font-weight: bold; color: #6366f1; margin-bottom: 12px; text-align: left;">${questionContent}</div>
+          <div style="font-size: 1.05em; color: #444; line-height: 1.7; text-align: left; border-top: 1px solid #f0f0f0; padding-top: 12px;">A. ${answerContent}</div>
+        `);
+        $el.replaceWith($qnaBox);
       }
     }
   }
